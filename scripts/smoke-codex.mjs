@@ -17,8 +17,14 @@ try {
     poc: true,
   });
   if (result.platform !== 'codex') throw new Error('platform');
-  if (result.vendorSlots !== 20) throw new Error(`expected 20 slots, got ${result.vendorSlots}`);
-  console.log('smoke:codex ok', result.skillCount, 'skills');
+  // No vendor catalog: install does not seed vendor maps (agent-as-developer).
+  if (result.vendorSlots !== 0) {
+    throw new Error(`expected 0 catalog maps, got ${result.vendorSlots}`);
+  }
+  if (!result.skillCount || result.skillCount < 1) {
+    throw new Error(`expected skills installed, got ${result.skillCount}`);
+  }
+  console.log('smoke:codex ok', result.skillCount, 'skills', 'maps:', result.vendorSlots);
 } finally {
   rmSync(dir, { recursive: true, force: true });
 }
