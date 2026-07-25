@@ -2,11 +2,16 @@
 /**
  * Layerkit CLI — multi-vendor data-layer command surface for agent platforms.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
 import { generateJavaScaffold } from '../../libs/generate/java-scaffold.js';
+import {
+  checkJavaQuality,
+  defaultJacocoSearchRoots,
+  JACOCO_MIN_LINE_COVERAGE,
+} from '../../libs/generate/quality.js';
 import { layerkitHookGuidance } from '../../libs/hooks/guidance.js';
 import { installLayerkit } from '../../libs/install/install.js';
 import {
@@ -95,8 +100,14 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['doctor'],
-    usage: 'doctor [--project-dir <path>]',
+    usage: 'doctor [--quality] [--strict] [--project-dir <path>]',
     handler: runDoctor,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['promote'],
+    usage: 'promote [--vendor <id>] [--strict] [--project-dir <path>]',
+    handler: runPromote,
     showInTopLevelHelp: true,
   },
   {
@@ -105,6 +116,7 @@ const cliCommands: CliCommand[] = [
     handler: runConfig,
     showInTopLevelHelp: true,
   },
+
   {
     path: ['repo', 'status'],
     usage: 'repo status [--project-dir <path>]',
@@ -406,7 +418,8 @@ const cliCommands: CliCommand[] = [
         writeFileSync(p, f.content, 'utf8');
       }
       console.log(`Scaffolded ${files.length} files → ${out}`);
-      console.log('Next: use skill layerkit-generate-java to implement the client.');
+      console.log('Includes: Facade, Strategy, PrivacyGate, DeliveryClient, JaCoCo 0.95 pom, DESIGN_PATTERNS.md');
+      console.log('Next: skill layerkit-generate-java; then mvn test && layerkit doctor --quality --strict');
     },
     showInTopLevelHelp: true,
   },
@@ -549,11 +562,93 @@ function printInstallResult(result: Awaited<ReturnType<typeof installLayerkit>>)
   for (const n of result.notes) console.log(`- ${n}`);
 }
 
-function runDoctor(_args: string[], ctx: CliContext): void {
+function hasFlag(args: string[], name: string): boolean {
+  return args.includes(name);
+}
+
+function runDoctor(args: string[], ctx: CliContext): void {
   const store = openStore(ctx);
   const result = store.doctor();
   for (const line of result.lines) console.log(line);
-  if (!result.ok) process.exitCode = 1;
+  let ok = result.ok;
+
+  if (hasFlag(args, '--quality')) {
+    console.log('');
+    console.log('== quality (JaCoCo) ==');
+    const strict = hasFlag(args, '--strict');
+    const q = checkJavaQuality({
+      searchRoots: defaultJacocoSearchRoots(store.projectDir, ctx.repoRoot),
+      strict,
+      minLineCoverage: JACOCO_MIN_LINE_COVERAGE,
+    });
+    for (const line of q.lines) console.log(line);
+    if (!q.ok) ok = false;
+  } else if (hasFlag(args, '--strict')) {
+    console.log('Note: --strict applies with --quality (JaCoCo report required).');
+  }
+
+  if (!ok) process.exitCode = 1;
+}
+
+/**
+ * Promote map_complete → live after quality gate.
+ * With --strict (default for promote), JaCoCo report must exist and meet 0.95 line floor when parseable.
+ */
+function runPromote(args: string[], ctx: CliContext): void {
+  const store = openStore(ctx);
+  const project = store.loadProject();
+  if (!project) throw new Error('No project — run layerkit install --poc');
+
+  // promote is quality-gated; --strict is default unless --no-strict
+  const strict = !hasFlag(args, '--no-strict');
+  const q = checkJavaQuality({
+    searchRoots: defaultJacocoSearchRoots(store.projectDir, ctx.repoRoot),
+    strict,
+    minLineCoverage: JACOCO_MIN_LINE_COVERAGE,
+  });
+  console.log('== promote quality gate ==');
+  for (const line of q.lines) console.log(line);
+  if (!q.ok) {
+    console.log('Promote blocked: fix coverage / run mvn test under out/java, then retry.');
+    process.exitCode = 1;
+    return;
+  }
+
+  const onlyVendor = flag(args, '--vendor');
+  const maps = store.listMaps().filter((m) => {
+    if (onlyVendor && m.vendor !== onlyVendor) return false;
+    const filled = m.fields.length > 0 || Object.keys(m.intents).length > 0;
+    return filled && (m.status === 'map_complete' || m.status === 'live');
+  });
+
+  if (onlyVendor && maps.length === 0) {
+    const m = store.loadMap(onlyVendor);
+    if (!m) throw new Error(`No map for vendor ${onlyVendor}`);
+    throw new Error(
+      `Cannot promote ${onlyVendor}: status=${m.status ?? '?'} (need map_complete with fields/intents)`,
+    );
+  }
+
+  if (maps.length === 0) {
+    console.log('No map_complete vendors to promote.');
+    return;
+  }
+
+  let promoted = 0;
+  for (const m of maps) {
+    if (m.status === 'live') {
+      console.log(`  skip ${m.vendor}: already live`);
+      continue;
+    }
+    m.status = 'live';
+    store.saveMap(m);
+    console.log(`  promoted ${m.vendor} → live`);
+    promoted++;
+  }
+  console.log(`Promote done: ${promoted} map(s) set live.`);
+  if (existsSync(join(store.projectDir, 'out', 'java', 'pom.xml'))) {
+    console.log('Tip: regenerate client if needed: layerkit generate --lang java');
+  }
 }
 
 function runConfig(): void {
