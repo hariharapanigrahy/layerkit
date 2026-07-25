@@ -7,6 +7,9 @@ Install Layerkit (agent-first multi-vendor data-layer toolkit).
 
 Repo: https://github.com/hariharapanigrahy/layerkit
 
+Day-1 path (read first): docs/AGENT_GOLDEN_PATH.md
+Master skill only after install: skills/layerkit-orchestrate-integration/SKILL.md
+
 Before installing, ask:
 
 Question 0 — Agent platform?
@@ -18,7 +21,7 @@ Question 1 — Guidance mode?
 2. Hooks only
 3. No hooks
 
-Question 2 — Seed 20-vendor empty commerce POC?
+Question 2 — Seed empty project store (POC layout)?
 1. Yes (Recommended)
 2. No
 
@@ -33,10 +36,17 @@ cd layerkit && npm install && npm run build && npm link
 cd <target-app-repo>
 layerkit install --platform <platform> <hook flags> --poc
 layerkit doctor
+layerkit agent status
+layerkit agent next
 ```
 
 Do not invent vendor field maps during install.
-Next: skill layerkit-research-vendor for a priority vendor.
+Do not research or author maps until install + doctor are green.
 
-Final answer: platform, hooks mode, vendor slot count, next research step.
+Next (and only next): follow docs/AGENT_GOLDEN_PATH.md under skill
+layerkit-orchestrate-integration (agent status/next → research CLI → design →
+author → validate/submit/approve → generate → dry-run → doctor → promote).
+
+Final answer: platform, hooks mode, projectDir, doctor status, and that the
+next step is the golden path + orchestrate skill (not ad-hoc map authoring).
 ````

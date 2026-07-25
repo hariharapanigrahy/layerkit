@@ -14,6 +14,8 @@ Layerkit does **not** ship or maintain a vendor catalog. Agents research **any**
 
 ## Agent quick start
 
+**Day-1 any-vendor path:** [docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GOLDEN_PATH.md) (orchestrate + CLI only).
+
 Paste into your coding agent:
 
 ```txt
