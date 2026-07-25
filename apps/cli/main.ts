@@ -15,6 +15,7 @@ import {
   markStepDone,
   pipelineStatusPath,
   PIPELINE_STATUS_REL,
+  scanAndWriteDomainDiscovery,
   scanAndWriteStyleProfile,
 } from '../../libs/agent/index.js';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
@@ -191,6 +192,13 @@ const cliCommands: CliCommand[] = [
     path: ['style-profile', 'scan'],
     usage: 'style-profile scan [--root <dir>] [--out memory|path] [--project-dir <path>]',
     handler: runStyleProfileScan,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['discover', 'scan'],
+    usage:
+      'discover scan [--root <dir>] [--out memory|path] [--proposal <path>] [--project-dir <path>]',
+    handler: runDiscoverScan,
     showInTopLevelHelp: true,
   },
 
@@ -996,6 +1004,39 @@ function runStyleProfileScan(args: string[], ctx: CliContext): void {
   console.log(`http: ${p.http}`);
   console.log(`test: ${p.test}`);
   console.log(`Wrote style profile → ${outPath}`);
+}
+
+/**
+ * Heuristic domain discovery (TS/JS/Java/Kotlin) → memory/runbooks/domain-discovery.md
+ * Optional --proposal writes a draft domain_spec proposal JSON (file:// sources only).
+ */
+function runDiscoverScan(args: string[], ctx: CliContext): void {
+  const rootFlag = flag(args, '--root');
+  const root = resolve(rootFlag ?? ctx.repoRoot);
+  if (!isScannableRoot(root)) {
+    throw new Error(`discover scan: --root is not a directory: ${root}`);
+  }
+  const out = flag(args, '--out') ?? 'memory';
+  const proposalFlag = flag(args, '--proposal');
+  const { result, outPath, proposalPath } = scanAndWriteDomainDiscovery({
+    root,
+    projectDir: ctx.projectDir,
+    out: out === 'memory' ? 'memory' : resolve(out),
+    proposal: proposalFlag ? resolve(proposalFlag) : undefined,
+  });
+  console.log(`Scanned: ${root}`);
+  console.log(`Files: ${result.scannedFiles.length}`);
+  console.log(
+    `Intents (${result.intents.length}): ${result.intents.map((i: { id: string }) => i.id).join(', ') || '(none)'}`,
+  );
+  console.log(
+    `Fields (${result.fields.length}): ${result.fields.map((f: { path: string }) => f.path).join(', ') || '(none)'}`,
+  );
+  console.log(`Sources: ${result.sources.length}`);
+  console.log(`Wrote domain discovery → ${outPath}`);
+  if (proposalPath) {
+    console.log(`Wrote domain_spec proposal → ${proposalPath}`);
+  }
 }
 
 function flag(args: string[], name: string): string | undefined {

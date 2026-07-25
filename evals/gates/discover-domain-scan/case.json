@@ -1,0 +1,6 @@
+{
+  "id": "discover-domain-scan",
+  "suite": "ci",
+  "title": "domain discovery scan of fake-domain finds purchase, email fields, sources, proposal shape",
+  "fixtures": ["agent/fake-domain"]
+}
