@@ -1,15 +1,21 @@
 /**
  * Gate: empty vendor maps are skipped with agent-research reason.
+ * Uses an inline empty skeleton — not a catalog slot.
  */
 import { assertTrue } from '../../harness/assert.js';
-import { buildPocVendorMaps } from '../../../libs/domain/commerce.js';
+import { emptyVendorMap } from '../../../libs/domain/commerce.js';
 import { applyVendorMap } from '../../../libs/vendor-memory/map-engine.js';
 
-const maps = buildPocVendorMaps();
-assertTrue('poc has 20 vendors', maps.length === 20);
+const empty = emptyVendorMap({
+  vendor: 'example_vendor',
+  displayName: 'Example (empty)',
+  documentation: [{ title: 'Docs', url: 'https://docs.example.com/api' }],
+});
 
-const meta = maps.find((m) => m.vendor === 'meta')!;
-const result = applyVendorMap({ intent: 'purchase', eventId: 'x' }, meta);
+assertTrue('skeleton has no fields', empty.fields.length === 0);
+assertTrue('skeleton status', empty.status === 'skeleton');
+
+const result = applyVendorMap({ intent: 'purchase', eventId: 'x' }, empty);
 assertTrue('empty map skipped', result.skipped === true);
 assertTrue(
   'reason is agent research',

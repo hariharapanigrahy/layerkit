@@ -1,13 +1,16 @@
 /**
- * Gate: migrateMapV1toV2 / asV2 in-memory migration.
+ * Gate: migrateMapV1toV2 / asV2 in-memory migration (generic example map).
  */
 import { assertEqual, assertTrue } from '../../harness/assert.js';
-import { emptyVendorMap, VENDOR_SLOTS } from '../../../libs/domain/commerce.js';
+import { emptyVendorMap } from '../../../libs/domain/commerce.js';
 import type { VendorMapV1 } from '../../../libs/domain/types.js';
 import { asV2, mapSchemaVersion, migrateMapV1toV2 } from '../../../libs/vendor-memory/migrate.js';
 
-const metaSlot = VENDOR_SLOTS.find((s) => s.vendor === 'meta')!;
-const skeleton = emptyVendorMap(metaSlot);
+const skeleton = emptyVendorMap({
+  vendor: 'example_vendor',
+  displayName: 'Example',
+  documentation: [{ title: 'Docs', url: 'https://docs.example.com/api' }],
+});
 
 assertEqual('empty skeleton is v1', mapSchemaVersion(skeleton), 1);
 assertTrue('skeleton has docs', (skeleton.documentation?.length ?? 0) > 0);
@@ -35,17 +38,16 @@ assertEqual(
   skeleton.endpoint.path,
 );
 
-// Filled v1 with intents
 const filled: VendorMapV1 = {
   schemaVersion: 1,
-  vendor: 'meta',
-  displayName: 'Meta',
+  vendor: 'example_vendor',
+  displayName: 'Example',
   version: '1.0.0',
   auth: { type: 'bearer' },
-  endpoint: { method: 'POST', path: '/v18.0/{pixel}/events', baseUrl: 'https://graph.facebook.com' },
+  endpoint: { method: 'POST', path: '/v1/events', baseUrl: 'https://api.example.com' },
   intents: {
-    purchase: { eventName: 'Purchase', staticFields: { action_source: 'website' } },
-    lead: { eventName: 'Lead', skip: false },
+    purchase: { eventName: 'purchase', staticFields: { source: 'web' } },
+    lead: { eventName: 'lead', skip: false },
   },
   fields: [{ domain: 'eventId', vendor: 'event_id', transform: { type: 'identity' } }],
   documentation: skeleton.documentation,
@@ -59,15 +61,14 @@ assertEqual(
   filledV2.intents.purchase?.operationId,
   'default',
 );
-assertEqual('intent eventName preserved', filledV2.intents.purchase?.eventName, 'Purchase');
+assertEqual('intent eventName preserved', filledV2.intents.purchase?.eventName, 'purchase');
 assertEqual(
   'staticFields preserved',
-  filledV2.intents.purchase?.staticFields?.action_source,
-  'website',
+  filledV2.intents.purchase?.staticFields?.source,
+  'web',
 );
 assertEqual('fields length', filledV2.fields.length, 1);
 
-// Idempotent asV2 on already-v2
 const again = asV2(filledV2);
 assertEqual('asV2 idempotent vendor', again.vendor, filledV2.vendor);
 assertEqual('asV2 idempotent schema', again.schemaVersion, 2);

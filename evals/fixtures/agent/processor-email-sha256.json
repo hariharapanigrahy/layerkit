@@ -1,8 +1,8 @@
 {
-  "id": "meta.email.sha256_normalized",
+  "id": "example.email.sha256_normalized",
   "kind": "agent",
   "category": "email",
-  "description": "Normalize email then SHA-256 hex per Meta CAPI",
+  "description": "Normalize email then SHA-256 hex (fixture processor for agent evals — not a vendor catalog)",
   "piiAffecting": true,
   "version": "1.0.0",
   "status": "stable",
@@ -10,8 +10,8 @@
   "outputType": "string",
   "sources": [
     {
-      "title": "Customer Information Parameters",
-      "url": "https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/customer-information-parameters",
+      "title": "Example hashing guidance (fixture)",
+      "url": "https://docs.example.com/api/pii",
       "excerpt": "Hash email with SHA256 after normalizing"
     }
   ],

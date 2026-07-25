@@ -553,7 +553,7 @@ function printInstallResult(result: Awaited<ReturnType<typeof installLayerkit>>)
   }
   console.log(`Automatic map-update reminders: ${result.autoMapUpdates ? 'enabled' : 'disabled'}.`);
   console.log(`Config: ${result.configFile}`);
-  console.log(`Vendor memory: ${result.projectDir} (${result.vendorSlots} slots)`);
+  console.log(`Project store: ${result.projectDir} (maps seeded: ${result.vendorSlots})`);
   console.log('');
   console.log('Next steps:');
   console.log('- Restart your coding agent if skills/hooks do not appear.');

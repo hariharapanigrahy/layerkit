@@ -37,6 +37,7 @@ export interface InstallResult {
   autoMapUpdates: boolean;
   configFile: string;
   projectDir: string;
+  /** Number of maps in project store (not a catalog size). */
   vendorSlots: number;
   notes: string[];
 }

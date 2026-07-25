@@ -7,7 +7,7 @@ import {
   type LayerkitConfig,
 } from '../config/layerkit-config.js';
 import { resolveProjectDir } from '../config/project-dir.js';
-import { buildPocVendorMaps, COMMERCE_DOMAIN } from '../domain/commerce.js';
+import { COMMERCE_DOMAIN } from '../domain/commerce.js';
 import {
   formatSecretFindings,
   scanJsonForSecrets,
@@ -111,6 +111,11 @@ export class VendorMemoryStore {
     }
   }
 
+  /**
+   * Initialize project store.
+   * `poc` only scaffolds domain + memory — **no vendor catalog / empty vendor maps**.
+   * Agents add vendors from evidence for this customer project only.
+   */
   initProject(opts: { name: string; poc: boolean }): void {
     this.ensureDirs();
     const project: LayerProject = {
@@ -119,17 +124,14 @@ export class VendorMemoryStore {
       languages: ['java'],
       javaPackage: 'io.layerkit.commerce',
       domain: COMMERCE_DOMAIN,
-      vendors: opts.poc ? buildPocVendorMaps().map((m) => m.vendor) : [],
+      vendors: [],
       dataLayerVersionId: `${opts.name}@0.1.0`,
     };
     this.writeJson(join(this.projectDir, 'project.json'), project);
     this.writeJson(join(this.projectDir, 'domain.json'), COMMERCE_DOMAIN);
     this.ensureMemoryIndex();
-    if (opts.poc) {
-      for (const m of buildPocVendorMaps()) {
-        this.saveMap(m);
-      }
-    }
+    // poc flag reserved for future sample domain seeds — never seeds a vendor catalog
+    void opts.poc;
   }
 
   ensureMemoryIndex(): void {

@@ -9,7 +9,7 @@ const command = loadFixtureText('curl/meta-purchase.curl.txt');
 const parsed = parseCurl(command);
 
 assertEqual('method is POST', parsed.method, 'POST');
-assertEqual('host is graph.facebook.com', parsed.host, 'graph.facebook.com');
+assertEqual('host is api.example.com', parsed.host, 'api.example.com');
 assertTrue('path contains /events', parsed.path.includes('/events'), parsed.path);
 assertEqual('auth class is bearer', parsed.authClass, 'bearer');
 

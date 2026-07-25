@@ -12,14 +12,14 @@ import {
 } from '../../../libs/strategy/index.js';
 import { applyVendorMap } from '../../../libs/vendor-memory/map-engine.js';
 
-const map = loadFixture<VendorMap>('meta/map-v1.json');
+const map = loadFixture<VendorMap>('agent/map-v1.json');
 
-// Empty registry: agent processor meta.email.sha256_normalized is not installed
+// Empty registry: agent processor not installed
 const emptyReg = createStrategyRegistry();
 
 // executeProcessor throws
 assertThrows('execute throws ProcessorUnresolvedError', () => {
-  executeProcessor('meta.email.sha256_normalized', 'a@b.com', emptyReg);
+  executeProcessor('example.email.sha256_normalized', 'a@b.com', emptyReg);
 });
 
 try {

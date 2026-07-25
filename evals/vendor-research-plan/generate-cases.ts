@@ -1,67 +1,90 @@
 /**
- * Data-driven plan cases: one research task per catalog vendor slot.
- * Adding a vendor to libs/domain/commerce.ts (VENDOR_SLOTS) automatically
- * expands this harness — no per-vendor case tables.
+ * Agent research-plan cases from **eval fixtures only** — not a vendor catalog.
+ * Scenarios live in evals/fixtures/agent/research-scenarios.json.
+ * Product agents research any customer-chosen vendor; this harness only
+ * checks that plan prompts can be generated from scenario fixtures.
  */
-import {
-  COMMERCE_DOMAIN,
-  VENDOR_SLOTS,
-  type VendorSlot,
-} from '../../libs/domain/commerce.js';
-import type { DomainSpec } from '../../libs/domain/types.js';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { COMMERCE_DOMAIN } from '../../libs/domain/commerce.js';
+import type { DomainSpec, DocSource } from '../../libs/domain/types.js';
+
+export interface ResearchScenario {
+  id: string;
+  vendor: string;
+  displayName: string;
+  documentation: DocSource[];
+}
 
 export interface PlanCase {
   id: string;
   vendor: string;
   displayName: string;
-  /** Hostnames that sources[] must hit (derived from documentation URLs) */
   mustCiteHosts: string[];
-  /** Primary doc URLs the agent must open */
   documentationUrls: string[];
-  /** Domain intents to attempt (skip allowed with reason in proposal) */
   intents: string[];
-  /** Domain field paths agents should try to map when docs support them */
   domainFields: string[];
-  /** Fully rendered agent prompt (template, not hand-written per vendor) */
   prompt: string;
   judge: readonly string[];
 }
 
-/** Universal judge — same for every vendor */
+/** Universal process judge — not vendor-specific truth */
 export const UNIVERSAL_JUDGE: readonly string[] = [
-  'sources[] cite at least one host from mustCiteHosts (from official documentation URLs)',
+  'sources[] cite at least one host from mustCiteHosts (from scenario documentation URLs)',
   'No invented email/phone/hash rules without a quoted excerpt in sources',
   'endpoint.path and auth.type match cited documentation (no REPLACE placeholders)',
-  'proposal passes `layerkit proposal validate` (schema + sources gate)',
+  'proposal passes layerkit proposal validate (schema + sources gate)',
   'intents not supported by docs use skip:true with a short note, not guessed event names',
 ];
 
 export function hostnameFromUrl(url: string): string | null {
   try {
     const host = new URL(url).hostname.toLowerCase();
-    // strip leading www.
     return host.replace(/^www\./, '');
   } catch {
     return null;
   }
 }
 
+function loadScenarios(): ResearchScenario[] {
+  // Resolve from package root so both src and dist/ test runners work
+  const here = dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    join(here, '../fixtures/agent/research-scenarios.json'),
+    join(here, '../../evals/fixtures/agent/research-scenarios.json'),
+    join(process.cwd(), 'evals/fixtures/agent/research-scenarios.json'),
+  ];
+  for (const path of candidates) {
+    try {
+      return JSON.parse(readFileSync(path, 'utf8')) as ResearchScenario[];
+    } catch {
+      /* try next */
+    }
+  }
+  throw new Error(
+    'research-scenarios.json not found (evals/fixtures/agent/) — not a vendor catalog file',
+  );
+}
+
 export function buildResearchPrompt(opts: {
-  slot: VendorSlot;
+  scenario: ResearchScenario;
   domain: DomainSpec;
   intents: string[];
   domainFields: string[];
 }): string {
-  const { slot, domain, intents, domainFields } = opts;
-  const docLines = slot.documentation
+  const { scenario, domain, intents, domainFields } = opts;
+  const docLines = scenario.documentation
     .map((d, i) => `${i + 1}. ${d.title}: ${d.url}`)
     .join('\n');
 
   return [
-    `You are filling a Layerkit vendor map for vendor id "${slot.vendor}" (${slot.displayName}).`,
+    `You are an integration developer using Layerkit.`,
+    `Author a customer-owned vendor map for vendor id "${scenario.vendor}" (${scenario.displayName}).`,
+    `This is NOT a Layerkit catalog entry — maps live in the customer's projectDir only.`,
     '',
     '## Primary documentation (open these; do not invent URLs)',
-    docLines || '(no documentation URLs on slot — mark proposal blocked)',
+    docLines || '(no documentation URLs — mark proposal blocked)',
     '',
     `## Domain`,
     `- domain id: ${domain.id}`,
@@ -69,49 +92,45 @@ export function buildResearchPrompt(opts: {
     `- fields to map when docs support them: ${domainFields.join(', ')}`,
     '',
     '## Deliverable',
-    'Draft one Layerkit proposal JSON (schemaVersion 1, kind vendor_map) that:',
+    'Draft one Layerkit proposal JSON (kind vendor_map) that:',
     '1. Sets real endpoint + auth from the docs above',
-    '2. Maps each supported intent to the vendor event/action name (or skip:true with reason)',
-    '3. Maps domain fields to vendor paths with transforms only when docs specify processing',
+    '2. Maps each supported intent (or skip:true with reason)',
+    '3. Maps domain fields only when docs support them',
     '4. Includes sources[] with { title, url, excerpt } for every non-obvious rule',
     '',
     '## Forbidden',
-    '- Copying another vendor\'s field table',
-    '- Inventing SHA256/E.164 rules without a cited excerpt',
+    '- Inventing hash/phone rules without a cited excerpt',
     '- Filling placeholders without reading the docs',
+    '- Treating Layerkit as a pre-built vendor catalog',
   ].join('\n');
 }
 
 export interface GeneratePlanCasesOptions {
   domain?: DomainSpec;
-  slots?: readonly VendorSlot[];
-  /** Filter to one vendor id */
+  scenarios?: readonly ResearchScenario[];
   vendor?: string;
-  /** Override intents (default: all domain intents) */
   intents?: string[];
-  /** Cap count (for sampling evals) */
   limit?: number;
 }
 
 /**
- * Generate plan cases from the vendor catalog + domain.
- * O(n) in number of slots — scales when catalog grows.
+ * Generate agent research plan cases from fixture scenarios (eval-only).
  */
 export function generatePlanCases(opts: GeneratePlanCasesOptions = {}): PlanCase[] {
   const domain = opts.domain ?? COMMERCE_DOMAIN;
-  let slots = [...(opts.slots ?? VENDOR_SLOTS)];
+  let scenarios = [...(opts.scenarios ?? loadScenarios())];
   if (opts.vendor) {
-    slots = slots.filter((s) => s.vendor === opts.vendor);
+    scenarios = scenarios.filter((s) => s.vendor === opts.vendor);
   }
   if (opts.limit != null && opts.limit >= 0) {
-    slots = slots.slice(0, opts.limit);
+    scenarios = scenarios.slice(0, opts.limit);
   }
 
   const intents = opts.intents ?? domain.intents.map((i) => i.id);
   const domainFields = domain.fields.map((f) => f.path);
 
-  return slots.map((slot) => {
-    const documentationUrls = slot.documentation.map((d) => d.url);
+  return scenarios.map((scenario) => {
+    const documentationUrls = scenario.documentation.map((d) => d.url);
     const hosts = new Set<string>();
     for (const url of documentationUrls) {
       const h = hostnameFromUrl(url);
@@ -119,14 +138,14 @@ export function generatePlanCases(opts: GeneratePlanCasesOptions = {}): PlanCase
     }
 
     return {
-      id: `${slot.vendor}-map`,
-      vendor: slot.vendor,
-      displayName: slot.displayName,
-      mustCiteHosts: [...hosts].sort(),
+      id: `research-${scenario.id}`,
+      vendor: scenario.vendor,
+      displayName: scenario.displayName,
+      mustCiteHosts: [...hosts],
       documentationUrls,
       intents,
       domainFields,
-      prompt: buildResearchPrompt({ slot, domain, intents, domainFields }),
+      prompt: buildResearchPrompt({ scenario, domain, intents, domainFields }),
       judge: UNIVERSAL_JUDGE,
     };
   });

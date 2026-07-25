@@ -36,8 +36,8 @@ assertTrue('at least 10 residual gaps for empty seeds', gaps.length >= 10, Strin
 // Ensure we did not fabricate a plausible-looking endpoint string anywhere
 const blob = JSON.stringify(sheet);
 assertTrue(
-  'sheet JSON has no fake graph.facebook host',
-  !blob.includes('graph.facebook.com'),
+  'sheet JSON has no invented production hosts',
+  !blob.includes('graph.facebook.com') && !blob.includes('googleads.googleapis.com'),
 );
 assertTrue(
   'sheet JSON has no fake api.example host',

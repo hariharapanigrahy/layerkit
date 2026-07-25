@@ -11,7 +11,7 @@ const base: Proposal = {
   id: 'eval-no-sources',
   summary: 'bad proposal',
   payload: {
-    vendor: 'meta',
+    vendor: 'example_vendor',
     displayName: 'Meta',
     version: '1',
     auth: { type: 'bearer' },
@@ -37,8 +37,8 @@ const good: Proposal = {
   id: 'eval-with-sources',
   sources: [
     {
-      title: 'Meta CAPI',
-      url: 'https://developers.facebook.com/docs/marketing-api/conversions-api',
+      title: 'Example API',
+      url: 'https://docs.example.com/api/events',
       excerpt: 'event_name is required',
     },
   ],
@@ -46,8 +46,8 @@ const good: Proposal = {
     ...(base.payload as object),
     documentation: [
       {
-        title: 'Meta CAPI',
-        url: 'https://developers.facebook.com/docs/marketing-api/conversions-api',
+        title: 'Example API',
+        url: 'https://docs.example.com/api/events',
       },
     ],
   },

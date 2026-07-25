@@ -1,8 +1,8 @@
 /**
- * Score map coverage quality across vendor slots (field completeness, source density).
- * Does NOT invent field names — only scores agent-produced maps.
+ * Score map coverage quality for agent-produced maps.
+ * Does NOT use a vendor catalog — scores maps passed in or empty baseline.
  */
-import { buildPocVendorMaps } from '../../libs/domain/commerce.js';
+import { emptyVendorMap } from '../../libs/domain/commerce.js';
 import type { VendorMap } from '../../libs/domain/types.js';
 
 export interface MapQualityScore {
@@ -35,8 +35,7 @@ export function scoreMap(map: VendorMap): MapQualityScore {
   score += Math.min(15, withProcessor * 3);
   reasons.push(`processors:${withProcessor}`);
 
-  const endpointPath = map.endpoint?.path ?? '';
-  if (endpointPath && !endpointPath.includes('REPLACE')) {
+  if (map.endpoint && !map.endpoint.path.includes('REPLACE')) {
     score += 5;
     reasons.push('endpoint_set');
   }
@@ -45,14 +44,20 @@ export function scoreMap(map: VendorMap): MapQualityScore {
 }
 
 function main(): void {
-  const maps = buildPocVendorMaps();
-  const scores = maps.map(scoreMap).sort((a, b) => b.score - a.score);
-  console.log('Map quality baseline (empty POC slots):');
-  for (const s of scores.slice(0, 5)) {
+  // Baseline: single empty agent skeleton (not a multi-vendor catalog)
+  const maps = [
+    emptyVendorMap({
+      vendor: 'example_vendor',
+      displayName: 'Example',
+      documentation: [{ title: 'Docs', url: 'https://docs.example.com' }],
+    }),
+  ];
+  const scores = maps.map(scoreMap);
+  console.log('Map quality baseline (empty agent skeleton — not a catalog):');
+  for (const s of scores) {
     console.log(`  ${s.vendor}: ${s.score} (${s.reasons.join(', ')})`);
   }
-  console.log(`Mean score: ${(scores.reduce((a, b) => a + b.score, 0) / scores.length).toFixed(2)}`);
-  console.log('Optimizer trains weights when agent-filled maps are contributed to evals/fixtures.');
+  console.log('Score real maps from customer projectDir after agent research.');
 }
 
 main();

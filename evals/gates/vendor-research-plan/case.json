@@ -1,9 +1,5 @@
 {
   "id": "vendor-research-plan",
   "suite": "all",
-  "title": "Research plan cases scale with VENDOR_SLOTS (one per catalog vendor)",
-  "owners": ["research", "evals"],
-  "featurePr": "W8",
-  "fixtures": [],
-  "tags": ["deterministic", "no-network", "scale"]
+  "title": "Agent research-plan cases from fixture scenarios (not a vendor catalog)"
 }

@@ -1,7 +1,7 @@
 # Contributing to Layerkit
 
 Thanks for helping build an **agent-first multi-vendor data-layer toolkit**.  
-This project is intentionally open: vendor maps, processors, platform installers, and evals all improve with community research.
+This project is intentionally open: agent skill or process evals, processors, platform installers, and evals all improve with community research.
 
 ## Code of conduct
 
