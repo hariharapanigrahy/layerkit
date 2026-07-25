@@ -1,0 +1,7 @@
+{
+  "id": "handoff-runbook-cli",
+  "suite": "ci",
+  "title": "handoff template has required headings; writeHandoffRunbook creates file under temp projectDir",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network", "agent", "handoff"]
+}
