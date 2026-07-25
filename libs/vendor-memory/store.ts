@@ -227,9 +227,9 @@ export class VendorMemoryStore {
     };
   }
 
-  /** True when apply may bypass ready_to_apply (default true until PR15). */
+  /** True when apply may bypass ready_to_apply (opt-in; default false = strict). */
   isLegacyApplyEnabled(): boolean {
-    return this.getMakerCheckerConfig().legacyApplyWithoutApprove !== false;
+    return this.getMakerCheckerConfig().legacyApplyWithoutApprove === true;
   }
 
   /**
@@ -417,10 +417,22 @@ export class VendorMemoryStore {
     lines.push(`Project: ${project.name}`);
     lines.push(`Languages: ${project.languages.join(', ')}`);
     const mc = this.getMakerCheckerConfig();
+    const legacyOn = mc.legacyApplyWithoutApprove === true;
+    const modeLabel = legacyOn
+      ? 'LEGACY (apply without approve)'
+      : 'STRICT (requires ready_to_apply)';
+    lines.push(`makerChecker: mode=${modeLabel}`);
     lines.push(
-      `makerChecker: legacyApply=${mc.legacyApplyWithoutApprove} ` +
-        `requireDistinct=${mc.requireDistinctChecker} allowSelfApprove=${mc.allowSelfApprove}`,
+      `  legacyApplyWithoutApprove=${legacyOn} ` +
+        `requireDistinct=${mc.requireDistinctChecker} ` +
+        `allowSelfApprove=${mc.allowSelfApprove}`,
     );
+    if (legacyOn) {
+      lines.push(
+        '  ⚠ legacyApplyWithoutApprove=true — pending/validated/approved apply bypasses checker ' +
+          '(set makerChecker.legacyApplyWithoutApprove=false for strict)',
+      );
+    }
     if (mc.allowSelfApprove) {
       lines.push('  ⚠ self-approve enabled (doctor warn)');
     }

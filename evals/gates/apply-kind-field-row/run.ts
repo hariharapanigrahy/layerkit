@@ -7,6 +7,11 @@ import { withTempProject } from '../../harness/temp-project.js';
 import type { Proposal, VendorMap } from '../../../libs/domain/types.js';
 
 await withTempProject(async ({ store }) => {
+  // Enable legacy apply so pending proposals can apply without full maker-checker path
+  const project = store.loadProject()!;
+  project.makerChecker = { ...project.makerChecker, legacyApplyWithoutApprove: true };
+  store.saveProject(project);
+
   const base: VendorMap = {
     vendor: 'acme',
     displayName: 'Acme',
