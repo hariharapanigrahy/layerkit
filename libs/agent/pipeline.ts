@@ -50,11 +50,12 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
     id: 'design',
     skill: 'layerkit-design-flow',
     cliHints: [
+      'layerkit design decide --vendor <v> [--sequence] [--oauth] [--shape linear_map|flow|hybrid]',
       'layerkit proposal validate ./flow.json',
       'layerkit process dry-run --vendor <v> --intent <i>',
     ],
     doneWhen:
-      'IntegrationFlow authored when sequence/branching is required; flat VendorMap preferred first',
+      'Design decision recorded (map vs flow); IntegrationFlow when sequence/branching required; flat VendorMap preferred first',
   },
   {
     id: 'author',
