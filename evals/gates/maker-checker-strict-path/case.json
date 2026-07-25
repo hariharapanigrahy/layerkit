@@ -1,0 +1,8 @@
+{
+  "id": "maker-checker-strict-path",
+  "suite": "ci",
+  "title": "strict: apply without approve fails; submit→validate→approve→apply succeeds",
+  "owners": ["maker-checker"],
+  "featurePr": "W5/PR5",
+  "tags": ["deterministic", "no-network", "maker-checker"]
+}

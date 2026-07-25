@@ -30,8 +30,22 @@ npm install && npm run build && npm link
 cd /path/to/your/app
 layerkit install --platform codex --hooks enabled --auto-map-updates enabled --poc
 # platforms: codex|claude|cursor|copilot|opencode|openhands|factory-droid|antigravity
+# optional: --project-dir integrations/layerkit  (default .layerkit)
 layerkit doctor
 ```
+
+### Project store path
+
+Layerkit stores maps, proposals, and memory under a **project directory** (default `.layerkit`):
+
+| Priority | Source |
+|----------|--------|
+| 1 | CLI `--project-dir <path>` |
+| 2 | Env `LAYERKIT_PROJECT_DIR` |
+| 3 | Repo pointer `layerkit.path.json` / `layerkit.json` |
+| 4 | Default `{repo}/.layerkit` |
+
+Install may prompt on TTY. Doctor prints the resolved path. Memory lives at `{projectDir}/memory/`.
 
 ---
 
@@ -97,19 +111,37 @@ Maintainer launch checklist: [docs/OPEN_SOURCE_LAUNCH.md](./docs/OPEN_SOURCE_LAU
 
 ---
 
-## Scripts
+## Scripts & evals
 
 ```bash
 npm test
 npm run smoke:codex
 npm run smoke:cursor
-npm run eval:ci                 # merge bar (deterministic gates)
-npm run eval:all
+npm run eval:ci                 # merge bar — suite ci (required on every PR)
+npm run eval:all                # release bar — ci + extras (e.g. vendor-research-plan)
 npm run eval:proposal-sources   # legacy single-case aliases still work
 npm run eval:vendor-research-plan
 ```
 
+| Script | Role |
+|--------|------|
+| `npm run eval:ci` | **Merge bar** — deterministic gates in `evals/suites.json#ci` |
+| `npm run eval:all` | **Release bar** — `ci` + scale/quality extras under suite `all` |
+| Nightly workflow | `.github/workflows/nightly.yml` runs `eval:all` on a schedule |
+
 See [evals/README.md](./evals/README.md) for how to add a gate.
+
+### Production checklist (brief)
+
+Ship only when:
+
+- [ ] `npm run eval:ci` green (PR + main)
+- [ ] `npm run eval:all` green before release
+- [ ] CI runs `eval:ci` on every PR (`.github/workflows/ci.yml`)
+- [ ] Subsystems that ship behavior have a gate in `evals/gates/`
+- [ ] No LLM on the production `track()` hot path
+
+Smokes alone are **not** production-ready.
 
 ---
 

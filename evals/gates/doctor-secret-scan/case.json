@@ -1,0 +1,9 @@
+{
+  "id": "doctor-secret-scan",
+  "suite": "ci",
+  "title": "doctor flags raw high-entropy secrets in maps/proposals; SecretRef and docs allowlisted",
+  "owners": ["doctor", "security"],
+  "featurePr": "W6",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network", "security", "doctor"]
+}

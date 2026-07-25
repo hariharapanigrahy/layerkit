@@ -2,11 +2,16 @@
 /**
  * Layerkit CLI — multi-vendor data-layer command surface for agent platforms.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
 import { generateJavaScaffold } from '../../libs/generate/java-scaffold.js';
+import {
+  checkJavaQuality,
+  defaultJacocoSearchRoots,
+  JACOCO_MIN_LINE_COVERAGE,
+} from '../../libs/generate/quality.js';
 import { layerkitHookGuidance } from '../../libs/hooks/guidance.js';
 import { installLayerkit } from '../../libs/install/install.js';
 import {
@@ -15,9 +20,28 @@ import {
   platformDisplayName,
   type InstallPlatform,
 } from '../../libs/install/paths.js';
-import type { Proposal } from '../../libs/domain/types.js';
+import type { Identity, Proposal } from '../../libs/domain/types.js';
+import {
+  createMemoryStack,
+  type MemoryEntryType,
+} from '../../libs/memory/index.js';
 import { applyVendorMap } from '../../libs/vendor-memory/map-engine.js';
-import { createVendorMemoryStore, type VendorMemoryStore } from '../../libs/vendor-memory/store.js';
+import {
+  createVendorMemoryStore,
+  type CheckerRole,
+  type VendorMemoryStore,
+} from '../../libs/vendor-memory/store.js';
+
+const MEMORY_TYPES: readonly MemoryEntryType[] = [
+  'questionnaire',
+  'research',
+  'proposals',
+  'dry-runs',
+  'privacy',
+  'approvals',
+  'runbooks',
+  'other',
+];
 
 interface CliCommand {
   path: readonly string[];
@@ -76,8 +100,14 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['doctor'],
-    usage: 'doctor [--project-dir <path>]',
+    usage: 'doctor [--quality] [--strict] [--project-dir <path>]',
     handler: runDoctor,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['promote'],
+    usage: 'promote [--vendor <id>] [--strict] [--project-dir <path>]',
+    handler: runPromote,
     showInTopLevelHelp: true,
   },
   {
@@ -86,6 +116,7 @@ const cliCommands: CliCommand[] = [
     handler: runConfig,
     showInTopLevelHelp: true,
   },
+
   {
     path: ['repo', 'status'],
     usage: 'repo status [--project-dir <path>]',
@@ -143,12 +174,115 @@ const cliCommands: CliCommand[] = [
     showInTopLevelHelp: true,
   },
   {
-    path: ['proposal', 'validate'],
-    usage: 'proposal validate <file> [--project-dir <path>]',
+    path: ['map', 'migrate'],
+    usage: 'map migrate [vendor] [--project-dir <path>]',
     handler: (args, ctx) => {
-      const file = requireArg(args[0], 'proposal validate <file>');
+      const store = openStore(ctx);
+      const vendor = args[0];
+      const { migrated, skipped } = store.migrateMaps(vendor);
+      if (migrated.length === 0 && skipped.length === 0) {
+        console.log('No maps to migrate.');
+        return;
+      }
+      for (const v of migrated) console.log(`Migrated ${v} → schemaVersion 2`);
+      for (const v of skipped) console.log(`Skipped ${v} (already v2)`);
+      console.log(`Done: ${migrated.length} migrated, ${skipped.length} skipped.`);
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['memory', 'list'],
+    usage: 'memory list [--vendor <v>] [--type questionnaire|research|...] [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const mem = createMemoryStack(ctx.projectDir);
+      const vendor = flag(args, '--vendor');
+      const typeRaw = flag(args, '--type');
+      let type: MemoryEntryType | undefined;
+      if (typeRaw) {
+        if (!MEMORY_TYPES.includes(typeRaw as MemoryEntryType)) {
+          throw new Error(`Invalid --type. Use: ${MEMORY_TYPES.join('|')}`);
+        }
+        type = typeRaw as MemoryEntryType;
+      }
+      const entries = mem.list({ vendor, type });
+      if (!entries.length) {
+        console.log('(no memory entries)');
+        return;
+      }
+      for (const e of entries) {
+        console.log(`${e.type}\t${e.vendor ?? '-'}\t${e.relativePath}\t${e.title}`);
+      }
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['memory', 'show'],
+    usage: 'memory show <path-or-id> [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const id = requireArg(args[0], 'memory show <path-or-id>');
+      const mem = createMemoryStack(ctx.projectDir);
+      console.log(mem.show(id));
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['memory', 'append'],
+    usage:
+      'memory append --type <type> --title <title> [--vendor <v>] [--body <text>|--body-file <file>] [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const typeRaw = flag(args, '--type');
+      const title = flag(args, '--title');
+      const vendor = flag(args, '--vendor');
+      const bodyFlag = flag(args, '--body');
+      const bodyFile = flag(args, '--body-file');
+      if (!typeRaw || !MEMORY_TYPES.includes(typeRaw as MemoryEntryType)) {
+        throw new Error(
+          `Usage: layerkit memory append --type <${MEMORY_TYPES.join('|')}> --title <title> [--body|--body-file]`,
+        );
+      }
+      if (!title) throw new Error('memory append requires --title');
+      let body = bodyFlag ?? '';
+      if (bodyFile) body = readFileSync(resolve(bodyFile), 'utf8');
+      if (!body) throw new Error('memory append requires --body or --body-file');
+      const mem = createMemoryStack(ctx.projectDir);
+      const path = mem.append({ type: typeRaw as MemoryEntryType, title, body, vendor });
+      console.log(`Appended memory note → ${path}`);
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['memory', 'index'],
+    usage: 'memory index [--project-dir <path>]',
+    handler: (_args, ctx) => {
+      const mem = createMemoryStack(ctx.projectDir);
+      console.log(`Rebuilt INDEX → ${mem.index()}`);
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['proposal', 'submit'],
+    usage: 'proposal submit <file> [--by <actorId>] [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const file = requireArg(args[0], 'proposal submit <file>');
       const proposal = readProposal(file);
       const store = openStore(ctx);
+      const by = flag(args, '--by');
+      const maker: Identity | undefined = by
+        ? { type: 'user', id: by }
+        : proposal.maker ?? { type: 'agent', id: 'cli' };
+      const submitted = store.submitProposal(proposal, maker);
+      console.log(`Submitted proposal ${submitted.id} (status=${submitted.status})`);
+      console.log(`Saved: ${join(store.projectDir, 'proposals', `${submitted.id}.json`)}`);
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['proposal', 'validate'],
+    usage: 'proposal validate <file|id> [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const ref = requireArg(args[0], 'proposal validate <file|id>');
+      const store = openStore(ctx);
+      const proposal = loadProposalRef(store, ref);
       const result = store.reviewProposal(proposal);
       if (result.valid) {
         proposal.status = 'validated';
@@ -164,12 +298,74 @@ const cliCommands: CliCommand[] = [
     showInTopLevelHelp: true,
   },
   {
-    path: ['proposal', 'apply'],
-    usage: 'proposal apply <file> [--project-dir <path>]',
+    path: ['proposal', 'approve'],
+    usage:
+      'proposal approve <id> --by <actorId> [--role checker|privacy_reviewer|admin] [--comment <text>] [--dev] [--project-dir <path>]',
     handler: (args, ctx) => {
-      const file = requireArg(args[0], 'proposal apply <file>');
-      const proposal = readProposal(file);
+      const id = requireArg(args[0], 'proposal approve <id> --by <actorId>');
+      const byId = flag(args, '--by');
+      if (!byId) throw new Error('Usage: layerkit proposal approve <id> --by <actorId>');
+      const role = (flag(args, '--role') ?? 'checker') as CheckerRole;
+      if (!['checker', 'privacy_reviewer', 'admin'].includes(role)) {
+        throw new Error('--role must be checker|privacy_reviewer|admin');
+      }
       const store = openStore(ctx);
+      const next = store.approveProposal(id, {
+        by: { type: 'user', id: byId },
+        role,
+        comment: flag(args, '--comment'),
+        dev: args.includes('--dev'),
+      });
+      console.log(`Approved proposal ${next.id} → status=${next.status}`);
+      console.log(`Checks: ${(next.checks ?? []).length}`);
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['proposal', 'reject'],
+    usage:
+      'proposal reject <id> --by <actorId> [--role checker|privacy_reviewer|admin] [--comment <text>] [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const id = requireArg(args[0], 'proposal reject <id> --by <actorId>');
+      const byId = flag(args, '--by');
+      if (!byId) throw new Error('Usage: layerkit proposal reject <id> --by <actorId>');
+      const role = (flag(args, '--role') ?? 'checker') as CheckerRole;
+      if (!['checker', 'privacy_reviewer', 'admin'].includes(role)) {
+        throw new Error('--role must be checker|privacy_reviewer|admin');
+      }
+      const store = openStore(ctx);
+      const next = store.rejectProposal(id, {
+        by: { type: 'user', id: byId },
+        role,
+        comment: flag(args, '--comment'),
+      });
+      console.log(`Rejected proposal ${next.id} (status=${next.status})`);
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['proposal', 'list'],
+    usage: 'proposal list [--project-dir <path>]',
+    handler: (_args, ctx) => {
+      const store = openStore(ctx);
+      const list = store.listProposals();
+      if (!list.length) {
+        console.log('(no proposals)');
+        return;
+      }
+      for (const p of list) {
+        console.log(`${p.id}\t${p.status}\t${p.kind}\t${p.summary}`);
+      }
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['proposal', 'apply'],
+    usage: 'proposal apply <file|id> [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const ref = requireArg(args[0], 'proposal apply <file|id>');
+      const store = openStore(ctx);
+      const proposal = loadProposalRef(store, ref);
       const applied = store.applyProposal(proposal);
       console.log('Applied proposal to vendor memory.');
       console.log(`Kind: ${applied.kind}`);
@@ -222,7 +418,8 @@ const cliCommands: CliCommand[] = [
         writeFileSync(p, f.content, 'utf8');
       }
       console.log(`Scaffolded ${files.length} files → ${out}`);
-      console.log('Next: use skill layerkit-generate-java to implement the client.');
+      console.log('Includes: Facade, Strategy, PrivacyGate, DeliveryClient, JaCoCo 0.95 pom, DESIGN_PATTERNS.md');
+      console.log('Next: skill layerkit-generate-java; then mvn test && layerkit doctor --quality --strict');
     },
     showInTopLevelHelp: true,
   },
@@ -365,11 +562,93 @@ function printInstallResult(result: Awaited<ReturnType<typeof installLayerkit>>)
   for (const n of result.notes) console.log(`- ${n}`);
 }
 
-function runDoctor(_args: string[], ctx: CliContext): void {
+function hasFlag(args: string[], name: string): boolean {
+  return args.includes(name);
+}
+
+function runDoctor(args: string[], ctx: CliContext): void {
   const store = openStore(ctx);
   const result = store.doctor();
   for (const line of result.lines) console.log(line);
-  if (!result.ok) process.exitCode = 1;
+  let ok = result.ok;
+
+  if (hasFlag(args, '--quality')) {
+    console.log('');
+    console.log('== quality (JaCoCo) ==');
+    const strict = hasFlag(args, '--strict');
+    const q = checkJavaQuality({
+      searchRoots: defaultJacocoSearchRoots(store.projectDir, ctx.repoRoot),
+      strict,
+      minLineCoverage: JACOCO_MIN_LINE_COVERAGE,
+    });
+    for (const line of q.lines) console.log(line);
+    if (!q.ok) ok = false;
+  } else if (hasFlag(args, '--strict')) {
+    console.log('Note: --strict applies with --quality (JaCoCo report required).');
+  }
+
+  if (!ok) process.exitCode = 1;
+}
+
+/**
+ * Promote map_complete → live after quality gate.
+ * With --strict (default for promote), JaCoCo report must exist and meet 0.95 line floor when parseable.
+ */
+function runPromote(args: string[], ctx: CliContext): void {
+  const store = openStore(ctx);
+  const project = store.loadProject();
+  if (!project) throw new Error('No project — run layerkit install --poc');
+
+  // promote is quality-gated; --strict is default unless --no-strict
+  const strict = !hasFlag(args, '--no-strict');
+  const q = checkJavaQuality({
+    searchRoots: defaultJacocoSearchRoots(store.projectDir, ctx.repoRoot),
+    strict,
+    minLineCoverage: JACOCO_MIN_LINE_COVERAGE,
+  });
+  console.log('== promote quality gate ==');
+  for (const line of q.lines) console.log(line);
+  if (!q.ok) {
+    console.log('Promote blocked: fix coverage / run mvn test under out/java, then retry.');
+    process.exitCode = 1;
+    return;
+  }
+
+  const onlyVendor = flag(args, '--vendor');
+  const maps = store.listMaps().filter((m) => {
+    if (onlyVendor && m.vendor !== onlyVendor) return false;
+    const filled = m.fields.length > 0 || Object.keys(m.intents).length > 0;
+    return filled && (m.status === 'map_complete' || m.status === 'live');
+  });
+
+  if (onlyVendor && maps.length === 0) {
+    const m = store.loadMap(onlyVendor);
+    if (!m) throw new Error(`No map for vendor ${onlyVendor}`);
+    throw new Error(
+      `Cannot promote ${onlyVendor}: status=${m.status ?? '?'} (need map_complete with fields/intents)`,
+    );
+  }
+
+  if (maps.length === 0) {
+    console.log('No map_complete vendors to promote.');
+    return;
+  }
+
+  let promoted = 0;
+  for (const m of maps) {
+    if (m.status === 'live') {
+      console.log(`  skip ${m.vendor}: already live`);
+      continue;
+    }
+    m.status = 'live';
+    store.saveMap(m);
+    console.log(`  promoted ${m.vendor} → live`);
+    promoted++;
+  }
+  console.log(`Promote done: ${promoted} map(s) set live.`);
+  if (existsSync(join(store.projectDir, 'out', 'java', 'pom.xml'))) {
+    console.log('Tip: regenerate client if needed: layerkit generate --lang java');
+  }
 }
 
 function runConfig(): void {
@@ -413,6 +692,25 @@ function requireArg(v: string | undefined, usage: string): string {
 
 function readProposal(file: string): Proposal {
   return JSON.parse(readFileSync(resolve(file), 'utf8')) as Proposal;
+}
+
+/** Load proposal by filesystem path or by id from the store. */
+function loadProposalRef(store: VendorMemoryStore, ref: string): Proposal {
+  // Prefer store id when file does not exist
+  try {
+    const fromFile = readProposal(ref);
+    if (fromFile?.id) return fromFile;
+  } catch {
+    // fall through to store
+  }
+  const fromStore = store.loadProposal(ref);
+  if (fromStore) return fromStore;
+  // Last attempt: treat as path even if earlier parse failed oddly
+  try {
+    return readProposal(ref);
+  } catch {
+    throw new Error(`Proposal not found as file or id: ${ref}`);
+  }
 }
 
 function matchCommand(argv: string[]): CliCommand | undefined {

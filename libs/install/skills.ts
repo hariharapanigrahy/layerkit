@@ -3,10 +3,14 @@ import { join } from 'node:path';
 
 export const SKILL_NAMES = [
   'layerkit-bootstrap',
+  'layerkit-discover-data-layer',
   'layerkit-research-vendor',
   'layerkit-author-processor',
+  'layerkit-design-flow',
+  'layerkit-privacy-review',
   'layerkit-generate-java',
   'layerkit-update-maps',
+  'layerkit-checker-assist',
 ] as const;
 
 export function listPackagedSkills(packageRoot: string): string[] {

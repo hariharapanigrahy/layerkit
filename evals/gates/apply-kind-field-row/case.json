@@ -1,0 +1,8 @@
+{
+  "id": "apply-kind-field-row",
+  "suite": "ci",
+  "title": "field_row proposal upserts a field into an existing vendor map",
+  "owners": ["maker-checker"],
+  "featurePr": "W5/PR5b",
+  "tags": ["deterministic", "no-network", "apply-kind"]
+}
