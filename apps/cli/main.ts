@@ -38,6 +38,15 @@ import {
 } from '../../libs/memory/index.js';
 import { applyVendorMap } from '../../libs/vendor-memory/map-engine.js';
 import {
+  deepenFromHubMarkdown,
+  fillAnswerSheetFromEvidence,
+  hasInventedEndpoint,
+  parseCurl,
+  parseOpenAPI,
+  residualGaps,
+  type ResearchSeed,
+} from '../../libs/research/index.js';
+import {
   createVendorMemoryStore,
   type CheckerRole,
   type VendorMemoryStore,
@@ -143,6 +152,37 @@ const cliCommands: CliCommand[] = [
     path: ['agent', 'mark-done'],
     usage: 'agent mark-done --step <id> [--project-dir <path>]',
     handler: runAgentMarkDone,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['research', 'openapi'],
+    usage: 'research openapi <file> [--json]',
+    handler: runResearchOpenapi,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['research', 'curl'],
+    usage: 'research curl <file-or-inline> [--json]',
+    handler: runResearchCurl,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['research', 'deepen'],
+    usage: 'research deepen <hub.md> [--json]',
+    handler: runResearchDeepen,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['research', 'fill'],
+    usage:
+      'research fill [--openapi <file>]... [--curl <file>]... [--hub <file>]... [--vendor <id>] [--out <sheet.json>] [--json]',
+    handler: runResearchFill,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['research', 'gaps'],
+    usage: 'research gaps <sheet.json> [--json]',
+    handler: runResearchGaps,
     showInTopLevelHelp: true,
   },
 
@@ -769,6 +809,154 @@ function runRepoStatus(_args: string[], ctx: CliContext): void {
   const filled = store.listMaps().filter((m) => m.fields.length || Object.keys(m.intents).length);
   console.log(`Filled maps: ${filled.length}`);
   console.log(`Skeletons: ${store.listMaps().length - filled.length}`);
+}
+
+function wantJson(args: string[]): boolean {
+  return args.includes('--json');
+}
+
+function emitJsonOrText(args: string[], data: unknown, text: () => void): void {
+  if (wantJson(args)) {
+    console.log(JSON.stringify(data, null, 2));
+    return;
+  }
+  text();
+}
+
+function readTextArg(pathOrInline: string): string {
+  const abs = resolve(pathOrInline);
+  if (existsSync(abs)) return readFileSync(abs, 'utf8');
+  return pathOrInline;
+}
+
+function collectFlags(args: string[], name: string): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === name) {
+      const v = args[++i];
+      if (v) out.push(v);
+      continue;
+    }
+    if (args[i]!.startsWith(`${name}=`)) {
+      out.push(args[i]!.slice(name.length + 1));
+    }
+  }
+  return out;
+}
+
+function runResearchOpenapi(args: string[]): void {
+  const file = requireArg(args[0], 'research openapi <file> [--json]');
+  const raw = readFileSync(resolve(file), 'utf8');
+  const parsed = parseOpenAPI(raw);
+  emitJsonOrText(args, parsed, () => {
+    console.log(`OpenAPI operations: ${parsed.operations.length}`);
+    const lines = parsed.operations.slice(0, 20).map((o) => `  ${o.method} ${o.path}`);
+    if (parsed.operations.length > 20) lines.push(`  … +${parsed.operations.length - 20} more`);
+    console.log(lines.join('\n') || '  (no operations)');
+  });
+}
+
+function runResearchCurl(args: string[]): void {
+  const input = requireArg(args[0], 'research curl <file-or-inline> [--json]');
+  const raw = readTextArg(input);
+  const parsed = parseCurl(raw);
+  emitJsonOrText(args, parsed, () => {
+    console.log(`${parsed.method} ${parsed.url}`);
+    if (parsed.host) console.log(`host: ${parsed.host}`);
+    if (parsed.path) console.log(`path: ${parsed.path}`);
+    const headers = Object.keys(parsed.headers ?? {});
+    if (headers.length) console.log(`headers: ${headers.join(', ')}`);
+  });
+}
+
+function runResearchDeepen(args: string[]): void {
+  const file = requireArg(args[0], 'research deepen <hub.md> [--json]');
+  const raw = readFileSync(resolve(file), 'utf8');
+  const plan = deepenFromHubMarkdown(raw, file);
+  emitJsonOrText(args, plan, () => {
+    console.log(`enqueue: ${plan.enqueue.length}  needsHuman: ${plan.needsHuman}`);
+    for (const s of plan.enqueue) {
+      console.log(`  ${s.kind}\t${s.ref}`);
+    }
+    for (const e of plan.deepenLog) {
+      console.log(`  log L${e.level} ${e.action}${e.detail ? `: ${e.detail}` : ''}`);
+    }
+  });
+}
+
+function runResearchFill(args: string[]): void {
+  const openapis = collectFlags(args, '--openapi');
+  const curls = collectFlags(args, '--curl');
+  const hubs = collectFlags(args, '--hub');
+  const vendor = flag(args, '--vendor');
+  const out = flag(args, '--out');
+
+  if (!openapis.length && !curls.length && !hubs.length) {
+    throw new Error(
+      'Usage: layerkit research fill [--openapi <file>]... [--curl <file>]... [--hub <file>]... [--vendor <id>] [--out <sheet.json>]',
+    );
+  }
+
+  const seeds: ResearchSeed[] = [];
+  for (const f of openapis) {
+    seeds.push({
+      kind: 'openapi',
+      urlOrPath: resolve(f),
+      content: readFileSync(resolve(f), 'utf8'),
+    });
+  }
+  for (const f of curls) {
+    seeds.push({ kind: 'curl', command: readTextArg(f) });
+  }
+  for (const f of hubs) {
+    seeds.push({
+      kind: 'hub_md',
+      path: resolve(f),
+      content: readFileSync(resolve(f), 'utf8'),
+    });
+  }
+
+  const sheet = fillAnswerSheetFromEvidence(seeds, { vendor });
+  const gaps = residualGaps(sheet);
+  const invented = hasInventedEndpoint(sheet);
+
+  if (out) {
+    writeFileSync(resolve(out), JSON.stringify(sheet, null, 2) + '\n', 'utf8');
+  }
+
+  emitJsonOrText(args, { sheet, residualGaps: gaps, inventedEndpoint: invented }, () => {
+    if (out) console.log(`Wrote answer sheet → ${resolve(out)}`);
+    const dimCount = Object.keys(sheet.dimensions).length;
+    console.log(`dimensions answered: ${countAnswered(sheet)} / ${dimCount}`);
+    console.log(`residual gaps: ${gaps.length}`);
+    if (invented) console.log('warning: possible invented endpoint signals in sheet');
+    for (const g of gaps.slice(0, 12)) {
+      console.log(`  gap ${g.id}: ${g.topic} (${g.reason})`);
+    }
+    if (gaps.length > 12) console.log(`  … +${gaps.length - 12} more`);
+  });
+}
+
+function countAnswered(sheet: {
+  dimensions: Record<string, { answer?: string; source?: string }>;
+}): number {
+  return Object.values(sheet.dimensions).filter(
+    (a) => a.answer && a.answer.trim().length > 0 && a.source !== 'needs-evidence' && a.source !== 'unanswered',
+  ).length;
+}
+
+function runResearchGaps(args: string[]): void {
+  const file = requireArg(args[0], 'research gaps <sheet.json> [--json]');
+  const sheet = JSON.parse(readFileSync(resolve(file), 'utf8'));
+  const gaps = residualGaps(sheet);
+  const invented = hasInventedEndpoint(sheet);
+  emitJsonOrText(args, { residualGaps: gaps, inventedEndpoint: invented }, () => {
+    console.log(`residual gaps: ${gaps.length}`);
+    if (invented) console.log('warning: possible invented endpoint signals');
+    for (const g of gaps) {
+      console.log(`  ${g.id}\t${g.topic}\t${g.reason}`);
+    }
+  });
 }
 
 function flag(args: string[], name: string): string | undefined {
