@@ -15,7 +15,8 @@ import {
   platformDisplayName,
   type InstallPlatform,
 } from '../../libs/install/paths.js';
-import type { Proposal } from '../../libs/domain/types.js';
+import type { Identity, Proposal } from '../../libs/domain/types.js';
+import type { CheckerRole } from '../../libs/vendor-memory/store.js';
 import { applyVendorMap } from '../../libs/vendor-memory/map-engine.js';
 import { createVendorMemoryStore, type VendorMemoryStore } from '../../libs/vendor-memory/store.js';
 
@@ -143,12 +144,29 @@ const cliCommands: CliCommand[] = [
     showInTopLevelHelp: true,
   },
   {
-    path: ['proposal', 'validate'],
-    usage: 'proposal validate <file> [--project-dir <path>]',
+    path: ['proposal', 'submit'],
+    usage: 'proposal submit <file> [--by <actorId>] [--project-dir <path>]',
     handler: (args, ctx) => {
-      const file = requireArg(args[0], 'proposal validate <file>');
+      const file = requireArg(args[0], 'proposal submit <file>');
       const proposal = readProposal(file);
       const store = openStore(ctx);
+      const by = flag(args, '--by');
+      const maker: Identity | undefined = by
+        ? { type: 'user', id: by }
+        : proposal.maker ?? { type: 'agent', id: 'cli' };
+      const submitted = store.submitProposal(proposal, maker);
+      console.log(`Submitted proposal ${submitted.id} (status=${submitted.status})`);
+      console.log(`Saved: ${join(store.projectDir, 'proposals', `${submitted.id}.json`)}`);
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['proposal', 'validate'],
+    usage: 'proposal validate <file|id> [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const ref = requireArg(args[0], 'proposal validate <file|id>');
+      const store = openStore(ctx);
+      const proposal = loadProposalRef(store, ref);
       const result = store.reviewProposal(proposal);
       if (result.valid) {
         proposal.status = 'validated';
@@ -164,12 +182,74 @@ const cliCommands: CliCommand[] = [
     showInTopLevelHelp: true,
   },
   {
-    path: ['proposal', 'apply'],
-    usage: 'proposal apply <file> [--project-dir <path>]',
+    path: ['proposal', 'approve'],
+    usage:
+      'proposal approve <id> --by <actorId> [--role checker|privacy_reviewer|admin] [--comment <text>] [--dev] [--project-dir <path>]',
     handler: (args, ctx) => {
-      const file = requireArg(args[0], 'proposal apply <file>');
-      const proposal = readProposal(file);
+      const id = requireArg(args[0], 'proposal approve <id> --by <actorId>');
+      const byId = flag(args, '--by');
+      if (!byId) throw new Error('Usage: layerkit proposal approve <id> --by <actorId>');
+      const role = (flag(args, '--role') ?? 'checker') as CheckerRole;
+      if (!['checker', 'privacy_reviewer', 'admin'].includes(role)) {
+        throw new Error('--role must be checker|privacy_reviewer|admin');
+      }
       const store = openStore(ctx);
+      const next = store.approveProposal(id, {
+        by: { type: 'user', id: byId },
+        role,
+        comment: flag(args, '--comment'),
+        dev: args.includes('--dev'),
+      });
+      console.log(`Approved proposal ${next.id} → status=${next.status}`);
+      console.log(`Checks: ${(next.checks ?? []).length}`);
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['proposal', 'reject'],
+    usage:
+      'proposal reject <id> --by <actorId> [--role checker|privacy_reviewer|admin] [--comment <text>] [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const id = requireArg(args[0], 'proposal reject <id> --by <actorId>');
+      const byId = flag(args, '--by');
+      if (!byId) throw new Error('Usage: layerkit proposal reject <id> --by <actorId>');
+      const role = (flag(args, '--role') ?? 'checker') as CheckerRole;
+      if (!['checker', 'privacy_reviewer', 'admin'].includes(role)) {
+        throw new Error('--role must be checker|privacy_reviewer|admin');
+      }
+      const store = openStore(ctx);
+      const next = store.rejectProposal(id, {
+        by: { type: 'user', id: byId },
+        role,
+        comment: flag(args, '--comment'),
+      });
+      console.log(`Rejected proposal ${next.id} (status=${next.status})`);
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['proposal', 'list'],
+    usage: 'proposal list [--project-dir <path>]',
+    handler: (_args, ctx) => {
+      const store = openStore(ctx);
+      const list = store.listProposals();
+      if (!list.length) {
+        console.log('(no proposals)');
+        return;
+      }
+      for (const p of list) {
+        console.log(`${p.id}\t${p.status}\t${p.kind}\t${p.summary}`);
+      }
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['proposal', 'apply'],
+    usage: 'proposal apply <file|id> [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const ref = requireArg(args[0], 'proposal apply <file|id>');
+      const store = openStore(ctx);
+      const proposal = loadProposalRef(store, ref);
       const applied = store.applyProposal(proposal);
       console.log('Applied proposal to vendor memory.');
       console.log(`Kind: ${applied.kind}`);
@@ -413,6 +493,25 @@ function requireArg(v: string | undefined, usage: string): string {
 
 function readProposal(file: string): Proposal {
   return JSON.parse(readFileSync(resolve(file), 'utf8')) as Proposal;
+}
+
+/** Load proposal by filesystem path or by id from the store. */
+function loadProposalRef(store: VendorMemoryStore, ref: string): Proposal {
+  // Prefer store id when file does not exist
+  try {
+    const fromFile = readProposal(ref);
+    if (fromFile?.id) return fromFile;
+  } catch {
+    // fall through to store
+  }
+  const fromStore = store.loadProposal(ref);
+  if (fromStore) return fromStore;
+  // Last attempt: treat as path even if earlier parse failed oddly
+  try {
+    return readProposal(ref);
+  } catch {
+    throw new Error(`Proposal not found as file or id: ${ref}`);
+  }
 }
 
 function matchCommand(argv: string[]): CliCommand | undefined {

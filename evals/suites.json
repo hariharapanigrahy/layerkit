@@ -19,7 +19,10 @@
     "evidence-no-invent",
     "memory-index-append",
     "delivery-shadow-no-network",
-    "e2e-track-meta"
+    "e2e-track-meta",
+    "maker-checker-legacy-apply",
+    "maker-checker-strict-path",
+    "apply-kind-field-row"
   ],
   "all": [
     "proposal-sources-required",
@@ -41,7 +44,10 @@
     "evidence-no-invent",
     "memory-index-append",
     "delivery-shadow-no-network",
-    "e2e-track-meta"
+    "e2e-track-meta",
+    "maker-checker-legacy-apply",
+    "maker-checker-strict-path",
+    "apply-kind-field-row"
   ],
   "nightly": []
 }

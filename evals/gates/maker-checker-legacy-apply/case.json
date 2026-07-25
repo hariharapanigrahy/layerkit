@@ -1,0 +1,8 @@
+{
+  "id": "maker-checker-legacy-apply",
+  "suite": "ci",
+  "title": "legacyApplyWithoutApprove=true: pending apply works and emits LEGACY_APPLY",
+  "owners": ["maker-checker"],
+  "featurePr": "W5/PR5",
+  "tags": ["deterministic", "no-network", "maker-checker"]
+}
