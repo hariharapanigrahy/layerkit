@@ -26,12 +26,15 @@ export const COMMERCE_DOMAIN: DomainSpec = {
   ],
 };
 
-/** 20 empty vendor slots — docs only. Agents fill maps. */
-export const VENDOR_SLOTS: Array<{
+/** Catalog entry: identity + primary docs only. Maps are agent-authored. */
+export type VendorSlot = {
   vendor: string;
   displayName: string;
   documentation: VendorMap['documentation'];
-}> = [
+};
+
+/** Empty vendor slots — docs only. Agents fill maps. Scales by appending slots. */
+export const VENDOR_SLOTS: readonly VendorSlot[] = [
   {
     vendor: 'meta',
     displayName: 'Meta Conversions API',

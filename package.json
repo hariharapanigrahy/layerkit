@@ -48,7 +48,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "npm run build && node scripts/check-install-options.js && node scripts/check-proposal-validate.js && node scripts/check-empty-map-skip.js",
+    "test": "npm run build && node scripts/check-install-options.js && node scripts/check-proposal-validate.js && node scripts/check-empty-map-skip.js && node --test dist/evals/vendor-research-plan/generate-cases.test.js",
     "smoke:codex": "npm run build && node scripts/smoke-codex.mjs",
     "smoke:claude": "npm run build && node scripts/smoke-claude.mjs",
     "smoke:cursor": "npm run build && node scripts/smoke-cursor.mjs",
