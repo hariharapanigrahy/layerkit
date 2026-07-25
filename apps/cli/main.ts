@@ -21,6 +21,7 @@ import {
   PIPELINE_STATUS_REL,
   scanAndWriteDomainDiscovery,
   scanAndWriteStyleProfile,
+  parseStyleProfileMarkdown,
   writeDesignDecision,
   type DesignDecision,
   type IntegrationShape,
@@ -32,6 +33,8 @@ import {
   type WireExpectation,
   extractPathFromDocExcerpt,
   writeHandoffRunbook,
+  STYLE_PROFILE_RUNBOOK_REL,
+  type StyleProfile,
 } from '../../libs/agent/index.js';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
@@ -557,30 +560,12 @@ const cliCommands: CliCommand[] = [
     path: ['generate'],
     usage: 'generate --lang java|typescript|ts [--out <dir>] [--project-dir <path>]',
     handler: (args, ctx) => {
-      const lang = (flag(args, '--lang') ?? 'java').toLowerCase();
+      const lang = flag(args, '--lang') ?? 'java';
       const store = openStore(ctx);
       const project = store.loadProject();
       const domain = store.loadDomain();
       if (!project || !domain) throw new Error('No project — run layerkit install --poc');
       const maps = store.listMaps();
-
-      if (lang === 'java') {
-        const out = flag(args, '--out') ?? join(store.projectDir, 'out', 'java');
-        const files = generateJavaScaffold({ project, domain, maps });
-        for (const f of files) {
-          const p = join(out, f.path);
-          mkdirSync(join(p, '..'), { recursive: true });
-          writeFileSync(p, f.content, 'utf8');
-        }
-        console.log(`Scaffolded ${files.length} files → ${out}`);
-        console.log(
-          'Includes: Facade, Strategy, PrivacyGate, DeliveryClient, JaCoCo 0.95 pom, DESIGN_PATTERNS.md',
-        );
-        console.log(
-          'Next: skill layerkit-generate-java; then mvn test && layerkit doctor --quality --strict',
-        );
-        return;
-      }
 
       if (lang === 'typescript' || lang === 'ts') {
         const out = flag(args, '--out') ?? join(store.projectDir, 'out', 'ts');
@@ -590,19 +575,34 @@ const cliCommands: CliCommand[] = [
           mkdirSync(join(p, '..'), { recursive: true });
           writeFileSync(p, f.content, 'utf8');
         }
-        console.log(`Scaffolded ${files.length} files → ${out}`);
-        console.log(
-          'Includes: DataLayerClient facade, vendor types, apply-map dry_run stub, package.json (type module)',
-        );
-        console.log(
-          'Next: dry-run demos via DataLayerClient.track; full maps via layerkit process dry-run (same maps as Java)',
-        );
+        console.log(`Scaffolded ${files.length} TS files → ${out}`);
+        console.log('Includes: DataLayerClient dry_run facade, apply-map stub, types, README');
+        console.log('Next: use maps from projectDir; runtime track stays on Layerkit Node path');
         return;
       }
 
-      throw new Error(
-        `Unsupported --lang ${lang}. Supported: java | typescript | ts`,
-      );
+      if (lang !== 'java') {
+        throw new Error('Supported --lang: java | typescript | ts');
+      }
+
+      const out = flag(args, '--out') ?? join(store.projectDir, 'out', 'java');
+      let style: Partial<StyleProfile> | undefined;
+      const stylePath = join(store.projectDir, STYLE_PROFILE_RUNBOOK_REL);
+      if (existsSync(stylePath)) {
+        style = parseStyleProfileMarkdown(readFileSync(stylePath, 'utf8'));
+      }
+      const files = generateJavaScaffold({ project, domain, maps, style });
+      for (const f of files) {
+        const p = join(out, f.path);
+        mkdirSync(join(p, '..'), { recursive: true });
+        writeFileSync(p, f.content, 'utf8');
+      }
+      console.log(`Scaffolded ${files.length} files → ${out}`);
+      if (style) {
+        console.log(`Style profile applied from ${STYLE_PROFILE_RUNBOOK_REL}`);
+      }
+      console.log('Includes: Facade, Strategy, PrivacyGate, DeliveryClient, JaCoCo 0.95 pom, DESIGN_PATTERNS.md');
+      console.log('Next: skill layerkit-generate-java; then mvn test && layerkit doctor --quality --strict');
     },
     showInTopLevelHelp: true,
   },

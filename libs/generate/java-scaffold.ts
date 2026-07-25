@@ -1,9 +1,13 @@
 import type { DomainSpec, LayerProject, VendorMap } from '../domain/types.js';
+import type { StyleProfile } from '../agent/style-profile.js';
 
 export interface GeneratedFile {
   path: string;
   content: string;
 }
+
+/** Multi-segment Java package (e.g. com.acme.integrations). */
+const JAVA_PACKAGE_RE = /^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)+$/;
 
 function packageToPath(pkg: string): string {
   return pkg.replace(/\./g, '/');
@@ -22,22 +26,65 @@ function escapeXml(s: string): string {
 }
 
 /**
+ * True when s is a multi-segment Java package name (not free-form prose).
+ */
+export function looksLikeJavaPackage(s: string): boolean {
+  return JAVA_PACKAGE_RE.test(s.trim());
+}
+
+/**
+ * Resolve package for codegen: prefer style.package when it looks like a Java package
+ * (or contains one as a leading token). Otherwise fall back to project default.
+ */
+export function resolveJavaPackage(
+  stylePackage: string | undefined,
+  projectPackage: string | undefined,
+): string {
+  const fallback = projectPackage?.trim() || 'io.layerkit.generated';
+  if (!stylePackage?.trim()) return fallback;
+  const trimmed = stylePackage.trim();
+  if (looksLikeJavaPackage(trimmed)) return trimmed;
+  // Free-text profile values like "com.acme.foo (api / domain)" → extract first package token
+  const m = trimmed.match(/\b([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)+)\b/);
+  if (m && looksLikeJavaPackage(m[1]!)) return m[1]!;
+  return fallback;
+}
+
+function styleMentions(value: string | undefined, ...needles: string[]): boolean {
+  if (!value) return false;
+  const lower = value.toLowerCase();
+  return needles.some((n) => lower.includes(n.toLowerCase()));
+}
+
+/**
  * Generate enterprise Java client scaffold with design-pattern stubs:
  * Facade (DataLayerClient), Strategy (VendorAdapter + StrategyRegistry),
  * Ports (PrivacyGate, DeliveryClient), pom with JUnit 5 + JaCoCo 0.95 floor.
+ *
+ * When `style` is provided (from memory/runbooks/java-style-profile.md), templates
+ * are steered: package path, HTTP client comments, DI annotations, test stub.
  */
 export function generateJavaScaffold(opts: {
   project: LayerProject;
   domain: DomainSpec;
   maps: VendorMap[];
+  /** Optional client style profile — steers package, HTTP, DI, tests. */
+  style?: StyleProfile | Partial<StyleProfile>;
 }): GeneratedFile[] {
   const filled = opts.maps.filter((m) => m.fields.length || Object.keys(m.intents).length);
   const empty = opts.maps.filter((m) => !m.fields.length && !Object.keys(m.intents).length);
-  const pkg = opts.project.javaPackage ?? 'io.layerkit.generated';
+  const style = opts.style;
+  const pkg = resolveJavaPackage(style?.package, opts.project.javaPackage);
   const pkgPath = packageToPath(pkg);
   const base = `src/main/java/${pkgPath}/datalayer`;
+  const testBase = `src/test/java/${pkgPath}/datalayer`;
   const art = artifactId(opts.project.name);
   const filledVendors = filled.map((m) => m.vendor);
+
+  const httpOkHttp = styleMentions(style?.http, 'okhttp');
+  const httpWebClient = styleMentions(style?.http, 'webclient');
+  const diSpring = styleMentions(style?.di, 'spring');
+  const testJUnit = styleMentions(style?.test, 'junit');
 
   const files: GeneratedFile[] = [
     {
@@ -46,15 +93,15 @@ export function generateJavaScaffold(opts: {
     },
     {
       path: 'DESIGN_PATTERNS.md',
-      content: designPatternsMd(pkg),
+      content: designPatternsMd(pkg, style),
     },
     {
       path: 'AGENT_TASK.md',
-      content: agentTaskMd(pkg, opts.domain, filled, empty),
+      content: agentTaskMd(pkg, opts.domain, filled, empty, style),
     },
     {
       path: `${base}/DataLayerClient.java`,
-      content: dataLayerClientJava(pkg, filledVendors),
+      content: dataLayerClientJava(pkg, filledVendors, { diSpring, diText: style?.di }),
     },
     {
       path: `${base}/vendor/VendorAdapter.java`,
@@ -70,9 +117,21 @@ export function generateJavaScaffold(opts: {
     },
     {
       path: `${base}/delivery/DeliveryClient.java`,
-      content: deliveryClientJava(pkg),
+      content: deliveryClientJava(pkg, {
+        httpOkHttp,
+        httpWebClient,
+        httpText: style?.http,
+      }),
     },
   ];
+
+  // JUnit already on pom; emit a stub test class when style asks for JUnit
+  if (testJUnit) {
+    files.push({
+      path: `${testBase}/DataLayerClientTest.java`,
+      content: dataLayerClientTestJava(pkg, style?.test),
+    });
+  }
 
   return files;
 }
@@ -160,7 +219,28 @@ function pomXml(artifact: string, javaPackage: string): string {
 `;
 }
 
-function designPatternsMd(pkg: string): string {
+function designPatternsMd(pkg: string, style?: Partial<StyleProfile>): string {
+  const styleSection = style
+    ? `
+## Style profile (steering)
+
+Generate consumed \`memory/runbooks/java-style-profile.md\` and steered templates:
+
+| Key | Value used |
+|-----|------------|
+| package | \`${style.package ?? '(default)'}\` → code package \`${pkg}.datalayer\` |
+| di | \`${style.di ?? '(none)'}\` |
+| http | \`${style.http ?? '(none)'}\` |
+| test | \`${style.test ?? '(none)'}\` |
+
+Match these conventions when filling adapters and delivery — do not invent a parallel tree.
+`
+    : `
+## Style profile
+
+If \`memory/runbooks/java-style-profile.md\` exists, re-run \`layerkit generate\` so package / DI / HTTP / test stack steer these templates.
+`;
+
   return `# Design patterns (Layerkit Java client)
 
 Generated package root: \`${pkg}.datalayer\`
@@ -177,7 +257,7 @@ Enterprise integrations **must** follow these patterns. Freeform one-off shapes 
 | Retries / errors | **Policy object** | Typed error classes; no swallowed exceptions |
 | Observation | **Observer / SPI sinks** | Injected; no static global logger for audit |
 | Config | **Immutable options** | Validated at startup |
-
+${styleSection}
 ## Layout
 
 \`\`\`text
@@ -212,12 +292,24 @@ function agentTaskMd(
   domain: DomainSpec,
   filled: VendorMap[],
   empty: VendorMap[],
+  style?: Partial<StyleProfile>,
 ): string {
+  const styleHint = style
+    ? `
+## Style profile (applied)
+
+- package → \`${pkg}\`
+- di: ${style.di ?? '_n/a_'}
+- http: ${style.http ?? '_n/a_'}
+- test: ${style.test ?? '_n/a_'}
+`
+    : '';
+
   return `# Agent task (layerkit-generate-java)
 
 Scaffold emits design-pattern stubs under package \`${pkg}.datalayer\`.
 Implement filled vendors only. **No LLM on the hot path.**
-
+${styleHint}
 ## Domain intents
 ${domain.intents.map((i) => `- ${i.id}`).join('\n')}
 
@@ -245,13 +337,28 @@ Rules: cite docs; Java 17+; match customer package/style when present.
 `;
 }
 
-function dataLayerClientJava(pkg: string, filledVendors: string[]): string {
+function dataLayerClientJava(
+  pkg: string,
+  filledVendors: string[],
+  opts: { diSpring: boolean; diText?: string },
+): string {
   const vendorComment =
     filledVendors.length > 0
       ? filledVendors.map((v) => ` *   - ${v}`).join('\n')
       : ' *   (none yet — research maps first)';
-  return `package ${pkg}.datalayer;
 
+  const springImport = opts.diSpring
+    ? `\n// Style profile DI: Spring — prefer @Component + constructor injection\n// import org.springframework.stereotype.Component;\n`
+    : '';
+  const springJavadoc = opts.diSpring
+    ? `\n * <p>Style profile DI: <b>Spring</b> — wire with {@code @Component} and constructor injection${
+        opts.diText ? ` (${opts.diText})` : ''
+      }.`
+    : '';
+  const springAnnotation = opts.diSpring ? '// @Component\n' : '';
+
+  return `package ${pkg}.datalayer;
+${springImport}
 import ${pkg}.datalayer.delivery.DeliveryClient;
 import ${pkg}.datalayer.privacy.PrivacyGate;
 import ${pkg}.datalayer.strategy.StrategyRegistry;
@@ -269,11 +376,11 @@ import java.util.Objects;
  * Hides vendor fan-out, strategy resolution, privacy, and delivery.
  *
  * <p>Pattern: <b>Facade</b>. Runtime must remain deterministic — no LLM on the hot path.
- *
+ *${springJavadoc}
  * <p>Filled vendors to implement:
 ${vendorComment}
  */
-public final class DataLayerClient {
+${springAnnotation}public final class DataLayerClient {
 
     public enum Mode {
         DRY_RUN,
@@ -535,11 +642,41 @@ public interface PrivacyGate {
 `;
 }
 
-function deliveryClientJava(pkg: string): string {
+function deliveryClientJava(
+  pkg: string,
+  opts: { httpOkHttp: boolean; httpWebClient: boolean; httpText?: string },
+): string {
+  let httpImportBlock = '';
+  let httpJavadoc = '';
+
+  if (opts.httpOkHttp) {
+    httpImportBlock = `
+// Style profile HTTP: OkHttp — preferred stack for real delivery impl
+// import okhttp3.OkHttpClient;
+// import okhttp3.MediaType;
+// import okhttp3.Request;
+// import okhttp3.RequestBody;
+// import okhttp3.Response;
+`;
+    httpJavadoc = `
+ * <p>Style profile HTTP: <b>OkHttp</b> — implement deliver() with OkHttpClient (okhttp3)${
+   opts.httpText ? `; profile: ${opts.httpText}` : ''
+ }.`;
+  } else if (opts.httpWebClient) {
+    httpImportBlock = `
+// Style profile HTTP: WebClient — preferred stack for real delivery impl
+// import org.springframework.web.reactive.function.client.WebClient;
+`;
+    httpJavadoc = `
+ * <p>Style profile HTTP: <b>WebClient</b> — implement deliver() with Spring WebClient${
+   opts.httpText ? `; profile: ${opts.httpText}` : ''
+ }.`;
+  }
+
   return `package ${pkg}.datalayer.delivery;
 
 import ${pkg}.datalayer.DataLayerClient.Mode;
-
+${httpImportBlock}
 import java.util.Map;
 
 /**
@@ -547,7 +684,7 @@ import java.util.Map;
  * Implementations handle retries, idempotency, rate limits, and DLQ.
  * Dry-run must not perform network egress.
  *
- * <p>Pattern: <b>Ports &amp; Adapters</b>.
+ * <p>Pattern: <b>Ports &amp; Adapters</b>.${httpJavadoc}
  */
 public interface DeliveryClient {
 
@@ -573,6 +710,30 @@ public interface DeliveryClient {
             }
             return DeliveryResult.dryRunOk();
         }
+    }
+}
+`;
+}
+
+function dataLayerClientTestJava(pkg: string, testText?: string): string {
+  const note = testText ? ` Style profile test: ${testText}.` : '';
+  return `package ${pkg}.datalayer;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * Scaffold test stub (JUnit 5). Expand to ≥95% line coverage before promote.${note}
+ */
+class DataLayerClientTest {
+
+    @Test
+    void scaffoldPlaceholder() {
+        // Replace with real Facade / adapter tests; pom already has junit-jupiter.
+        assertTrue(true);
+        assertNotNull(DataLayerClient.Mode.DRY_RUN);
     }
 }
 `;

@@ -46,7 +46,7 @@ Optional research note:
 layerkit memory append --type research --title "java style profile" --vendor general --body-file ./java-style-profile.md
 ```
 
-5. Next: `layerkit-generate-java` must **consume** this profile.
+5. Next: `layerkit generate` **consumes** this profile (package / DI / HTTP / test) to steer Java scaffold templates.
 
 ## Forbidden
 
