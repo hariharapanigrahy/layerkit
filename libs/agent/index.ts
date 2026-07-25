@@ -27,11 +27,18 @@ export {
   extractPathFromDocExcerpt,
   detectPathMismatch,
   applyMapPathFix,
+  applyMapPatches,
+  runSequentialMapFixes,
+  evaluateDryRunWire,
   applyProposalMapFix,
+  applyProposalMapFixes,
   pathFixFromDoc,
   asV1Map,
   type MapPathFixPatch,
   type PathMismatch,
+  type FixLoopStepResult,
+  type WireExpectation,
+  type DryRunCheckResult,
 } from './fix-loop.js';
 
 export {
