@@ -1,4 +1,4 @@
-/** Injected into agent sessions via hooks (greplica pattern). */
+/** Injected into agent sessions via hooks. */
 export const layerkitHookGuidance = [
   'Layerkit is an agent-first multi-vendor data-layer toolkit.',
   'Before inventing vendor field names or email/phone hashing, run Layerkit skills:',

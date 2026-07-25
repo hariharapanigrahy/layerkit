@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Layerkit CLI — greplica-shaped command surface for multi-vendor data layers.
+ * Layerkit CLI — multi-vendor data-layer command surface for agent platforms.
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -194,7 +194,7 @@ const cliCommands: CliCommand[] = [
       if (!platform || !isInstallPlatform(platform)) {
         throw new Error(`Usage: layerkit hook ingest --platform ${installPlatformUsage}`);
       }
-      // Greplica-style guidance injection payload
+      // Agent hook guidance injection payload
       if (platform === 'openhands' || platform === 'copilot') {
         console.log(JSON.stringify({ additionalContext: layerkitHookGuidance }));
       } else {

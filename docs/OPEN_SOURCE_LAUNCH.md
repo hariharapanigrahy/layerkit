@@ -27,7 +27,7 @@ gh repo create hariharapanigrahy/layerkit \
   --public \
   --source=. \
   --remote=origin \
-  --description "Agent-first multi-vendor data-layer toolkit (Java-first, greplica-style install/evals)" \
+  --description "Agent-first multi-vendor data-layer toolkit (Java-first, multi-platform install, evals)" \
   --push
 ```
 

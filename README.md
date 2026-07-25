@@ -6,8 +6,6 @@
 
 ### Agent-first multi-vendor data-layer toolkit (Java-first for enterprises)
 
-Open-source package structured like [Greplica](https://github.com/Autoloops/greplica): **apps / libs / evals / skills / multi-platform install**.
-
 Vendor field names, auth, and email/phone processing are **authored by coding agents** from **primary vendor documentation** — not hardcoded as fake universal truth. The package installs skills/hooks, stores proposals, and runs evals.
 
 **Contributions welcome** — see [CONTRIBUTING.md](./CONTRIBUTING.md). Good first issues: fill empty vendor maps from official docs.
@@ -70,7 +68,7 @@ layerkit generate --lang java
 
 ```text
 apps/cli/                 CLI entry
-libs/install/platforms/   Multi-agent install (greplica-style)
+libs/install/platforms/   Multi-agent platform install
 libs/vendor-memory/       Local maps + proposals
 libs/proposal/            Validate gates (sources required)
 libs/domain/              Commerce intents, empty vendor slots

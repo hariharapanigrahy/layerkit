@@ -1,4 +1,4 @@
-# Architecture (greplica-shaped)
+# Architecture
 
 Standalone repo: https://github.com/hariharapanigrahy/layerkit
 
@@ -7,16 +7,16 @@ apps/cli              CLI entry (install, proposal, doctor, generate, hooks)
 libs/
   install/platforms   codex | claude | cursor | copilot | opencode | openhands | factory-droid | antigravity
   hooks               session guidance injection
-  vendor-memory       local map/proposal store (graph analog)
+  vendor-memory       local map/proposal store
   proposal            validate/apply gates
   domain              commerce intents + empty vendor slots
   generate            Java scaffold only
   config              ~/.layerkit/config.json
-  agent-runner        (extension point for offline eval agent runs)
+  agent-runner        extension point for offline eval agent runs
 evals/
   cases/*             rubrics + run.ts gates
-  map-quality-optimizer   coverage scoring (ranking-optimizer analog)
-  vendor-research-plan    held-out research prompts (swechat-plan analog)
+  map-quality-optimizer   map coverage scoring
+  vendor-research-plan    held-out research prompts + judge criteria
 skills/               what coding agents execute
 scripts/              smoke:* + check-* (CI)
 ```

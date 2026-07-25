@@ -1,6 +1,5 @@
 /**
- * Install platforms — mirrors greplica's multi-agent surface.
- * @see https://github.com/Autoloops/greplica libs/install/paths.ts
+ * Supported coding-agent install platforms for Layerkit skills and hooks.
  */
 
 export const installPlatforms = [

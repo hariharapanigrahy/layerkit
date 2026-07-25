@@ -5,7 +5,7 @@ import type { DomainSpec, LayerProject, Proposal, VendorMap } from '../domain/ty
 import { validateProposal, validateVendorMap } from '../proposal/validate.js';
 
 /**
- * Local project "memory" for vendor maps — greplica graph analog.
+ * Local project store for vendor maps and proposals.
  * Agents write via proposals; store persists under .layerkit/
  */
 export class VendorMemoryStore {

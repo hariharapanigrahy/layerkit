@@ -76,7 +76,7 @@ export function validateVendorMap(map: VendorMap, domain?: DomainSpec): Validati
   return issues;
 }
 
-/** Greplica-style: proposals without sources are invalid. */
+/** Proposals without documentation sources are invalid. */
 export function validateProposal(proposal: Proposal): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   if (proposal.schemaVersion !== 1) {

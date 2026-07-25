@@ -13,7 +13,7 @@ Be respectful. See [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
 |--------------|--------|--------|
 | **Vendor map** (research from official docs) | Proposal PR + `.layerkit` fixture or `evals/fixtures/` | Must include `sources[]` with doc URLs + excerpts |
 | **Processor** (email/phone/time rules) | `libs/` only if generic; prefer agent proposals + eval | Cite primary docs; no invented hash rules |
-| **Agent platform install** | `libs/install/platforms/` + `scripts/smoke-*.mjs` | Mirror greplica-style skill/hook paths |
+| **Agent platform install** | `libs/install/platforms/` + `scripts/smoke-*.mjs` | Skills and hooks per coding-agent platform |
 | **Eval case** | `evals/cases/<name>/run.ts` + `rubric.json` | CI-runnable preferred |
 | **Java generation skill / scaffold** | `skills/layerkit-generate-java`, `libs/generate/` | Enterprise Java is the default language target |
 | **Docs / install UX** | `README.md`, `docs/`, skills | Clear agent prompts help adoption |

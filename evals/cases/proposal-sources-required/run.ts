@@ -1,6 +1,5 @@
 /**
  * Eval: proposals without documentation sources must fail validation.
- * Mirrors greplica's proposal quality gates.
  */
 import { assertTrue } from '../../lib/common.js';
 import { validateProposal } from '../../../libs/proposal/validate.js';

@@ -1,5 +1,4 @@
 /**
- * Analog of greplica evals/swechat-plan:
  * Hold-out style planning cases for "research vendor X and produce a proposal".
  * Cases describe prompts + judge criteria; live agent runs are offline.
  */
@@ -55,7 +54,7 @@ function main(): void {
     console.log(`  prompt: ${c.prompt}`);
   }
   console.log('');
-  console.log('Judge criteria (for human/LLM judge, greplica-style):');
+  console.log('Judge criteria (for human/LLM judge):');
   console.log('1. sources[] include official host');
   console.log('2. No invented hash algorithms without excerpt');
   console.log('3. endpoint path matches docs');

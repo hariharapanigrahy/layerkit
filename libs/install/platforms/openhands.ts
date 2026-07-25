@@ -4,7 +4,7 @@ import { copySkillsTo } from '../skills.js';
 import type { PlatformInstaller } from './types.js';
 import { layerkitHookGuidance } from '../../hooks/guidance.js';
 
-/** OpenHands: repo-local skills + hooks (greplica pattern). */
+/** OpenHands: repo-local skills + hooks. */
 export const openhandsInstaller: PlatformInstaller = {
   platform: 'openhands',
   install({ packageRoot, repoRoot, hooksEnabled }) {

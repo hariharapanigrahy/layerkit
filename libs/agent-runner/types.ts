@@ -1,5 +1,5 @@
 /**
- * Extension point for offline eval agent runs (greplica libs/agent-runner analog).
+ * Extension point for offline eval agent runs.
  * Wire Codex/OpenCode/OpenHands subprocess runners here when scoring vendor-research-plan cases live.
  */
 export type AgentPlatformRunner = 'codex' | 'opencode' | 'openhands';

@@ -1,6 +1,5 @@
 /**
- * Analog of greplica evals/ranking-optimizer:
- * score map coverage quality across vendor slots (field completeness, source density).
+ * Score map coverage quality across vendor slots (field completeness, source density).
  * Does NOT invent field names — only scores agent-produced maps.
  */
 import { buildPocVendorMaps } from '../../libs/domain/commerce.js';
