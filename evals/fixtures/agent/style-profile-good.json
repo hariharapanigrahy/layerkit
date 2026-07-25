@@ -1,0 +1,9 @@
+{
+  "package": "com.acme.integrations.datalayer (api / domain / infrastructure)",
+  "di": "constructor injection via Spring @Component",
+  "http": "JDK HttpClient",
+  "test": "JUnit 5 + AssertJ + WireMock",
+  "logging": "SLF4J",
+  "config": "application.yml",
+  "notes": "Fixture style profile for agent-style-profile-shape gate"
+}

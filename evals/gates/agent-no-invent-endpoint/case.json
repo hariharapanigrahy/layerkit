@@ -1,0 +1,9 @@
+{
+  "id": "agent-no-invent-endpoint",
+  "suite": "ci",
+  "title": "Empty seeds → no fake host in answer sheet; invent detector catches fabrications",
+  "owners": ["agent", "research"],
+  "featurePr": "agent-dev-evals",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network", "agent-process", "no-invent"]
+}

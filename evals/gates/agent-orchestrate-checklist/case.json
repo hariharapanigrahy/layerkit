@@ -1,0 +1,9 @@
+{
+  "id": "agent-orchestrate-checklist",
+  "suite": "ci",
+  "title": "Orchestrate checklist fixture lists required skill pipeline order",
+  "owners": ["agent"],
+  "featurePr": "agent-dev-evals",
+  "fixtures": ["agent/orchestrate-checklist.json"],
+  "tags": ["deterministic", "no-network", "agent-process", "orchestrate"]
+}
