@@ -5,6 +5,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import {
+  detectPathMismatch,
+  evaluateDryRunWire,
+  extractPathFromDocExcerpt,
   formatNextStepLine,
   formatPipelineStatus,
   getNextStep,
@@ -13,9 +16,13 @@ import {
   isScannableRoot,
   loadCompletedSteps,
   markStepDone,
+  pathFixFromDoc,
   pipelineStatusPath,
   PIPELINE_STATUS_REL,
+  runSequentialMapFixes,
   scanAndWriteStyleProfile,
+  type MapPathFixPatch,
+  type WireExpectation,
 } from '../../libs/agent/index.js';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
@@ -33,7 +40,7 @@ import {
   platformDisplayName,
   type InstallPlatform,
 } from '../../libs/install/paths.js';
-import type { Identity, Proposal } from '../../libs/domain/types.js';
+import type { Identity, Proposal, VendorMap } from '../../libs/domain/types.js';
 import {
   createMemoryStack,
   type MemoryEntryType,
@@ -191,6 +198,19 @@ const cliCommands: CliCommand[] = [
     path: ['style-profile', 'scan'],
     usage: 'style-profile scan [--root <dir>] [--out memory|path] [--project-dir <path>]',
     handler: runStyleProfileScan,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['fix', 'dry-run'],
+    usage:
+      'fix dry-run --map <map.json> --patches <patches.json> [--expect-event <name>] [--require-field <path>]... [--forbid-field <path>]... [--out <fixed-map.json>] [--json]',
+    handler: runFixDryRun,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['fix', 'suggest'],
+    usage: 'fix suggest --map <map.json> --doc <file.md> [--json]',
+    handler: runFixSuggest,
     showInTopLevelHelp: true,
   },
 
@@ -996,6 +1016,192 @@ function runStyleProfileScan(args: string[], ctx: CliContext): void {
   console.log(`http: ${p.http}`);
   console.log(`test: ${p.test}`);
   console.log(`Wrote style profile → ${outPath}`);
+}
+
+
+/** Default sample domain event for pure dry-run wire checks (no network). */
+const FIX_DRY_RUN_SAMPLE = {
+  intent: 'purchase',
+  eventId: 'evt_1',
+  user: { email: 'Ada@Example.com' },
+  value: { amount: 10, currency: 'usd' },
+};
+
+function buildWireExpectation(args: string[]): WireExpectation | null {
+  const expectEvent = flag(args, '--expect-event');
+  const requireFields = collectFlags(args, '--require-field');
+  const forbidFields = collectFlags(args, '--forbid-field');
+  if (!expectEvent && requireFields.length === 0 && forbidFields.length === 0) {
+    return null;
+  }
+  const expectation: WireExpectation = { notSkipped: true };
+  if (expectEvent) expectation.eventName = expectEvent;
+  if (requireFields.length) expectation.requiredKeys = requireFields;
+  if (forbidFields.length) expectation.forbiddenKeys = forbidFields;
+  return expectation;
+}
+
+/**
+ * Apply ordered MapPathFixPatch list to a map (fix-loop pure helpers).
+ * Optionally evaluate dry-run wire before/after each step when expectations are set.
+ */
+function runFixDryRun(args: string[]): void {
+  const mapPath = flag(args, '--map');
+  const patchesPath = flag(args, '--patches');
+  if (!mapPath || !patchesPath) {
+    throw new Error(
+      'Usage: layerkit fix dry-run --map <map.json> --patches <patches.json> [--expect-event <name>] [--require-field <path>]... [--forbid-field <path>]... [--out <fixed-map.json>] [--json]',
+    );
+  }
+
+  const map = JSON.parse(readFileSync(resolve(mapPath), 'utf8')) as VendorMap;
+  const patchesRaw = JSON.parse(readFileSync(resolve(patchesPath), 'utf8'));
+  const patches: MapPathFixPatch[] = Array.isArray(patchesRaw)
+    ? (patchesRaw as MapPathFixPatch[])
+    : [patchesRaw as MapPathFixPatch];
+
+  if (!patches.length) {
+    throw new Error('fix dry-run: --patches must be a non-empty array of MapPathFixPatch');
+  }
+  for (const [i, p] of patches.entries()) {
+    if (!p || typeof p !== 'object' || typeof p.field !== 'string' || typeof p.to !== 'string') {
+      throw new Error(
+        `fix dry-run: patch[${i}] must have string field and to (got ${JSON.stringify(p)})`,
+      );
+    }
+  }
+
+  const expectation = buildWireExpectation(args);
+  const out = flag(args, '--out');
+
+  const beforeApply = applyVendorMap(FIX_DRY_RUN_SAMPLE, map);
+  const beforeCheck = expectation ? evaluateDryRunWire(beforeApply, expectation) : null;
+
+  const { steps, final } = runSequentialMapFixes(map, patches);
+
+  type StepReport = {
+    index: number;
+    patch: MapPathFixPatch;
+    dryRun: ReturnType<typeof applyVendorMap>;
+    check: ReturnType<typeof evaluateDryRunWire> | null;
+  };
+
+  const stepReports: StepReport[] = steps.map((s) => {
+    const dryRun = applyVendorMap(FIX_DRY_RUN_SAMPLE, s.map);
+    return {
+      index: s.index,
+      patch: s.patch,
+      dryRun,
+      check: expectation ? evaluateDryRunWire(dryRun, expectation) : null,
+    };
+  });
+
+  const finalApply = applyVendorMap(FIX_DRY_RUN_SAMPLE, final);
+  const finalCheck = expectation ? evaluateDryRunWire(finalApply, expectation) : null;
+
+  if (out) {
+    writeFileSync(resolve(out), JSON.stringify(final, null, 2) + '\n', 'utf8');
+  }
+
+  const payload = {
+    patchesApplied: patches.length,
+    before: {
+      dryRun: beforeApply,
+      check: beforeCheck,
+    },
+    steps: stepReports.map((r) => ({
+      index: r.index,
+      patch: r.patch,
+      dryRun: r.dryRun,
+      check: r.check,
+      ok: r.check ? r.check.ok : true,
+    })),
+    final: {
+      map: final,
+      dryRun: finalApply,
+      check: finalCheck,
+      ok: finalCheck ? finalCheck.ok : true,
+    },
+    out: out ? resolve(out) : undefined,
+  };
+
+  if (expectation && finalCheck && !finalCheck.ok) {
+    process.exitCode = 1;
+  }
+
+  emitJsonOrText(args, payload, () => {
+    console.log(`fix dry-run: applying ${patches.length} patch(es)`);
+    if (beforeCheck) {
+      console.log(
+        `  before: ${beforeCheck.ok ? 'OK' : 'FAIL'} ${beforeCheck.failures.length ? `(${beforeCheck.failures.join('; ')})` : ''}`,
+      );
+    } else {
+      console.log(
+        `  before: skipped=${beforeApply.skipped}${beforeApply.reason ? ` (${beforeApply.reason})` : ''}`,
+      );
+    }
+    for (const r of stepReports) {
+      const patchLabel = `${r.patch.field}: ${JSON.stringify(r.patch.from ?? '?')} → ${JSON.stringify(r.patch.to)}`;
+      if (r.check) {
+        console.log(
+          `  step ${r.index}: ${r.check.ok ? 'OK' : 'FAIL'}  ${patchLabel}${r.check.failures.length ? `  — ${r.check.failures.join('; ')}` : ''}`,
+        );
+      } else {
+        console.log(`  step ${r.index}: applied  ${patchLabel}`);
+      }
+    }
+    if (finalCheck) {
+      console.log(
+        `  final: ${finalCheck.ok ? 'OK' : 'FAIL'}${finalCheck.failures.length ? `  — ${finalCheck.failures.join('; ')}` : ''}`,
+      );
+    } else {
+      console.log(
+        `  final: skipped=${finalApply.skipped}${finalApply.reason ? ` (${finalApply.reason})` : ''}`,
+      );
+      if (finalApply.wire) {
+        console.log(`  wire: ${JSON.stringify(finalApply.wire)}`);
+      }
+    }
+    if (out) console.log(`Wrote fixed map → ${resolve(out)}`);
+  });
+}
+
+/**
+ * Suggest a path patch from map + vendor doc excerpt (no invent if doc has no path).
+ */
+function runFixSuggest(args: string[]): void {
+  const mapPath = flag(args, '--map');
+  const docPath = flag(args, '--doc');
+  if (!mapPath || !docPath) {
+    throw new Error('Usage: layerkit fix suggest --map <map.json> --doc <file.md> [--json]');
+  }
+
+  const map = JSON.parse(readFileSync(resolve(mapPath), 'utf8')) as VendorMap;
+  const doc = readFileSync(resolve(docPath), 'utf8');
+  const docPathExtracted = extractPathFromDocExcerpt(doc);
+  const mismatch = detectPathMismatch(map, doc);
+  const patch = pathFixFromDoc(map, doc);
+
+  const payload = {
+    mapPath: mismatch.mapPath,
+    docPath: docPathExtracted,
+    mismatch: mismatch.mismatch,
+    detail: mismatch.detail,
+    // null when no inventable fix (doc has no path, or paths already match)
+    patch,
+  };
+
+  emitJsonOrText(args, payload, () => {
+    console.log(`map path: ${mismatch.mapPath ?? '(none)'}`);
+    console.log(`doc path: ${docPathExtracted ?? '(none extractable)'}`);
+    console.log(`mismatch: ${mismatch.mismatch}${mismatch.detail ? ` — ${mismatch.detail}` : ''}`);
+    if (patch) {
+      console.log('suggested patch:');
+      console.log(JSON.stringify(patch, null, 2));
+    } else {
+      console.log('suggested patch: (none — no invent when doc has no path or paths match)');
+    }
+  });
 }
 
 function flag(args: string[], name: string): string | undefined {
