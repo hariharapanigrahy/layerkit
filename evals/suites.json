@@ -39,7 +39,8 @@
     "schema-dual-read",
     "strategy-execute-sha256",
     "strategy-fail-closed",
-    "style-profile-cli"
+    "style-profile-cli",
+    "ts-client-scaffold"
   ],
   "all": [
     "agent-citation-required-on-map",
@@ -82,6 +83,7 @@
     "strategy-execute-sha256",
     "strategy-fail-closed",
     "style-profile-cli",
+    "ts-client-scaffold",
     "vendor-research-plan"
   ],
   "nightly": []
