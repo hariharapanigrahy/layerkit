@@ -23,3 +23,14 @@ export {
   createDeliverySimulator,
   type SimulatorOptions,
 } from './simulator.js';
+
+export {
+  sendWithRetry,
+  createHttpClient,
+  computeBackoffMs,
+  type FetchLike,
+  type HttpClientOptions,
+  type HttpSendRequest,
+  type HttpSendResult,
+  type DeliveryHttpClient,
+} from './http-client.js';

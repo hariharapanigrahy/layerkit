@@ -1,0 +1,9 @@
+{
+  "id": "delivery-live-http-mock",
+  "suite": "ci",
+  "title": "live HTTP retries on 429/5xx then success; shadow stays offline",
+  "owners": ["delivery"],
+  "featurePr": "delivery-live-http",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network", "delivery", "http", "retry"]
+}
