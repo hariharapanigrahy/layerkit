@@ -1,16 +1,22 @@
 import { cpSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
+/** Packaged agent skills — agent-as-developer loop (no vendor catalog maintenance). */
 export const SKILL_NAMES = [
   'layerkit-bootstrap',
   'layerkit-discover-data-layer',
   'layerkit-research-vendor',
+  'layerkit-design-integration',
+  'layerkit-author-map',
   'layerkit-author-processor',
   'layerkit-design-flow',
   'layerkit-privacy-review',
+  'layerkit-align-client-style',
   'layerkit-generate-java',
-  'layerkit-update-maps',
+  'layerkit-fix-from-dry-run',
   'layerkit-checker-assist',
+  'layerkit-session-handoff',
+  'layerkit-orchestrate-integration',
 ] as const;
 
 export function listPackagedSkills(packageRoot: string): string[] {
