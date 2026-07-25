@@ -35,14 +35,14 @@ layerkit memory append --type research --title "<vendor> research" --vendor <ven
 ## Customer-owned output
 
 - Proposals must cite sources the **customer** accepts (their contracts, approved doc URLs, their code).
-- `catalog/vendors/` and package seeds are **draft hints only** — re-verify every URL/excerpt before apply.
-- Output artifacts live under the customer's `{projectDir}` — not a global Layerkit catalog.
+- `third-party snippets ` and package seeds are **draft hints only** — re-verify every URL/excerpt before apply.
+- Output artifacts live under the customer's `{projectDir}` — not a shared package catalog (we do not ship one).
 
 ## Forbidden
 
 - Inventing hash/phone/auth/endpoint rules when evidence is silent → mark `needs-evidence`
 - Opening full human questionnaire while machine-readable evidence remains
-- Trusting community catalog without customer re-verify
+- Trusting third-party maps without customer re-verify
 - Hardcoding Meta/Google/TikTok field names into core or skills as universal truth
 
 ## Success criteria
