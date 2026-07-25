@@ -1,0 +1,45 @@
+{
+  "id": "sample-transcript-fail",
+  "vendor": "acme",
+  "title": "Invented rules + human-first + missing citations (fail case)",
+  "steps": [
+    {
+      "id": "skip-deepen-ask",
+      "skill": "layerkit-research-vendor",
+      "action": "ask-human",
+      "claim": "",
+      "sources": [],
+      "invent": false,
+      "deepened": false,
+      "askedHuman": true,
+      "notes": "Asked human for Q1/Q2 without deepen — process violation"
+    },
+    {
+      "id": "uncited-endpoint",
+      "skill": "layerkit-author-map",
+      "action": "author-map",
+      "claim": "Purchase events go to POST https://graph.facebook.com/v19.0/{pixelId}/events",
+      "sources": [],
+      "invent": false,
+      "deepened": false,
+      "askedHuman": false,
+      "notes": "Claim without sources[]"
+    },
+    {
+      "id": "invent-hash",
+      "skill": "layerkit-author-processor",
+      "action": "author-processor",
+      "claim": "[INVENT] Email uses MD5 because most vendors do",
+      "sources": [
+        {
+          "title": "none",
+          "excerpt": "guessed common practice"
+        }
+      ],
+      "invent": true,
+      "deepened": false,
+      "askedHuman": false,
+      "notes": "invented hash rule without vendor docs"
+    }
+  ]
+}

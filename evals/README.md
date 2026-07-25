@@ -7,7 +7,8 @@
 | `npm run eval:ci` | Merge bar — suite `ci` in `suites.json` (required on every PR) |
 | `npm run eval:all` | Release bar — full `ci` list plus extras (e.g. `vendor-research-plan` scale) |
 | `npm run eval:<legacy>` | Single-case aliases (stable; re-export gates) |
-| Nightly | `.github/workflows/nightly.yml` schedules `npm run eval:all` |
+| Nightly | `.github/workflows/nightly.yml` schedules `npm run eval:all` + agent transcript judge |
+| `npm run eval:agent-judge` | **Nightly only** — deterministic transcript/process rubric (not merge bar; not in `eval:ci`) |
 
 ```bash
 npm run build
@@ -19,7 +20,9 @@ node dist/evals/harness/runner.js --list
 node dist/evals/harness/runner.js --suite ci --json   # JSON on stdout; logs on stderr
 ```
 
-**Empty suites:** `ci` / `all` with zero cases exit 1 (fail closed). Suite `nightly` may be empty (exit 0 + warning) until agent judges land.
+**Empty suites:** `ci` / `all` with zero cases exit 1 (fail closed). Suite `nightly` may be empty (exit 0 + warning).
+
+**Agent transcript judge (nightly only):** `evals/agent-judge/` scores recorded fixture transcripts (`evals/fixtures/agent/sample-transcript*.json`) for citations present, no invent markers, and deepen-before-human. Run via `npm run eval:agent-judge`. **Not** part of `eval:ci` / merge bar.
 
 **Timeouts:** each gate defaults to 60s; override with `EVAL_GATE_TIMEOUT_MS`.
 
@@ -32,6 +35,7 @@ evals/
   gates/<case-id>/  # deterministic CI cases
     case.json       # metadata: suite, owners, tags
     run.ts          # executable gate (PASS/FAIL, exit 1 on fail)
+  agent-judge/      # nightly transcript/process rubric (not merge bar)
   suites.json       # suite → case id lists
   cases/            # legacy thin re-exports (npm script aliases)
   lib/common.ts     # re-exports harness assert
@@ -81,7 +85,7 @@ console.log('my-gate: all checks passed');
 1. **Deterministic first** — fixed timestamps/fixtures; no flaky clocks.
 2. **Fail closed** — missing fixture or bad assertion → exit 1.
 3. **Gates are the merge bar** — `eval:ci` must stay green on `main`.
-4. **Agent / LLM judges** belong under `evals/agent/` and suite `nightly` (not default CI).
+4. **Agent / LLM judges** are nightly only (`evals/agent-judge/`, `npm run eval:agent-judge`) — never add them to suite `ci` / merge bar.
 
 ## Current CI suite (G0)
 

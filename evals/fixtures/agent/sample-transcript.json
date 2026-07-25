@@ -1,0 +1,83 @@
+{
+  "id": "sample-transcript-pass",
+  "vendor": "acme",
+  "title": "Evidence-first research + residual human (pass case)",
+  "steps": [
+    {
+      "id": "deepen-hub",
+      "skill": "layerkit-research-vendor",
+      "action": "deepen",
+      "claim": "Hub index links to OpenAPI at /openapi.json and curl samples under /docs/curl",
+      "sources": [
+        {
+          "title": "Hub index",
+          "url": "https://docs.acme-fixture.test/",
+          "excerpt": "See openapi.json and curl samples for Purchase events"
+        }
+      ],
+      "invent": false,
+      "deepened": true,
+      "askedHuman": false,
+      "notes": "L1 deepen: enqueued openapi + curl before residual"
+    },
+    {
+      "id": "answer-q1-auth",
+      "skill": "layerkit-research-vendor",
+      "action": "research",
+      "claim": "Auth uses OAuth2 client credentials against /oauth/token",
+      "sources": [
+        {
+          "title": "OpenAPI securitySchemes",
+          "url": "https://docs.acme-fixture.test/openapi.json",
+          "excerpt": "oauth2 clientCredentials tokenUrl: /oauth/token"
+        }
+      ],
+      "invent": false,
+      "deepened": true,
+      "askedHuman": false
+    },
+    {
+      "id": "answer-q2-endpoints",
+      "skill": "layerkit-research-vendor",
+      "action": "research",
+      "claim": "Purchase events POST /v1/events",
+      "sources": [
+        {
+          "title": "curl sample",
+          "url": "https://docs.acme-fixture.test/curl/purchase.txt",
+          "excerpt": "curl -X POST https://api.acme-fixture.test/v1/events"
+        }
+      ],
+      "invent": false,
+      "deepened": true,
+      "askedHuman": false
+    },
+    {
+      "id": "residual-q5-hash",
+      "skill": "layerkit-research-vendor",
+      "action": "ask-human",
+      "claim": "",
+      "sources": [],
+      "invent": false,
+      "deepened": true,
+      "askedHuman": true,
+      "notes": "Q5 email hash rule silent after L0–L4 deepen; residual questionnaire only"
+    },
+    {
+      "id": "author-processor",
+      "skill": "layerkit-author-processor",
+      "action": "author-processor",
+      "claim": "Email processor uses SHA-256 of trimmed lowercased email when policy requires hash",
+      "sources": [
+        {
+          "title": "Privacy hashing notes",
+          "url": "https://docs.acme-fixture.test/privacy/hashing.md",
+          "excerpt": "email: sha256(trim(lower(value)))"
+        }
+      ],
+      "invent": false,
+      "deepened": true,
+      "askedHuman": false
+    }
+  ]
+}
