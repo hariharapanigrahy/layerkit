@@ -1,13 +1,7 @@
-/** Injected into agent sessions via hooks. */
+/** Injected into agent sessions via hooks. Keep short (context budget). */
 export const layerkitHookGuidance = [
-  'Layerkit is an agent-first multi-vendor data-layer toolkit.',
-  'Evidence-first: docs, OpenAPI, curl, code — deepen before humans; never invent vendor rules.',
-  'Before inventing field names or email/phone hashing, run Layerkit skills:',
-  '- layerkit-research-vendor — multi-source evidence → map proposal with sources[]',
-  '- layerkit-author-processor — processing rules only with documentation citations',
-  '- layerkit-generate-java — implement enterprise Java client from applied maps',
-  '- layerkit-update-maps — refresh maps when docs change',
-  'CLI: layerkit proposal validate|apply, layerkit doctor [--quality --strict], layerkit promote, layerkit generate --lang java',
-  'Memory: {projectDir}/memory (INDEX.md); observation sinks are runtime telemetry, not memory.',
-  'Maps start empty; agents author knowledge. Production JVM must not call an LLM.',
+  'Layerkit: evidence-first (docs, OpenAPI, curl, code); deepen if unanswered; ask humans only for residual gaps; no LLM on track().',
+  'Next: discover-data-layer → research-vendor (multi-source) → proposal validate → generate java.',
+  'Also: design-flow (finalize only after quality gates), privacy-review, checker-assist (read-only — never approve/apply).',
+  'Docs: skills/*/SKILL.md, {projectDir}/memory/INDEX.md, layerkit doctor.',
 ].join(' ');

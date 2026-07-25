@@ -51,7 +51,8 @@
     "sample-meta-map-apply",
     "schema-dual-read",
     "strategy-execute-sha256",
-    "strategy-fail-closed"
+    "strategy-fail-closed",
+    "vendor-research-plan"
   ],
   "nightly": []
 }

@@ -5,8 +5,9 @@
 | Script | Purpose |
 |--------|---------|
 | `npm run eval:ci` | Merge bar — suite `ci` in `suites.json` (required on every PR) |
-| `npm run eval:all` | Release bar extras + `ci` (grows with java-ref, research scale) |
+| `npm run eval:all` | Release bar — full `ci` list plus extras (e.g. `vendor-research-plan` scale) |
 | `npm run eval:<legacy>` | Single-case aliases (stable; re-export gates) |
+| Nightly | `.github/workflows/nightly.yml` schedules `npm run eval:all` |
 
 ```bash
 npm run build
