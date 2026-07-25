@@ -10,7 +10,24 @@ Processors are agent-authored **pure transforms**. Proposal `sources[]` is manda
 ## Protocol
 
 1. Identify transform need from map field rows (`transform.processorId`) and vendor docs (hash, normalize, E.164, epoch ms, etc.).
-2. Draft `processor` proposal:
+2. **Scaffold with CLI** (preferred) — dual sources (proposal + payload) and optional builtin op:
+
+```bash
+layerkit proposal write processor \
+  --id example.email.sha256_normalized \
+  --out ./proc.json \
+  --source "PII hashing=https://docs.example.com/api/pii|Hash email with SHA256 after normalizing" \
+  --description "Normalize email then SHA-256 hex" \
+  --builtin-op hash.sha256_hex \
+  --agent <agentId> \
+  --validate
+```
+
+- `--source title=url` is **required** (repeatable). Optional `|excerpt` after the URL.
+- `--builtin-op` wires an executable `{ type: "builtin", op }` implementation when a BuiltinOp matches.
+- Does **not** auto-submit. Next tip: `layerkit proposal validate <file>`.
+
+3. Or draft `processor` proposal by hand:
 
 ```json
 {
@@ -43,15 +60,15 @@ Processors are agent-authored **pure transforms**. Proposal `sources[]` is manda
 }
 ```
 
-3. Validate + memory:
+4. Validate + memory:
 
 ```bash
 layerkit proposal validate ./proc.json
 layerkit memory append --type proposals --title "processor <id>" --vendor <vendor> --body-file ./proc-note.md
 ```
 
-4. Point vendor map field rows at `processorId`. Java implementation via `layerkit-generate-java` (pure methods in `StrategyRegistry` — no I/O, no LLM).
-5. Prefer builtins when semantics match; only author custom when docs require a distinct rule.
+5. Point vendor map field rows at `processorId`. Java implementation via `layerkit-generate-java` (pure methods in `StrategyRegistry` — no I/O, no LLM).
+6. Prefer builtins when semantics match; only author custom when docs require a distinct rule.
 
 ## Citation rules (hard)
 

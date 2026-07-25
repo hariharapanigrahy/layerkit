@@ -10,7 +10,25 @@ Author a **vendor_map** proposal only from cited evidence (research notes, OpenA
 ## Protocol
 
 1. Prerequisites: `layerkit-research-vendor` answer sheet + `layerkit-design-integration` shape = linear or hybrid.
-2. Draft proposal:
+2. **Scaffold with CLI** (preferred) — writes a valid dual-schema proposal shell; fill only from evidence:
+
+```bash
+layerkit proposal write map \
+  --vendor <vendor> \
+  --out ./map-proposal.json \
+  --source "Events API=https://docs.example.com/api/events|event_name is required" \
+  --endpoint POST:/v1/events@https://api.example.com \
+  --intent purchase:Purchase \
+  --field user.email:user_data.em \
+  --agent <agentId> \
+  --validate
+```
+
+- `--source title=url` is **required** (repeatable). Optional `|excerpt` after the URL.
+- `--endpoint METHOD:path[@baseUrl]`, `--intent intent:EventName`, `--field domain:vendor` are optional and may be repeated for intents/fields.
+- Does **not** auto-submit. Next tip: `layerkit proposal validate <file>`.
+
+3. Or draft proposal JSON by hand:
 
 ```json
 {
@@ -28,7 +46,7 @@ Author a **vendor_map** proposal only from cited evidence (research notes, OpenA
   "payload": {
     "vendor": "<vendor>",
     "version": "1",
-    "status": "draft",
+    "status": "map_complete",
     "documentation": [{ "title": "...", "url": "https://..." }],
     "auth": { "type": "bearer", "notes": "..." },
     "endpoint": { "method": "POST", "path": "/...", "baseUrl": "https://..." },
@@ -47,17 +65,17 @@ Author a **vendor_map** proposal only from cited evidence (research notes, OpenA
 }
 ```
 
-3. Every auth type, endpoint, eventName, and field row **must** map to a `sources[]` excerpt (or nested processor sources).
-4. Missing evidence → omit the row and mark `needs-evidence` in summary/memory — **do not invent**.
-5. Validate:
+4. Every auth type, endpoint, eventName, and field row **must** map to a `sources[]` excerpt (or nested processor sources).
+5. Missing evidence → omit the row and mark `needs-evidence` in summary/memory — **do not invent**.
+6. Validate + memory:
 
 ```bash
 layerkit proposal validate ./map-proposal.json
 layerkit memory append --type proposals --title "<vendor> map draft" --vendor <vendor> --body-file ./map-summary.md
 ```
 
-6. Processors for transforms → `layerkit-author-processor`. Flow-only paths → `layerkit-design-flow`.
-7. Submit for checker when ready: `layerkit proposal submit ./map-proposal.json --by <agentId>`
+7. Processors for transforms → `layerkit-author-processor`. Flow-only paths → `layerkit-design-flow`.
+8. Submit for checker when ready: `layerkit proposal submit ./map-proposal.json --by <agentId>`
 
 ## Forbidden
 
