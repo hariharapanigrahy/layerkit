@@ -93,7 +93,7 @@ function pomXml(artifact: string, javaPackage: string): string {
     <maven.compiler.release>17</maven.compiler.release>
     <junit.version>5.10.2</junit.version>
     <jacoco.version>0.8.12</jacoco.version>
-    <!-- Line coverage floor for promote / doctor --quality (design: ≥95%) -->
+    <!-- Line coverage floor for promote / doctor quality (design: >=95%) -->
     <jacoco.minimum.line>0.95</jacoco.minimum.line>
   </properties>
   <dependencies>
