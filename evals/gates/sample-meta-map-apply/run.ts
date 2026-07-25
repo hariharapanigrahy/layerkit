@@ -1,16 +1,33 @@
 /**
  * Gate: what a *good agent* proposal looks like after reading Meta docs.
- * Core does not invent this map — eval loads agent-shaped fixture inline.
- * Uses harness temp-project for isolated store + cleanup.
+ * Seeds Appendix A.5 processor so applyVendorMap executes the real pipeline
+ * (fail-closed — no __processor placeholders).
  */
-import { assertTrue } from '../../harness/assert.js';
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { assertEqual, assertTrue } from '../../harness/assert.js';
+import { loadFixture } from '../../harness/load-fixture.js';
 import { withTempProject } from '../../harness/temp-project.js';
 import type { Proposal } from '../../../libs/domain/types.js';
+import type { ExecutableProcessor } from '../../../libs/strategy/index.js';
 import { applyVendorMap } from '../../../libs/vendor-memory/map-engine.js';
+
+const GOLDEN_SHA256 =
+  'fb98d44ad7501a959f3f4f4a3f004fe2d9e581ea6207e218c4b02c08a4d75adf';
 
 // poc: true matches install --poc: apply agent map over seeded empty vendor skeletons
 await withTempProject(
-  async ({ store }) => {
+  async ({ store, projectDir }) => {
+    // Seed A.5 processor into project store before map apply / dry-run
+    const processor = loadFixture<ExecutableProcessor>('meta/processor-email-sha256.json');
+    const procDir = join(projectDir, 'processors');
+    mkdirSync(procDir, { recursive: true });
+    writeFileSync(
+      join(procDir, 'meta_email_sha256_normalized.json'),
+      JSON.stringify(processor, null, 2) + '\n',
+      'utf8',
+    );
+
     const proposal: Proposal = {
       schemaVersion: 1,
       kind: 'vendor_map',
@@ -68,12 +85,20 @@ await withTempProject(
     assertTrue('map applied', map.status === 'map_complete');
     // POC seeds 20 empty maps; apply overwrites meta skeleton with agent map.
     assertTrue('poc seeded maps still present', store.listMaps().length >= 1);
+
     const wire = applyVendorMap(
       { intent: 'purchase', eventId: 'ord_1', user: { email: 'a@b.com' } },
       map,
+      { processorsDir: procDir },
     );
     assertTrue('not skipped', !wire.skipped);
     assertTrue('event name', wire.wire?.event_name === 'Purchase');
+    const em = (wire.wire?.user_data as Record<string, unknown> | undefined)?.em;
+    assertEqual('user_data.em golden hash of a@b.com', em, GOLDEN_SHA256);
+    assertTrue(
+      'executed hash is string not placeholder',
+      typeof em === 'string' && !String(em).includes('__processor'),
+    );
     console.log('sample-meta-map-apply: all checks passed');
   },
   { poc: true },

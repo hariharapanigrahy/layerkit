@@ -1,0 +1,25 @@
+{
+  "id": "meta.email.sha256_normalized",
+  "kind": "agent",
+  "category": "email",
+  "description": "Normalize email then SHA-256 hex per Meta CAPI",
+  "piiAffecting": true,
+  "version": "1.0.0",
+  "status": "stable",
+  "inputTypes": ["string"],
+  "outputType": "string",
+  "sources": [
+    {
+      "title": "Customer Information Parameters",
+      "url": "https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/customer-information-parameters",
+      "excerpt": "Hash email with SHA256 after normalizing"
+    }
+  ],
+  "implementation": {
+    "type": "pipeline",
+    "steps": [
+      { "type": "builtin", "op": "email.normalize_basic" },
+      { "type": "builtin", "op": "hash.sha256_hex" }
+    ]
+  }
+}

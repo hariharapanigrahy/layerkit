@@ -1,0 +1,13 @@
+{
+  "id": "strategy-execute-sha256",
+  "suite": "ci",
+  "title": "Builtin/agent email pipeline produces known SHA-256",
+  "owners": ["runtime", "strategy"],
+  "featurePr": "PR3",
+  "fixtures": [
+    "meta/processor-email-sha256.json",
+    "meta/map-v1.json",
+    "meta/golden-email-sha256.json"
+  ],
+  "tags": ["deterministic", "no-network"]
+}

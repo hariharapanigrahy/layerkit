@@ -7,7 +7,9 @@
     "install-platforms",
     "project-dir-resolve",
     "schema-dual-read",
-    "map-v1-v2-migrate"
+    "map-v1-v2-migrate",
+    "strategy-execute-sha256",
+    "strategy-fail-closed"
   ],
   "all": [
     "proposal-sources-required",
@@ -17,7 +19,9 @@
     "install-platforms",
     "project-dir-resolve",
     "schema-dual-read",
-    "map-v1-v2-migrate"
+    "map-v1-v2-migrate",
+    "strategy-execute-sha256",
+    "strategy-fail-closed"
   ],
   "nightly": []
 }
