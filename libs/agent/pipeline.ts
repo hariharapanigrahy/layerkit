@@ -27,6 +27,7 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
     id: 'discover',
     skill: 'layerkit-discover-data-layer',
     cliHints: [
+      'layerkit discover scan --root .',
       'layerkit doctor',
       'layerkit memory list --type research',
       'layerkit memory append --type research --title "domain discovery" --body "..."',

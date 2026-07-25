@@ -35,6 +35,20 @@ export {
 } from './scan-style.js';
 
 export {
+  DOMAIN_DISCOVERY_RUNBOOK_REL,
+  scanDomain,
+  buildDomainSpecProposal,
+  formatDomainDiscoveryMarkdown,
+  writeDomainDiscoveryRunbook,
+  scanAndWriteDomainDiscovery,
+  isDomainScannableRoot,
+  type DomainDiscoveryResult,
+  type DomainDiscoverySource,
+  type DomainIntentHit,
+  type DomainFieldHit,
+} from './discover-domain.js';
+
+export {
   extractPathFromDocExcerpt,
   detectPathMismatch,
   applyMapPathFix,

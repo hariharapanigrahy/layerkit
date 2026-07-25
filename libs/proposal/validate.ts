@@ -212,7 +212,11 @@ export function validateProposal(proposal: Proposal): ValidationIssue[] {
     });
   }
   for (const s of proposal.sources ?? []) {
-    if (!s.url?.startsWith('http')) {
+    // http(s) for vendor docs; file:// for in-repo domain discovery / code evidence
+    const url = s.url ?? '';
+    const ok =
+      url.startsWith('http://') || url.startsWith('https://') || url.startsWith('file://');
+    if (!ok) {
       issues.push({
         level: 'error',
         code: 'source_url',
