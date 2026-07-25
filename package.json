@@ -61,7 +61,7 @@
     "eval:proposal-sources": "npm run build && node dist/evals/cases/proposal-sources-required/run.js",
     "eval:empty-map": "npm run build && node dist/evals/cases/empty-map-skipped/run.js",
     "eval:install-platforms": "npm run build && node dist/evals/cases/install-platforms/run.js",
-    "eval:sample-meta-map": "npm run build && node dist/evals/cases/sample-meta-map-apply/run.js",
+    "eval:sample-agent-map": "npm run build && node dist/evals/cases/sample-agent-map-apply/run.js",
     "eval:processor-citation": "npm run build && node dist/evals/cases/processor-citation-required/run.js",
     "eval:map-quality": "npm run build && node dist/evals/map-quality-optimizer/train.js",
     "eval:vendor-research-plan": "npm run build && node dist/evals/vendor-research-plan/run.js",

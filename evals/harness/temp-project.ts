@@ -13,7 +13,7 @@ export interface WithTempProjectOpts {
   name?: string;
   /**
    * Seed POC empty vendor maps (default: false).
-   * Use `poc: true` when the gate should exercise apply-over-install-poc (e.g. sample-meta-map-apply).
+   * Use `poc: true` when the gate should exercise apply-over-install-poc (e.g. sample-agent-map-apply).
    */
   poc?: boolean;
   /** Prefix for mkdtemp (default: layerkit-eval-) */

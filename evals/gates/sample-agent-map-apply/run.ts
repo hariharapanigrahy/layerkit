@@ -97,5 +97,5 @@ await withTempProject(async ({ store, projectDir }) => {
     'executed hash is string not placeholder',
     typeof em === 'string' && !String(em).includes('__processor'),
   );
-  console.log('sample-meta-map-apply: all checks passed');
+  console.log('sample-agent-map-apply: all checks passed');
 }, { poc: false });

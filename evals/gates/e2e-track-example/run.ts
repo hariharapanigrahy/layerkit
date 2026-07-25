@@ -91,5 +91,5 @@ await withTempProject(async ({ store, projectDir }) => {
   assertTrue('has wire', r.wire != null);
   const em = (r.wire?.user as Record<string, unknown> | undefined)?.email_hash;
   assertEqual('hashed email', em, GOLDEN);
-  console.log('e2e-track-meta: all checks passed');
+  console.log('e2e-track-example: all checks passed');
 }, { poc: false });
