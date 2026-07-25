@@ -1,0 +1,19 @@
+{
+  "id": "agent-orchestrate-default",
+  "title": "Agent-as-developer skill pipeline (process quality)",
+  "skills": [
+    "layerkit-bootstrap",
+    "layerkit-discover-data-layer",
+    "layerkit-research-vendor",
+    "layerkit-author-processor",
+    "layerkit-design-flow",
+    "layerkit-privacy-review",
+    "layerkit-generate-java",
+    "layerkit-checker-assist"
+  ],
+  "notes": [
+    "Evidence-first: research-vendor deepens before residual human ask",
+    "layerkit-update-maps is maintenance (parallel / later), not required in first-pass pipeline",
+    "Fixture vendor only"
+  ]
+}

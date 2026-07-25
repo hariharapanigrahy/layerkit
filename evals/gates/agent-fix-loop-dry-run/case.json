@@ -1,0 +1,13 @@
+{
+  "id": "agent-fix-loop-dry-run",
+  "suite": "ci",
+  "title": "Failing map path + doc excerpt → deterministic fix validates and maps",
+  "owners": ["agent"],
+  "featurePr": "agent-dev-evals",
+  "fixtures": [
+    "agent/wrong-path-map.json",
+    "agent/doc-excerpt-events.md",
+    "agent/fix-patch.json"
+  ],
+  "tags": ["deterministic", "no-network", "agent-process", "fix-loop"]
+}

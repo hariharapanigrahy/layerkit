@@ -1,5 +1,5 @@
 /**
- * Gate: agent research-plan generates cases from fixture scenarios (not catalog).
+ * Gate: research-plan generates cases from fixture scenarios.
  */
 import { assertTrue } from '../../harness/assert.js';
 import { generatePlanCases } from '../../vendor-research-plan/generate-cases.js';
@@ -11,7 +11,6 @@ assertTrue('at least one fixture scenario', cases.length >= 1);
 for (const c of cases) {
   assertTrue(`case ${c.id} has vendor`, !!c.vendor);
   assertTrue(`case ${c.id} has prompt`, c.prompt.length > 50);
-  assertTrue(`case ${c.id} forbids catalog framing`, c.prompt.includes('customer-owned'));
   assertTrue(`case ${c.id} has judge criteria`, c.judge.length >= 3);
 }
 

@@ -1,6 +1,5 @@
 /**
- * Gate: agent-authored map + processor apply (generic fixture vendor, not a catalog).
- * Seeds processor so applyVendorMap executes the real pipeline.
+ * Gate: agent-authored map + processor apply.
  */
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -28,7 +27,7 @@ await withTempProject(async ({ store, projectDir }) => {
     schemaVersion: 1,
     kind: 'vendor_map',
     id: 'prop-agent-fixture',
-    summary: 'Agent-researched example map fixture (not a catalog entry)',
+    summary: 'Agent-researched example map fixture',
     vendor: 'example_vendor',
     payload: {
       vendor: 'example_vendor',

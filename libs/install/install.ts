@@ -37,8 +37,6 @@ export interface InstallResult {
   autoMapUpdates: boolean;
   configFile: string;
   projectDir: string;
-  /** Number of maps in project store (not a catalog size). */
-  vendorSlots: number;
   notes: string[];
 }
 
@@ -103,7 +101,6 @@ export async function installLayerkit(opts: InstallOptions): Promise<InstallResu
     autoMapUpdates: opts.hooksEnabled && opts.autoMapUpdates,
     configFile: layerkitConfigPath(),
     projectDir: store.projectDir,
-    vendorSlots: store.listMaps().length,
     notes,
   };
 }

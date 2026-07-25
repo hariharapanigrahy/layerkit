@@ -1,5 +1,12 @@
 {
   "ci": [
+    "agent-citation-required-on-map",
+    "agent-evidence-before-human",
+    "agent-fix-loop-dry-run",
+    "agent-no-invent-endpoint",
+    "agent-orchestrate-checklist",
+    "agent-pipeline-order",
+    "agent-style-profile-shape",
     "apply-kind-field-row",
     "delivery-shadow-no-network",
     "doctor-secret-scan",
@@ -27,6 +34,13 @@
     "strategy-fail-closed"
   ],
   "all": [
+    "agent-citation-required-on-map",
+    "agent-evidence-before-human",
+    "agent-fix-loop-dry-run",
+    "agent-no-invent-endpoint",
+    "agent-orchestrate-checklist",
+    "agent-pipeline-order",
+    "agent-style-profile-shape",
     "apply-kind-field-row",
     "delivery-shadow-no-network",
     "doctor-secret-scan",

@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { installLayerkit } from '../dist/libs/install/install.js';
@@ -17,8 +17,13 @@ try {
     poc: true,
   });
   if (result.platform !== 'codex') throw new Error('platform');
-  if (result.vendorSlots !== 20) throw new Error(`expected 20 slots, got ${result.vendorSlots}`);
-  console.log('smoke:codex ok', result.skillCount, 'skills');
+  if (!result.projectDir || !existsSync(result.projectDir)) {
+    throw new Error(`expected project store at projectDir, got ${result.projectDir}`);
+  }
+  if (!result.skillCount || result.skillCount < 1) {
+    throw new Error(`expected skills installed, got ${result.skillCount}`);
+  }
+  console.log('smoke:codex ok', result.skillCount, 'skills', 'store:', result.projectDir);
 } finally {
   rmSync(dir, { recursive: true, force: true });
 }

@@ -1,0 +1,34 @@
+{
+  "vendor": "acme",
+  "displayName": "Acme Events",
+  "version": "1.0.0",
+  "auth": {
+    "type": "bearer",
+    "notes": "fixture token"
+  },
+  "endpoint": {
+    "method": "POST",
+    "path": "/v1/wrong/ingest",
+    "baseUrl": "https://api.acme-fixture.test"
+  },
+  "intents": {
+    "purchase": {
+      "eventName": "Purchase"
+    }
+  },
+  "fields": [
+    {
+      "domain": "eventId",
+      "vendor": "event_id",
+      "transform": { "type": "identity" }
+    }
+  ],
+  "documentation": [
+    {
+      "title": "Acme Events API (fixture)",
+      "url": "https://docs.acme-fixture.test/events"
+    }
+  ],
+  "status": "map_complete",
+  "notes": "Intentionally wrong endpoint.path for agent-fix-loop-dry-run"
+}

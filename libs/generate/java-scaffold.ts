@@ -417,7 +417,7 @@ import java.util.Map;
  */
 public interface VendorAdapter {
 
-    /** Customer-chosen vendor id (agent-authored; not a Layerkit catalog id). */
+    /** Vendor id for this integration. */
     String vendorId();
 
     /**

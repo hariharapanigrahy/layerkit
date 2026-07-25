@@ -3,11 +3,10 @@ import { describe, it } from 'node:test';
 import { generatePlanCases, hostnameFromUrl } from './generate-cases.js';
 
 describe('generatePlanCases', () => {
-  it('loads fixture scenarios (not a vendor catalog)', () => {
+  it('loads fixture scenarios', () => {
     const cases = generatePlanCases();
     assert.ok(cases.length >= 1, 'at least one fixture scenario');
     for (const c of cases) {
-      assert.ok(c.prompt.includes('customer-owned'));
       assert.ok(c.prompt.includes('## Primary documentation'));
       assert.ok(c.judge.length > 0);
     }

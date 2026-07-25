@@ -1,0 +1,9 @@
+{
+  "id": "agent-pipeline-order",
+  "suite": "ci",
+  "title": "INTEGRATION_PIPELINE order: discover → research → design → author → privacy → generate → handoff",
+  "owners": ["agent"],
+  "featurePr": "agent-dev-orchestrate",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network", "agent", "pipeline"]
+}

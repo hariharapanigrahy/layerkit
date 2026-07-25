@@ -1,0 +1,9 @@
+{
+  "id": "agent-citation-required-on-map",
+  "suite": "ci",
+  "title": "Agent-authored map proposal without sources fails validate",
+  "owners": ["agent", "proposal"],
+  "featurePr": "agent-dev-evals",
+  "fixtures": ["agent/wrong-path-map.json"],
+  "tags": ["deterministic", "no-network", "agent-process", "citation"]
+}
