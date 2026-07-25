@@ -1,6 +1,6 @@
 ---
 name: layerkit-orchestrate-integration
-description: Master skill — ordered agent-as-developer pipeline, stop conditions, when to ask human. No catalog filling.
+description: Master skill — ordered agent-as-developer pipeline, stop conditions, when to ask human.
 ---
 
 # layerkit-orchestrate-integration
@@ -9,7 +9,6 @@ Master loop: behave like a **full-stack integration developer**. Skills author k
 
 ## Product rules
 
-- Do **not** maintain a vendor catalog or expand `VENDOR_SLOTS` as product work
 - Do **not** hardcode Meta/Google/TikTok field truth into core
 - Customer-owned evidence only; residual human for true gaps
 

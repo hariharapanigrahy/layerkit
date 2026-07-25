@@ -1,5 +1,5 @@
 /**
- * Agent research-plan harness — fixture scenarios only (not a product catalog).
+ * Research-plan harness: generate agent prompts from fixture scenarios.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -59,7 +59,7 @@ function main(): void {
       join(args.writeDir, 'index.json'),
       JSON.stringify(
         {
-          generatedFrom: 'evals/fixtures/agent/research-scenarios.json (not a vendor catalog)',
+          generatedFrom: 'evals/fixtures/agent/research-scenarios.json',
           count: cases.length,
           cases: index,
         },
@@ -77,7 +77,7 @@ function main(): void {
   }
 
   if (!args.quiet) {
-    console.log('agent-research-plan (fixture scenarios only — not a product catalog)');
+    console.log('agent-research-plan');
     console.log(`Cases this run: ${cases.length}`);
     for (const c of cases) {
       console.log(`- ${c.vendor}: ${c.documentationUrls[0] ?? '(no docs)'}`);

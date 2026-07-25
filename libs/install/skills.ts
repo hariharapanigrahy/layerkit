@@ -1,7 +1,6 @@
 import { cpSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** Packaged agent skills — agent-as-developer loop (no vendor catalog maintenance). */
 export const SKILL_NAMES = [
   'layerkit-bootstrap',
   'layerkit-discover-data-layer',

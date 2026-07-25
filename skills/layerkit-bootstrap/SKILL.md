@@ -1,6 +1,6 @@
 ---
 name: layerkit-bootstrap
-description: Install Layerkit into the current repo; seed project store + memory; run doctor. No vendor catalog filling.
+description: Install Layerkit into the current repo; seed project store + memory; run doctor.
 ---
 
 # layerkit-bootstrap
@@ -21,13 +21,11 @@ layerkit memory index
 
 3. Confirm project store path (`--project-dir` / `LAYERKIT_PROJECT_DIR` / default `.layerkit`).
 4. Confirm memory dirs under `{projectDir}/memory/` (INDEX.md present).
-5. Do **not** fill vendor field maps, expand catalog slots, or invent Meta/Google/TikTok wire truth.
 6. Next: `layerkit-orchestrate-integration` (or `layerkit-discover-data-layer`).
 
 ## Forbidden
 
 - Authoring vendor maps during bootstrap
-- Treating `catalog/vendors/` as trusted truth
 - Hardcoding vendor field names into core
 
 ## Success criteria

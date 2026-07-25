@@ -111,11 +111,6 @@ export class VendorMemoryStore {
     }
   }
 
-  /**
-   * Initialize project store.
-   * `poc` only scaffolds domain + memory — **no vendor catalog / empty vendor maps**.
-   * Agents add vendors from evidence for this customer project only.
-   */
   initProject(opts: { name: string; poc: boolean }): void {
     this.ensureDirs();
     const project: LayerProject = {
@@ -130,7 +125,6 @@ export class VendorMemoryStore {
     this.writeJson(join(this.projectDir, 'project.json'), project);
     this.writeJson(join(this.projectDir, 'domain.json'), COMMERCE_DOMAIN);
     this.ensureMemoryIndex();
-    // poc flag reserved for future sample domain seeds — never seeds a vendor catalog
     void opts.poc;
   }
 

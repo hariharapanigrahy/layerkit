@@ -1,8 +1,5 @@
 /**
- * Agent research-plan cases from **eval fixtures only** — not a vendor catalog.
- * Scenarios live in evals/fixtures/agent/research-scenarios.json.
- * Product agents research any customer-chosen vendor; this harness only
- * checks that plan prompts can be generated from scenario fixtures.
+ * Research-plan cases from evals/fixtures/agent/research-scenarios.json.
  */
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -29,7 +26,6 @@ export interface PlanCase {
   judge: readonly string[];
 }
 
-/** Universal process judge — not vendor-specific truth */
 export const UNIVERSAL_JUDGE: readonly string[] = [
   'sources[] cite at least one host from mustCiteHosts (from scenario documentation URLs)',
   'No invented email/phone/hash rules without a quoted excerpt in sources',
@@ -48,7 +44,6 @@ export function hostnameFromUrl(url: string): string | null {
 }
 
 function loadScenarios(): ResearchScenario[] {
-  // Resolve from package root so both src and dist/ test runners work
   const here = dirname(fileURLToPath(import.meta.url));
   const candidates = [
     join(here, '../fixtures/agent/research-scenarios.json'),
@@ -62,9 +57,7 @@ function loadScenarios(): ResearchScenario[] {
       /* try next */
     }
   }
-  throw new Error(
-    'research-scenarios.json not found (evals/fixtures/agent/) — not a vendor catalog file',
-  );
+  throw new Error('research-scenarios.json not found under evals/fixtures/agent/');
 }
 
 export function buildResearchPrompt(opts: {
@@ -80,8 +73,7 @@ export function buildResearchPrompt(opts: {
 
   return [
     `You are an integration developer using Layerkit.`,
-    `Author a customer-owned vendor map for vendor id "${scenario.vendor}" (${scenario.displayName}).`,
-    `This is NOT a Layerkit catalog entry — maps live in the customer's projectDir only.`,
+    `Author a vendor map for vendor id "${scenario.vendor}" (${scenario.displayName}).`,
     '',
     '## Primary documentation (open these; do not invent URLs)',
     docLines || '(no documentation URLs — mark proposal blocked)',
@@ -101,7 +93,6 @@ export function buildResearchPrompt(opts: {
     '## Forbidden',
     '- Inventing hash/phone rules without a cited excerpt',
     '- Filling placeholders without reading the docs',
-    '- Treating Layerkit as a pre-built vendor catalog',
   ].join('\n');
 }
 
@@ -113,9 +104,6 @@ export interface GeneratePlanCasesOptions {
   limit?: number;
 }
 
-/**
- * Generate agent research plan cases from fixture scenarios (eval-only).
- */
 export function generatePlanCases(opts: GeneratePlanCasesOptions = {}): PlanCase[] {
   const domain = opts.domain ?? COMMERCE_DOMAIN;
   let scenarios = [...(opts.scenarios ?? loadScenarios())];

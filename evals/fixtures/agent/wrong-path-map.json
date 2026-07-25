@@ -1,6 +1,6 @@
 {
   "vendor": "acme",
-  "displayName": "Acme Events (fixture only — not catalog)",
+  "displayName": "Acme Events",
   "version": "1.0.0",
   "auth": {
     "type": "bearer",

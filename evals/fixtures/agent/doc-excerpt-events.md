@@ -1,4 +1,4 @@
-# Acme Events API (fixture documentation — not vendor catalog)
+# Acme Events API
 
 This is a **process-quality fixture** used by agent fix-loop evals.
 Vendor id `acme` is generic/fake for tests only.

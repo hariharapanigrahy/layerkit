@@ -62,7 +62,6 @@ layerkit memory append --type proposals --title "<vendor> map draft" --vendor <v
 ## Forbidden
 
 - Inventing vendor field names, hash rules, or endpoints without citations
-- Copying catalog maps without re-verifying every source
 - Applying/promoting from this skill without maker-checker when strict
 - Encoding vendor-specific field truth into Layerkit core
 

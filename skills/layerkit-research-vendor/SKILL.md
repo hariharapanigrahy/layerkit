@@ -36,7 +36,7 @@ layerkit memory append --type research --title "<vendor> research" --vendor <ven
 
 - Proposals must cite sources the **customer** accepts (their contracts, approved doc URLs, their code).
 - `third-party snippets ` and package seeds are **draft hints only** — re-verify every URL/excerpt before apply.
-- Output artifacts live under the customer's `{projectDir}` — not a shared package catalog (we do not ship one).
+- Output artifacts live under the customer's `{projectDir}`.
 
 ## Forbidden
 

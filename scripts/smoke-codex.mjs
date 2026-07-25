@@ -23,7 +23,6 @@ try {
   if (!result.skillCount || result.skillCount < 1) {
     throw new Error(`expected skills installed, got ${result.skillCount}`);
   }
-  // Install must not seed vendor maps — agents author them per project.
   console.log('smoke:codex ok', result.skillCount, 'skills', 'store:', result.projectDir);
 } finally {
   rmSync(dir, { recursive: true, force: true });

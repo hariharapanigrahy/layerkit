@@ -1,15 +1,10 @@
 import type { DomainSpec, VendorMap, VendorMapV1 } from './types.js';
 
-/**
- * Sample domain shape for commerce-style events.
- * This is a **domain template**, not a vendor catalog.
- * Agents discover the customer's real domain via skills; maps are customer-owned.
- */
+/** Sample commerce domain shape (intents + fields). */
 export const COMMERCE_DOMAIN: DomainSpec = {
   id: 'commerce',
   version: '1.1.0',
-  description:
-    'Sample commerce intents for agents to adapt. Not a list of vendor integrations.',
+  description: 'Sample commerce intents and fields.',
   intents: [
     { id: 'page_view', description: 'Page view' },
     { id: 'view_item', description: 'PDP' },
@@ -37,17 +32,13 @@ export const COMMERCE_DOMAIN: DomainSpec = {
   ],
 };
 
-/**
- * Identity for an empty map skeleton agents fill from evidence.
- * Not a catalog entry — created per project when an agent starts a vendor.
- */
 export type EmptyMapSeed = {
   vendor: string;
   displayName: string;
   documentation?: VendorMap['documentation'];
 };
 
-/** Empty skeleton map (v1). Agents research docs and fill via proposals. */
+/** Empty skeleton map (v1). */
 export function emptyVendorMap(seed: EmptyMapSeed): VendorMapV1 {
   return {
     vendor: seed.vendor,
@@ -59,14 +50,11 @@ export function emptyVendorMap(seed: EmptyMapSeed): VendorMapV1 {
     fields: [],
     documentation: seed.documentation ?? [],
     status: 'skeleton',
-    notes: 'Empty on purpose. Use skill layerkit-research-vendor / layerkit-orchestrate-integration.',
+    notes: 'Empty skeleton.',
   };
 }
 
-/**
- * @deprecated No vendor catalog. POC no longer seeds N vendor slots.
- * Returns empty array — agents add vendors per project from evidence.
- */
+/** @deprecated Prefer emptyVendorMap when creating a vendor map. */
 export function buildPocVendorMaps(): VendorMap[] {
   return [];
 }

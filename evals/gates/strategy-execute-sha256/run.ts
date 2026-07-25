@@ -1,6 +1,5 @@
 /**
- * Gate: agent pipeline email.normalize_basic → hash.sha256_hex matches golden for a@b.com.
- * Uses generic agent fixtures — not a vendor catalog entry.
+ * Gate: email.normalize_basic → hash.sha256_hex matches golden for a@b.com.
  */
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';

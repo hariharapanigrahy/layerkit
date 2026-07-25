@@ -60,7 +60,6 @@ layerkit memory append --type research --title "domain discovery" --vendor gener
 - Inventing domain fields not present in code or customer-accepted docs
 - Reading secret/credential files
 - Writing `vendor_map` / processor payloads here
-- Filling VENDOR_SLOTS catalog maps
 
 ## Success criteria
 

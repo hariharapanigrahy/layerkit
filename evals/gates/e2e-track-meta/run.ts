@@ -1,6 +1,5 @@
 /**
  * E2E: temp project → seed processor + map + privacy → track dry_run.
- * Generic agent fixture vendor only (not a product catalog).
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

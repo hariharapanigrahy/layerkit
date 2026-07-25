@@ -1,6 +1,5 @@
 /**
  * Gate: empty vendor maps are skipped with agent-research reason.
- * Uses an inline empty skeleton — not a catalog slot.
  */
 import { assertTrue } from '../../harness/assert.js';
 import { emptyVendorMap } from '../../../libs/domain/commerce.js';

@@ -53,7 +53,7 @@ function main(): void {
     }),
   ];
   const scores = maps.map(scoreMap);
-  console.log('Map quality baseline (empty agent skeleton — not a catalog):');
+  console.log('Map quality baseline (empty skeleton):');
   for (const s of scores) {
     console.log(`  ${s.vendor}: ${s.score} (${s.reasons.join(', ')})`);
   }

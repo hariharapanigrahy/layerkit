@@ -2,7 +2,7 @@
   "id": "example.email.sha256_normalized",
   "kind": "agent",
   "category": "email",
-  "description": "Normalize email then SHA-256 hex (fixture processor for agent evals — not a vendor catalog)",
+  "description": "Normalize email then SHA-256 hex",
   "piiAffecting": true,
   "version": "1.0.0",
   "status": "stable",
