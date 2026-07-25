@@ -1,6 +1,7 @@
 /**
- * Agent process-quality helpers (deterministic; no LLM).
- * Used by agent-as-developer eval gates and optional skill checklist docs.
+ * Agent helpers — deterministic process tools (not an LLM).
+ * - checklist / style-profile / fix-loop: process evals
+ * - pipeline: CLI agent status/next/mark-done
  */
 
 export {
@@ -32,3 +33,16 @@ export {
   type MapPathFixPatch,
   type PathMismatch,
 } from './fix-loop.js';
+
+export {
+  INTEGRATION_PIPELINE,
+  PIPELINE_STATUS_REL,
+  formatNextStepLine,
+  formatPipelineStatus,
+  getNextStep,
+  isPipelineStepId,
+  loadCompletedSteps,
+  markStepDone,
+  pipelineStatusPath,
+  type PipelineStep,
+} from './pipeline.js';

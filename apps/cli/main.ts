@@ -4,6 +4,17 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import {
+  formatNextStepLine,
+  formatPipelineStatus,
+  getNextStep,
+  INTEGRATION_PIPELINE,
+  isPipelineStepId,
+  loadCompletedSteps,
+  markStepDone,
+  pipelineStatusPath,
+  PIPELINE_STATUS_REL,
+} from '../../libs/agent/index.js';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
 import { generateJavaScaffold } from '../../libs/generate/java-scaffold.js';
@@ -114,6 +125,24 @@ const cliCommands: CliCommand[] = [
     path: ['config'],
     usage: 'config',
     handler: runConfig,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['agent', 'status'],
+    usage: 'agent status [--project-dir <path>]',
+    handler: runAgentStatus,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['agent', 'next'],
+    usage: 'agent next [--project-dir <path>]',
+    handler: runAgentNext,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['agent', 'mark-done'],
+    usage: 'agent mark-done --step <id> [--project-dir <path>]',
+    handler: runAgentMarkDone,
     showInTopLevelHelp: true,
   },
 
@@ -572,6 +601,12 @@ function runDoctor(args: string[], ctx: CliContext): void {
   for (const line of result.lines) console.log(line);
   let ok = result.ok;
 
+  // One-line agent pipeline hint when a project exists
+  if (store.loadProject()) {
+    const completed = loadCompletedSteps(store.projectDir);
+    console.log(formatNextStepLine(completed));
+  }
+
   if (hasFlag(args, '--quality')) {
     console.log('');
     console.log('== quality (JaCoCo) ==');
@@ -588,6 +623,64 @@ function runDoctor(args: string[], ctx: CliContext): void {
   }
 
   if (!ok) process.exitCode = 1;
+}
+
+/** Print full integration pipeline + memory marker presence. */
+function runAgentStatus(_args: string[], ctx: CliContext): void {
+  const completed = loadCompletedSteps(ctx.projectDir);
+  console.log(formatPipelineStatus(completed));
+  console.log('');
+  console.log('Memory markers:');
+  const statusPath = pipelineStatusPath(ctx.projectDir);
+  if (existsSync(statusPath)) {
+    console.log(`  present  memory/${PIPELINE_STATUS_REL}`);
+    for (const step of INTEGRATION_PIPELINE) {
+      const mark = completed.includes(step.id) ? 'done' : 'open';
+      console.log(`  ${mark.padEnd(6)} ${step.id}`);
+    }
+  } else {
+    console.log(`  missing  memory/${PIPELINE_STATUS_REL} (no steps marked done yet)`);
+    console.log('  Tip: layerkit agent mark-done --step <id>');
+  }
+}
+
+/** Print next skill + CLI hints. */
+function runAgentNext(_args: string[], ctx: CliContext): void {
+  const completed = loadCompletedSteps(ctx.projectDir);
+  const next = getNextStep(completed);
+  if (!next) {
+    console.log('Pipeline complete — no next agent step.');
+    console.log('Optional: layerkit promote --vendor <id>; layerkit agent status');
+    return;
+  }
+  console.log(`Next step: ${next.id}`);
+  console.log(`Skill: ${next.skill}`);
+  if (next.requiresHuman) console.log('Requires human: yes');
+  console.log(`Done when: ${next.doneWhen}`);
+  console.log('Commands / hints:');
+  for (const h of next.cliHints) console.log(`  ${h}`);
+  console.log('');
+  console.log(`Mark complete: layerkit agent mark-done --step ${next.id}`);
+}
+
+/** Append a completed step marker under memory/runbooks/pipeline-status.md. */
+function runAgentMarkDone(args: string[], ctx: CliContext): void {
+  const step = flag(args, '--step');
+  if (!step) {
+    throw new Error(
+      `Usage: layerkit agent mark-done --step <id>  (ids: ${INTEGRATION_PIPELINE.map((s) => s.id).join('|')})`,
+    );
+  }
+  if (!isPipelineStepId(step)) {
+    throw new Error(
+      `Unknown step "${step}". Known: ${INTEGRATION_PIPELINE.map((s) => s.id).join(', ')}`,
+    );
+  }
+  const path = markStepDone(ctx.projectDir, step);
+  const completed = loadCompletedSteps(ctx.projectDir);
+  console.log(`Marked done: ${step}`);
+  console.log(`Marker file: ${path}`);
+  console.log(formatNextStepLine(completed));
 }
 
 /**
