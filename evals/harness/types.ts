@@ -11,6 +11,10 @@ export interface GateCheckResult {
 export interface GateResult {
   id: string;
   ok: boolean;
+  /**
+   * Parsed from gate PASS/FAIL stdout lines by the runner.
+   * Gate success is still defined by child exit code (0 = ok).
+   */
   checks: GateCheckResult[];
   ms: number;
   error?: string;

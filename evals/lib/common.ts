@@ -8,4 +8,5 @@ export {
   assertEqual,
   assertThrows,
   assert,
+  EvalAssertionError,
 } from '../harness/assert.js';

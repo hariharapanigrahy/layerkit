@@ -15,7 +15,12 @@ npm run eval:ci
 node dist/evals/harness/runner.js --suite ci
 node dist/evals/harness/runner.js --case proposal-sources-required
 node dist/evals/harness/runner.js --list
+node dist/evals/harness/runner.js --suite ci --json   # JSON on stdout; logs on stderr
 ```
+
+**Empty suites:** `ci` / `all` with zero cases exit 1 (fail closed). Suite `nightly` may be empty (exit 0 + warning) until agent judges land.
+
+**Timeouts:** each gate defaults to 60s; override with `EVAL_GATE_TIMEOUT_MS`.
 
 ## Layout
 

@@ -1,16 +1,32 @@
 /**
  * Deterministic assertion helpers for eval gates.
- * Prints PASS/FAIL lines; fail() exits the process with code 1.
+ * Prints PASS/FAIL lines; fail() throws so try/finally (temp cleanup) still runs.
+ * Uncaught EvalAssertionError ends the gate process with a non-zero exit code.
  */
 import { strict as assert } from 'node:assert';
+
+/** Thrown by fail() / failed assertions — do not catch unless rethrowing. */
+export class EvalAssertionError extends Error {
+  readonly checkName: string;
+
+  constructor(checkName: string, message: string) {
+    super(`${checkName}: ${message}`);
+    this.name = 'EvalAssertionError';
+    this.checkName = checkName;
+  }
+}
 
 export function pass(name: string): void {
   console.log(`PASS ${name}`);
 }
 
+/**
+ * Report a failed check and abort the gate.
+ * Throws (does not process.exit) so withTempProject finally / cleanup always runs.
+ */
 export function fail(name: string, message: string): never {
   console.error(`FAIL ${name}: ${message}`);
-  process.exit(1);
+  throw new EvalAssertionError(name, message);
 }
 
 export function assertTrue(name: string, cond: boolean, message?: string): void {
@@ -18,9 +34,15 @@ export function assertTrue(name: string, cond: boolean, message?: string): void 
   pass(name);
 }
 
+/** Deep equality (objects/arrays OK). Prefer this over reference equality. */
 export function assertEqual<T>(name: string, actual: T, expected: T, message?: string): void {
-  if (actual !== expected) {
-    fail(name, message ?? `expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+  try {
+    assert.deepStrictEqual(actual, expected);
+  } catch {
+    fail(
+      name,
+      message ?? `expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
+    );
   }
   pass(name);
 }
