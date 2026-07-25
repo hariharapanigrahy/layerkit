@@ -16,9 +16,27 @@ import {
   type InstallPlatform,
 } from '../../libs/install/paths.js';
 import type { Identity, Proposal } from '../../libs/domain/types.js';
-import type { CheckerRole } from '../../libs/vendor-memory/store.js';
+import {
+  createMemoryStack,
+  type MemoryEntryType,
+} from '../../libs/memory/index.js';
 import { applyVendorMap } from '../../libs/vendor-memory/map-engine.js';
-import { createVendorMemoryStore, type VendorMemoryStore } from '../../libs/vendor-memory/store.js';
+import {
+  createVendorMemoryStore,
+  type CheckerRole,
+  type VendorMemoryStore,
+} from '../../libs/vendor-memory/store.js';
+
+const MEMORY_TYPES: readonly MemoryEntryType[] = [
+  'questionnaire',
+  'research',
+  'proposals',
+  'dry-runs',
+  'privacy',
+  'approvals',
+  'runbooks',
+  'other',
+];
 
 interface CliCommand {
   path: readonly string[];
@@ -140,6 +158,92 @@ const cliCommands: CliCommand[] = [
         for (const e of review.errors) console.log(`  error: ${e}`);
         for (const w of review.warnings) console.log(`  warn: ${w}`);
       }
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['map', 'migrate'],
+    usage: 'map migrate [vendor] [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const store = openStore(ctx);
+      const vendor = args[0];
+      const { migrated, skipped } = store.migrateMaps(vendor);
+      if (migrated.length === 0 && skipped.length === 0) {
+        console.log('No maps to migrate.');
+        return;
+      }
+      for (const v of migrated) console.log(`Migrated ${v} → schemaVersion 2`);
+      for (const v of skipped) console.log(`Skipped ${v} (already v2)`);
+      console.log(`Done: ${migrated.length} migrated, ${skipped.length} skipped.`);
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['memory', 'list'],
+    usage: 'memory list [--vendor <v>] [--type questionnaire|research|...] [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const mem = createMemoryStack(ctx.projectDir);
+      const vendor = flag(args, '--vendor');
+      const typeRaw = flag(args, '--type');
+      let type: MemoryEntryType | undefined;
+      if (typeRaw) {
+        if (!MEMORY_TYPES.includes(typeRaw as MemoryEntryType)) {
+          throw new Error(`Invalid --type. Use: ${MEMORY_TYPES.join('|')}`);
+        }
+        type = typeRaw as MemoryEntryType;
+      }
+      const entries = mem.list({ vendor, type });
+      if (!entries.length) {
+        console.log('(no memory entries)');
+        return;
+      }
+      for (const e of entries) {
+        console.log(`${e.type}\t${e.vendor ?? '-'}\t${e.relativePath}\t${e.title}`);
+      }
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['memory', 'show'],
+    usage: 'memory show <path-or-id> [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const id = requireArg(args[0], 'memory show <path-or-id>');
+      const mem = createMemoryStack(ctx.projectDir);
+      console.log(mem.show(id));
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['memory', 'append'],
+    usage:
+      'memory append --type <type> --title <title> [--vendor <v>] [--body <text>|--body-file <file>] [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const typeRaw = flag(args, '--type');
+      const title = flag(args, '--title');
+      const vendor = flag(args, '--vendor');
+      const bodyFlag = flag(args, '--body');
+      const bodyFile = flag(args, '--body-file');
+      if (!typeRaw || !MEMORY_TYPES.includes(typeRaw as MemoryEntryType)) {
+        throw new Error(
+          `Usage: layerkit memory append --type <${MEMORY_TYPES.join('|')}> --title <title> [--body|--body-file]`,
+        );
+      }
+      if (!title) throw new Error('memory append requires --title');
+      let body = bodyFlag ?? '';
+      if (bodyFile) body = readFileSync(resolve(bodyFile), 'utf8');
+      if (!body) throw new Error('memory append requires --body or --body-file');
+      const mem = createMemoryStack(ctx.projectDir);
+      const path = mem.append({ type: typeRaw as MemoryEntryType, title, body, vendor });
+      console.log(`Appended memory note → ${path}`);
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['memory', 'index'],
+    usage: 'memory index [--project-dir <path>]',
+    handler: (_args, ctx) => {
+      const mem = createMemoryStack(ctx.projectDir);
+      console.log(`Rebuilt INDEX → ${mem.index()}`);
     },
     showInTopLevelHelp: true,
   },

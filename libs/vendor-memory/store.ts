@@ -8,21 +8,27 @@ import {
 } from '../config/layerkit-config.js';
 import { resolveProjectDir } from '../config/project-dir.js';
 import { buildPocVendorMaps, COMMERCE_DOMAIN } from '../domain/commerce.js';
-import type {
-  AuthSpec,
-  CheckRecord,
-  DeliveryPolicy,
-  DomainSpec,
-  FieldMapRow,
-  Identity,
-  IntentBinding,
-  IntentWire,
-  LayerProject,
-  Proposal,
-  VendorMap,
+import {
+  formatSecretFindings,
+  scanJsonForSecrets,
+  type SecretFinding,
+} from '../doctor/secret-scan.js';
+import {
+  isVendorMapV1,
+  type AuthSpec,
+  type CheckRecord,
+  type DeliveryPolicy,
+  type DomainSpec,
+  type FieldMapRow,
+  type Identity,
+  type IntentBinding,
+  type IntentWire,
+  type LayerProject,
+  type Proposal,
+  type VendorMap,
 } from '../domain/types.js';
 import { validateProposal, validateVendorMap } from '../proposal/validate.js';
-import { mapSchemaVersion } from './migrate.js';
+import { mapSchemaVersion, migrateMapV1toV2 } from './migrate.js';
 
 /** Read user config without creating ~/.layerkit (eval-safe). */
 function readUserMakerChecker(): MakerCheckerConfig {
@@ -182,6 +188,27 @@ export class VendorMemoryStore {
       .filter((f) => f.endsWith('.json'))
       .map((f) => this.readJson<Proposal>(join(dir, f))!)
       .filter(Boolean);
+  }
+
+  /** Rewrite v1 maps to v2 on disk. */
+  migrateMaps(vendor?: string): { migrated: string[]; skipped: string[] } {
+    const maps = vendor
+      ? ([this.loadMap(vendor)].filter(Boolean) as VendorMap[])
+      : this.listMaps();
+    if (vendor && maps.length === 0) {
+      throw new Error(`No map for vendor: ${vendor}`);
+    }
+    const migrated: string[] = [];
+    const skipped: string[] = [];
+    for (const m of maps) {
+      if (!isVendorMapV1(m)) {
+        skipped.push(m.vendor);
+        continue;
+      }
+      this.saveMap(migrateMapV1toV2(m));
+      migrated.push(m.vendor);
+    }
+    return { migrated, skipped };
   }
 
   reviewProposal(proposal: Proposal): { valid: boolean; errors: string[]; warnings: string[] } {
@@ -378,7 +405,7 @@ export class VendorMemoryStore {
     return result;
   }
 
-  doctor(): { ok: boolean; lines: string[] } {
+  doctor(): { ok: boolean; lines: string[]; secretFindings?: SecretFinding[] } {
     const lines: string[] = [];
     lines.push(`projectDir: ${this.projectDir}`);
     const project = this.loadProject();
@@ -405,6 +432,7 @@ export class VendorMemoryStore {
     lines.push(`Vendor maps: ${maps.length}`);
     let errors = 0;
     const domain = this.loadDomain() ?? undefined;
+    const allSecretFindings: SecretFinding[] = [];
     for (const m of maps) {
       const issues = validateVendorMap(m, domain);
       const errs = issues.filter((i) => i.level === 'error');
@@ -415,9 +443,30 @@ export class VendorMemoryStore {
       } else {
         lines.push(`  ✓ ${m.vendor} (v${ver}, ${m.status ?? '?'})`);
       }
+      const secrets = scanJsonForSecrets(m, '');
+      allSecretFindings.push(...secrets.map((f) => ({ ...f, path: `map:${m.vendor}/${f.path}` })));
+      lines.push(...formatSecretFindings(secrets, `map:${m.vendor}`));
+      errors += secrets.filter((f) => f.level === 'error').length;
+    }
+    const proposals = this.listProposals();
+    if (proposals.length) lines.push(`Proposals: ${proposals.length}`);
+    for (const p of proposals) {
+      const secrets = scanJsonForSecrets(p, '');
+      allSecretFindings.push(
+        ...secrets.map((f) => ({ ...f, path: `proposal:${p.id}/${f.path}` })),
+      );
+      lines.push(...formatSecretFindings(secrets, `proposal:${p.id}`));
+      errors += secrets.filter((f) => f.level === 'error').length;
+    }
+    const secretErrors = allSecretFindings.filter((f) => f.level === 'error').length;
+    const secretWarns = allSecretFindings.filter((f) => f.level === 'warn').length;
+    if (secretErrors || secretWarns) {
+      lines.push(
+        `Secret scan: ${secretErrors} error(s), ${secretWarns} warning(s) (prefer SecretRef over inline tokens)`,
+      );
     }
     lines.push(errors ? `Doctor found ${errors} error(s)` : 'Doctor OK');
-    return { ok: errors === 0, lines };
+    return { ok: errors === 0, lines, secretFindings: allSecretFindings };
   }
 
   private isSelfApproveEffective(cfg: MakerCheckerConfig, dev?: boolean): boolean {
