@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { installLayerkit } from '../dist/libs/install/install.js';
@@ -17,14 +17,14 @@ try {
     poc: true,
   });
   if (result.platform !== 'codex') throw new Error('platform');
-  // No vendor catalog: install does not seed vendor maps (agent-as-developer).
-  if (result.vendorSlots !== 0) {
-    throw new Error(`expected 0 catalog maps, got ${result.vendorSlots}`);
+  if (!result.projectDir || !existsSync(result.projectDir)) {
+    throw new Error(`expected project store at projectDir, got ${result.projectDir}`);
   }
   if (!result.skillCount || result.skillCount < 1) {
     throw new Error(`expected skills installed, got ${result.skillCount}`);
   }
-  console.log('smoke:codex ok', result.skillCount, 'skills', 'maps:', result.vendorSlots);
+  // Install must not seed vendor maps — agents author them per project.
+  console.log('smoke:codex ok', result.skillCount, 'skills', 'store:', result.projectDir);
 } finally {
   rmSync(dir, { recursive: true, force: true });
 }
