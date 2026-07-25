@@ -1,9 +1,14 @@
 /**
  * Delivery simulator — dry_run / shadow never open network.
- * live mode requires explicit allowNetwork (not default in v0.2 TS path).
+ * live mode requires explicit allowNetwork and uses libs/delivery/http-client (fetch + retries).
  */
 import { buildIdempotencyKey, type IdempotencyStore, MemoryIdempotencyStore } from './idempotency.js';
 import { makeDlqRecord, writeDlqRecord } from './dlq.js';
+import {
+  sendWithRetry,
+  type FetchLike,
+  type HttpSendResult,
+} from './http-client.js';
 import type {
   DeliveryMode,
   DeliveryPolicy,
@@ -25,6 +30,13 @@ export interface SimulatorOptions {
    * dry_run/shadow always leave this at 0.
    */
   networkProbe?: { calls: number };
+  /**
+   * Injected fetch for live mode (tests mock; default globalThis.fetch).
+   * Never used in dry_run/shadow.
+   */
+  fetchImpl?: FetchLike;
+  /** Injected backoff sleep for live retries (tests use immediate). */
+  sleep?: (ms: number) => Promise<void>;
 }
 
 export class DeliverySimulator {
@@ -33,6 +45,8 @@ export class DeliverySimulator {
   readonly networkProbe: { calls: number };
   private readonly projectDir: string;
   private readonly allowNetwork: boolean;
+  private readonly fetchImpl?: FetchLike;
+  private readonly sleep?: (ms: number) => Promise<void>;
 
   constructor(opts: SimulatorOptions) {
     this.projectDir = opts.projectDir;
@@ -56,6 +70,8 @@ export class DeliverySimulator {
     this.idempotency = opts.idempotency ?? new MemoryIdempotencyStore();
     this.allowNetwork = opts.allowNetwork === true;
     this.networkProbe = opts.networkProbe ?? { calls: 0 };
+    this.fetchImpl = opts.fetchImpl;
+    this.sleep = opts.sleep;
   }
 
   /**
@@ -84,7 +100,7 @@ export class DeliverySimulator {
     }
 
     if (mode === 'dry_run' || mode === 'shadow') {
-      // Simulated success — zero network
+      // Simulated success — zero network (never touches fetch)
       await this.idempotency.record(key, {
         vendor: req.vendor,
         at: new Date().toISOString(),
@@ -127,21 +143,88 @@ export class DeliverySimulator {
       };
     }
 
-    // Explicit allowNetwork path — still no real fetch in this module for safety in CI.
-    // Count as a network intent for probe; actual HTTP belongs in a separate live client.
-    this.networkProbe.calls += 1;
-    await this.idempotency.record(key, {
+    if (!req.url) {
+      const dlq = makeDlqRecord({
+        vendor: req.vendor,
+        operationId: req.operationId,
+        eventId: req.eventId,
+        intent: req.intent,
+        errorClass: 'validation',
+        attempts: 0,
+        event: req.event ?? null,
+        wire: req.wire,
+        requestHeadersRedacted: redactHeaders(req.headers ?? {}),
+        mapVersion: req.mapVersion,
+        privacyPolicyVersion: req.privacyPolicyVersion,
+      });
+      writeDlqRecord(this.projectDir, dlq, this.policy);
+      return {
+        outcome: 'failure',
+        simulated: false,
+        networkCalls: 0,
+        errorClass: 'validation',
+        attempts: 0,
+        dlqId: dlq.id,
+        reasonCode: 'live_url_missing',
+      };
+    }
+
+    const sendResult: HttpSendResult = await sendWithRetry(
+      {
+        url: req.url,
+        method: req.method ?? 'POST',
+        headers: req.headers,
+        body: req.wire,
+        idempotencyKey: key,
+      },
+      {
+        policy: this.policy,
+        fetchImpl: this.fetchImpl,
+        sleep: this.sleep,
+        networkProbe: this.networkProbe,
+      },
+    );
+
+    if (sendResult.ok) {
+      await this.idempotency.record(key, {
+        vendor: req.vendor,
+        at: new Date().toISOString(),
+        status: sendResult.httpStatus ?? 200,
+      });
+      return {
+        outcome: 'success',
+        simulated: false,
+        networkCalls: sendResult.networkCalls,
+        httpStatus: sendResult.httpStatus,
+        attempts: sendResult.attempts,
+        reasonCode: sendResult.reasonCode ?? 'live_http_success',
+      };
+    }
+
+    const dlq = makeDlqRecord({
       vendor: req.vendor,
-      at: new Date().toISOString(),
-      status: 200,
+      operationId: req.operationId,
+      eventId: req.eventId,
+      intent: req.intent,
+      errorClass: sendResult.errorClass ?? 'unknown',
+      httpStatus: sendResult.httpStatus,
+      attempts: sendResult.attempts,
+      event: req.event ?? null,
+      wire: req.wire,
+      requestHeadersRedacted: redactHeaders(req.headers ?? {}),
+      mapVersion: req.mapVersion,
+      privacyPolicyVersion: req.privacyPolicyVersion,
     });
+    writeDlqRecord(this.projectDir, dlq, this.policy);
     return {
-      outcome: 'success',
+      outcome: 'failure',
       simulated: false,
-      networkCalls: 1,
-      httpStatus: 200,
-      attempts: 1,
-      reasonCode: 'live_send_recorded',
+      networkCalls: sendResult.networkCalls,
+      httpStatus: sendResult.httpStatus,
+      errorClass: sendResult.errorClass,
+      attempts: sendResult.attempts,
+      dlqId: dlq.id,
+      reasonCode: sendResult.reasonCode ?? 'live_http_failure',
     };
   }
 
