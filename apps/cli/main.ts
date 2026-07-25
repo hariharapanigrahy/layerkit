@@ -16,6 +16,7 @@ import {
   pipelineStatusPath,
   PIPELINE_STATUS_REL,
   scanAndWriteStyleProfile,
+  writeHandoffRunbook,
 } from '../../libs/agent/index.js';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
@@ -191,6 +192,13 @@ const cliCommands: CliCommand[] = [
     path: ['style-profile', 'scan'],
     usage: 'style-profile scan [--root <dir>] [--out memory|path] [--project-dir <path>]',
     handler: runStyleProfileScan,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['handoff', 'write'],
+    usage:
+      'handoff write [--vendor <v>] [--goal <text>] [--done <item>]... [--next <action>]... [--blocked <q>]... [--in-progress <item>]... [--evidence <item>]... [--quality <text>] [--out memory|path] [--project-dir <path>]',
+    handler: runHandoffWrite,
     showInTopLevelHelp: true,
   },
 
@@ -996,6 +1004,44 @@ function runStyleProfileScan(args: string[], ctx: CliContext): void {
   console.log(`http: ${p.http}`);
   console.log(`test: ${p.test}`);
   console.log(`Wrote style profile → ${outPath}`);
+}
+
+
+/**
+ * Write session handoff runbook under memory/runbooks/handoff-<vendor|project>.md
+ * (or --out <path>). Auto-includes pipeline status from markers.
+ */
+function runHandoffWrite(args: string[], ctx: CliContext): void {
+  const vendor = flag(args, '--vendor');
+  const goal = flag(args, '--goal');
+  const quality = flag(args, '--quality');
+  const out = flag(args, '--out') ?? 'memory';
+  const done = collectFlags(args, '--done');
+  const nextActions = collectFlags(args, '--next');
+  const blocked = collectFlags(args, '--blocked');
+  const inProgress = collectFlags(args, '--in-progress');
+  const evidence = collectFlags(args, '--evidence');
+
+  const outPath = writeHandoffRunbook({
+    projectDir: ctx.projectDir,
+    vendor,
+    goal,
+    quality,
+    done: done.length ? done : undefined,
+    nextActions: nextActions.length ? nextActions : undefined,
+    blocked: blocked.length ? blocked : undefined,
+    inProgress: inProgress.length ? inProgress : undefined,
+    evidence: evidence.length ? evidence : undefined,
+    out: out === 'memory' ? 'memory' : resolve(out),
+  });
+
+  console.log(`Wrote handoff runbook → ${outPath}`);
+  if (vendor) console.log(`Vendor: ${vendor}`);
+  if (goal) console.log(`Goal: ${goal}`);
+  if (nextActions.length) {
+    console.log('Next actions:');
+    for (const a of nextActions) console.log(`  - ${a}`);
+  }
 }
 
 function flag(args: string[], name: string): string | undefined {

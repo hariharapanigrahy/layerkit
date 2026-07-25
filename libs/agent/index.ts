@@ -64,3 +64,14 @@ export {
   pipelineStatusPath,
   type PipelineStep,
 } from './pipeline.js';
+
+export {
+  HANDOFF_TEMPLATE,
+  HANDOFF_REQUIRED_HEADINGS,
+  buildHandoffRunbook,
+  writeHandoffRunbook,
+  handoffRunbookRel,
+  handoffHasRequiredHeadings,
+  type HandoffRunbookInput,
+  type WriteHandoffRunbookInput,
+} from './handoff.js';
