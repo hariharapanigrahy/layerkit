@@ -64,6 +64,7 @@
     "eval:processor-citation": "npm run build && node dist/evals/cases/processor-citation-required/run.js",
     "eval:map-quality": "npm run build && node dist/evals/map-quality-optimizer/train.js",
     "eval:vendor-research-plan": "npm run build && node dist/evals/vendor-research-plan/run.js",
+    "eval:agent-judge": "npm run build && node scripts/run-agent-judge.mjs",
 
     "layerkit": "node dist/apps/cli/main.js",
     "prepare": "npm run build"

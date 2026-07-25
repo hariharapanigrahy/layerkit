@@ -17,5 +17,8 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run eval:all
+      - name: Agent transcript judge (nightly only, not merge bar)
+        run: npm run eval:agent-judge
+        continue-on-error: false
       - run: npm run smoke:codex
       - run: npm run smoke:openhands
