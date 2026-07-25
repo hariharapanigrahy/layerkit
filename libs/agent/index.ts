@@ -24,6 +24,17 @@ export {
 } from './style-profile.js';
 
 export {
+  STYLE_PROFILE_RUNBOOK_REL,
+  scanJavaStyle,
+  profileFromEvidence,
+  writeStyleProfileRunbook,
+  scanAndWriteStyleProfile,
+  isScannableRoot,
+  type StyleScanEvidence,
+  type StyleScanResult,
+} from './scan-style.js';
+
+export {
   extractPathFromDocExcerpt,
   detectPathMismatch,
   applyMapPathFix,

@@ -10,10 +10,12 @@ import {
   getNextStep,
   INTEGRATION_PIPELINE,
   isPipelineStepId,
+  isScannableRoot,
   loadCompletedSteps,
   markStepDone,
   pipelineStatusPath,
   PIPELINE_STATUS_REL,
+  scanAndWriteStyleProfile,
 } from '../../libs/agent/index.js';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
@@ -183,6 +185,12 @@ const cliCommands: CliCommand[] = [
     path: ['research', 'gaps'],
     usage: 'research gaps <sheet.json> [--json]',
     handler: runResearchGaps,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['style-profile', 'scan'],
+    usage: 'style-profile scan [--root <dir>] [--out memory|path] [--project-dir <path>]',
+    handler: runStyleProfileScan,
     showInTopLevelHelp: true,
   },
 
@@ -961,6 +969,33 @@ function runResearchGaps(args: string[]): void {
       console.log(`  ${g.id}\t${g.topic}\t${g.reason}`);
     }
   });
+}
+
+/**
+ * Heuristic scan of customer Java → memory/runbooks/java-style-profile.md
+ * (or --out <path>). No AST; greps package/DI/HTTP/test signals.
+ */
+function runStyleProfileScan(args: string[], ctx: CliContext): void {
+  const rootFlag = flag(args, '--root');
+  const root = resolve(rootFlag ?? ctx.repoRoot);
+  if (!isScannableRoot(root)) {
+    throw new Error(`style-profile scan: --root is not a directory: ${root}`);
+  }
+  const out = flag(args, '--out') ?? 'memory';
+  const { result, outPath } = scanAndWriteStyleProfile({
+    root,
+    projectDir: ctx.projectDir,
+    out: out === 'memory' ? 'memory' : resolve(out),
+  });
+  const p = result.profile;
+  console.log(`Scanned: ${root}`);
+  console.log(`Java files: ${result.evidence.javaFiles.length}`);
+  console.log(`Build files: ${result.evidence.buildFiles.join(', ') || '(none)'}`);
+  console.log(`package: ${p.package}`);
+  console.log(`di: ${p.di}`);
+  console.log(`http: ${p.http}`);
+  console.log(`test: ${p.test}`);
+  console.log(`Wrote style profile → ${outPath}`);
 }
 
 function flag(args: string[], name: string): string | undefined {

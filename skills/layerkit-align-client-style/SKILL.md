@@ -29,7 +29,18 @@ Before codegen, match the **customer's** package layout, DI, HTTP client, and te
 - examples: file://paths to 2–3 reference classes
 ```
 
-4. Write profile to memory (and optional file under projectDir):
+4. Write profile to memory (and optional file under projectDir).
+
+**CLI (preferred — deterministic heuristic scan):**
+
+```bash
+# Scan customer repo (or fixture) and write memory/runbooks/java-style-profile.md
+layerkit style-profile scan --root <customer-repo> [--project-dir <path>]
+# Or write to an explicit path:
+layerkit style-profile scan --root <customer-repo> --out ./java-style-profile.md
+```
+
+Optional research note:
 
 ```bash
 layerkit memory append --type research --title "java style profile" --vendor general --body-file ./java-style-profile.md
