@@ -155,6 +155,7 @@ const cliCommands: CliCommand[] = [
           value: { amount: 10, currency: 'usd' },
         },
         map,
+        { processorsDir: join(store.projectDir, 'processors') },
       );
       console.log(JSON.stringify(result, null, 2));
     },

@@ -1,9 +1,9 @@
 {
   "id": "sample-meta-map-apply",
   "suite": "ci",
-  "title": "Agent-shaped Meta map fixture validates, applies, and maps Purchase",
-  "owners": ["proposal", "map-engine", "store"],
-  "featurePr": "G0",
-  "fixtures": [],
+  "title": "Agent-shaped Meta map fixture validates, applies, executes processor, golden hash",
+  "owners": ["proposal", "map-engine", "store", "strategy"],
+  "featurePr": "PR3",
+  "fixtures": ["meta/processor-email-sha256.json"],
   "tags": ["deterministic", "no-network"]
 }

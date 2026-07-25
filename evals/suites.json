@@ -4,14 +4,18 @@
     "processor-citation-required",
     "empty-map-skipped",
     "sample-meta-map-apply",
-    "install-platforms"
+    "install-platforms",
+    "strategy-execute-sha256",
+    "strategy-fail-closed"
   ],
   "all": [
     "proposal-sources-required",
     "processor-citation-required",
     "empty-map-skipped",
     "sample-meta-map-apply",
-    "install-platforms"
+    "install-platforms",
+    "strategy-execute-sha256",
+    "strategy-fail-closed"
   ],
   "nightly": []
 }
