@@ -244,12 +244,14 @@ Doctor must be clean (or only expected empty-map warnings for vendors not in sco
 
 ```bash
 layerkit promote --vendor <vendor>
-# quality gate is on by default (--strict); use --no-strict only in explicit local experiments
+# Hard gates (fail-closed): map_complete + fields/intents, JaCoCo quality (--strict default),
+# doctor secret-scan clean, privacy policy when PII-looking fields, dry-run wire for purchase/first intent.
+# Break-glass: --no-strict (skip quality), --no-dry-run-check (skip dry-run only)
 layerkit agent status
 layerkit agent mark-done --step handoff
 ```
 
-Promote only when map is complete with fields/intents, dry-run is green for primary intents, privacy + checker approvals are done, and quality is green.
+Promote sets `map_complete` → `live` only after hard gates pass. Fix failed gate lines, then retry; do not bypass secrets or map_status.
 
 ---
 

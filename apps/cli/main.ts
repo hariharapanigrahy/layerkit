@@ -5,6 +5,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import {
+  evaluatePromoteGates,
+  formatPromoteGateFailures,
   formatNextStepLine,
   formatPipelineStatus,
   getNextStep,
@@ -129,7 +131,8 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['promote'],
-    usage: 'promote [--vendor <id>] [--strict] [--project-dir <path>]',
+    usage:
+      'promote [--vendor <id>] [--strict|--no-strict] [--no-dry-run-check] [--project-dir <path>]',
     handler: runPromote,
     showInTopLevelHelp: true,
   },
@@ -744,8 +747,15 @@ function runAgentMarkDone(args: string[], ctx: CliContext): void {
 }
 
 /**
- * Promote map_complete → live after quality gate.
- * With --strict (default for promote), JaCoCo report must exist and meet 0.95 line floor when parseable.
+ * Promote map_complete → live only after hard gates (fail-closed).
+ *
+ * Gates (all required unless skipped):
+ * 1. map_status — map_complete with fields/intents
+ * 2. quality — JaCoCo when --strict (default; --no-strict skips)
+ * 3. secret_scan — no doctor secret-scan critical findings
+ * 4. privacy_policy — policy under projectDir/privacy when PII-looking fields
+ * 5. dry_run — applyVendorMap wire for purchase or first intent
+ *    (default on; --no-dry-run-check break-glass)
  */
 function runPromote(args: string[], ctx: CliContext): void {
   const store = openStore(ctx);
@@ -754,50 +764,76 @@ function runPromote(args: string[], ctx: CliContext): void {
 
   // promote is quality-gated; --strict is default unless --no-strict
   const strict = !hasFlag(args, '--no-strict');
+  const requireDryRun = !hasFlag(args, '--no-dry-run-check');
+  const onlyVendor = flag(args, '--vendor');
+
   const q = checkJavaQuality({
     searchRoots: defaultJacocoSearchRoots(store.projectDir, ctx.repoRoot),
     strict,
     minLineCoverage: JACOCO_MIN_LINE_COVERAGE,
   });
-  console.log('== promote quality gate ==');
-  for (const line of q.lines) console.log(line);
-  if (!q.ok) {
-    console.log('Promote blocked: fix coverage / run mvn test under out/java, then retry.');
+
+  // Maps to evaluate: specific vendor, or all maps (gates filter eligibility)
+  let maps = store.listMaps();
+  if (onlyVendor) {
+    const m = store.loadMap(onlyVendor);
+    if (!m) throw new Error(`No map for vendor ${onlyVendor}`);
+    maps = [m];
+  }
+
+  if (maps.length === 0) {
+    console.log('No vendor maps to promote.');
+    return;
+  }
+
+  const doctor = store.doctor();
+  const processorsDir = join(store.projectDir, 'processors');
+
+  console.log('== promote hard gates ==');
+  const gateResult = evaluatePromoteGates({
+    maps,
+    secretFindings: doctor.secretFindings ?? [],
+    projectDir: store.projectDir,
+    quality: { ok: q.ok, lines: q.lines },
+    skipQuality: !strict,
+    requireDryRun,
+    processorsDir: existsSync(processorsDir) ? processorsDir : undefined,
+  });
+
+  for (const line of gateResult.lines) console.log(line);
+
+  if (!gateResult.ok) {
+    for (const line of formatPromoteGateFailures(gateResult.failures)) {
+      console.log(line);
+    }
+    console.log(
+      'Promote blocked: fix the failed gate(s), then retry. ' +
+        'Break-glass: --no-strict (quality), --no-dry-run-check (dry-run only).',
+    );
     process.exitCode = 1;
     return;
   }
 
-  const onlyVendor = flag(args, '--vendor');
-  const maps = store.listMaps().filter((m) => {
-    if (onlyVendor && m.vendor !== onlyVendor) return false;
-    const filled = m.fields.length > 0 || Object.keys(m.intents).length > 0;
-    return filled && (m.status === 'map_complete' || m.status === 'live');
-  });
-
-  if (onlyVendor && maps.length === 0) {
-    const m = store.loadMap(onlyVendor);
-    if (!m) throw new Error(`No map for vendor ${onlyVendor}`);
-    throw new Error(
-      `Cannot promote ${onlyVendor}: status=${m.status ?? '?'} (need map_complete with fields/intents)`,
-    );
-  }
-
-  if (maps.length === 0) {
-    console.log('No map_complete vendors to promote.');
-    return;
-  }
-
+  // Only set live for eligible vendors that passed every gate
+  const eligible = new Set(gateResult.eligibleVendors);
   let promoted = 0;
   for (const m of maps) {
     if (m.status === 'live') {
       console.log(`  skip ${m.vendor}: already live`);
       continue;
     }
+    if (!eligible.has(m.vendor)) continue;
     m.status = 'live';
     store.saveMap(m);
     console.log(`  promoted ${m.vendor} → live`);
     promoted++;
   }
+
+  if (promoted === 0 && maps.every((m) => m.status === 'live')) {
+    console.log('All targeted maps already live.');
+    return;
+  }
+
   console.log(`Promote done: ${promoted} map(s) set live.`);
   if (existsSync(join(store.projectDir, 'out', 'java', 'pom.xml'))) {
     console.log('Tip: regenerate client if needed: layerkit generate --lang java');
