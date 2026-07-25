@@ -1,0 +1,9 @@
+{
+  "id": "proposal-sources-required",
+  "suite": "ci",
+  "title": "Proposals without documentation sources must fail validation",
+  "owners": ["proposal"],
+  "featurePr": "G0",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network"]
+}

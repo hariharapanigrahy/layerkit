@@ -1,0 +1,9 @@
+{
+  "id": "privacy-live-require",
+  "suite": "ci",
+  "title": "live mode + no privacy policy → hard fail privacy_policy_required",
+  "owners": ["privacy"],
+  "featurePr": "W3/PR6",
+  "fixtures": ["privacy/event-purchase.json"],
+  "tags": ["deterministic", "no-network", "privacy"]
+}

@@ -1,0 +1,56 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Mini Events API",
+    "version": "1.0.0",
+    "description": "Fixture OpenAPI for evidence-openapi-q1q2 gate"
+  },
+  "servers": [
+    {
+      "url": "https://api.example-vendor.com/v1"
+    }
+  ],
+  "paths": {
+    "/events": {
+      "post": {
+        "operationId": "postEvent",
+        "summary": "Ingest a conversion event",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["event_name", "event_id"],
+                "properties": {
+                  "event_name": { "type": "string" },
+                  "event_id": { "type": "string" },
+                  "event_time": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

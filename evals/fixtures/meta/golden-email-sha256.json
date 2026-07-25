@@ -1,0 +1,7 @@
+{
+  "inputEmail": "a@b.com",
+  "normalized": "a@b.com",
+  "pipeline": ["email.normalize_basic", "hash.sha256_hex"],
+  "sha256Hex": "fb98d44ad7501a959f3f4f4a3f004fe2d9e581ea6207e218c4b02c08a4d75adf",
+  "notes": "SHA-256 UTF-8 hex of normalized email a@b.com (trim+lower, no gmail hacks)"
+}

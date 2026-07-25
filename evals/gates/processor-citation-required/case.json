@@ -1,0 +1,9 @@
+{
+  "id": "processor-citation-required",
+  "suite": "ci",
+  "title": "Processor proposals require documentation sources",
+  "owners": ["proposal", "strategy"],
+  "featurePr": "G0",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network"]
+}

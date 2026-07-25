@@ -1,0 +1,9 @@
+{
+  "id": "install-platforms",
+  "suite": "ci",
+  "title": "All declared install platforms have registered installers",
+  "owners": ["install"],
+  "featurePr": "G0",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network"]
+}

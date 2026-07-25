@@ -1,0 +1,93 @@
+# Layerkit evals (production merge bar)
+
+**Production readiness is defined by a green deterministic eval system**, not demos alone.
+
+| Script | Purpose |
+|--------|---------|
+| `npm run eval:ci` | Merge bar — suite `ci` in `suites.json` (required on every PR) |
+| `npm run eval:all` | Release bar extras + `ci` (grows with java-ref, research scale) |
+| `npm run eval:<legacy>` | Single-case aliases (stable; re-export gates) |
+
+```bash
+npm run build
+npm run eval:ci
+# or:
+node dist/evals/harness/runner.js --suite ci
+node dist/evals/harness/runner.js --case proposal-sources-required
+node dist/evals/harness/runner.js --list
+node dist/evals/harness/runner.js --suite ci --json   # JSON on stdout; logs on stderr
+```
+
+**Empty suites:** `ci` / `all` with zero cases exit 1 (fail closed). Suite `nightly` may be empty (exit 0 + warning) until agent judges land.
+
+**Timeouts:** each gate defaults to 60s; override with `EVAL_GATE_TIMEOUT_MS`.
+
+## Layout
+
+```text
+evals/
+  harness/          # runner, assert, temp-project, load-fixture, types
+  fixtures/         # normative JSON/YAML/MD for gates (grow with features)
+  gates/<case-id>/  # deterministic CI cases
+    case.json       # metadata: suite, owners, tags
+    run.ts          # executable gate (PASS/FAIL, exit 1 on fail)
+  suites.json       # suite → case id lists
+  cases/            # legacy thin re-exports (npm script aliases)
+  lib/common.ts     # re-exports harness assert
+```
+
+## How to add a gate
+
+1. **Create** `evals/gates/<case-id>/` with:
+   - `case.json` — `id`, `suite` (`ci` for merge bar), `title`, `owners`, `tags`
+   - `run.ts` — deterministic checks only (no network, no LLM keys)
+2. **Register** the id in `evals/suites.json` under `ci` (and `all` if release-relevant).
+3. **Use harness helpers**:
+   - `assertTrue` / `assertEqual` / `fail` from `evals/harness/assert.js`
+   - `withTempProject` from `evals/harness/temp-project.js` for store isolation
+   - `loadFixture` / `loadFixtureText` from `evals/harness/load-fixture.js` for `evals/fixtures/**`
+4. **Keep the gate under ~5s** (except install / java-ref).
+5. **Land the gate in the same PR** as the feature it protects (eval-with-feature).
+6. Verify: `npm run build && npm run eval:ci`
+
+### Minimal `run.ts` template
+
+```typescript
+import { assertTrue } from '../../harness/assert.js';
+// import { withTempProject } from '../../harness/temp-project.js';
+// import { loadFixture } from '../../harness/load-fixture.js';
+
+assertTrue('example holds', true);
+console.log('my-gate: all checks passed');
+```
+
+### `case.json` template
+
+```json
+{
+  "id": "my-gate",
+  "suite": "ci",
+  "title": "Short description of what must hold",
+  "owners": ["subsystem"],
+  "featurePr": "PRn",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network"]
+}
+```
+
+## Rules
+
+1. **Deterministic first** — fixed timestamps/fixtures; no flaky clocks.
+2. **Fail closed** — missing fixture or bad assertion → exit 1.
+3. **Gates are the merge bar** — `eval:ci` must stay green on `main`.
+4. **Agent / LLM judges** belong under `evals/agent/` and suite `nightly` (not default CI).
+
+## Current CI suite (G0)
+
+| Id | Asserts |
+|----|---------|
+| `proposal-sources-required` | empty `sources[]` → error `sources` |
+| `processor-citation-required` | processor without sources fails |
+| `empty-map-skipped` | empty map → `empty_map_awaiting_agent_research` |
+| `sample-meta-map-apply` | Meta fixture apply + Purchase wire |
+| `install-platforms` | 8 platforms registered with installers |

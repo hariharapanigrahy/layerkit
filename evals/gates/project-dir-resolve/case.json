@@ -1,0 +1,9 @@
+{
+  "id": "project-dir-resolve",
+  "suite": "ci",
+  "title": "Resolve projectDir: default .layerkit, CLI, env, pointer priority",
+  "owners": ["config", "store"],
+  "featurePr": "PR0",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network"]
+}

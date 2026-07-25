@@ -72,7 +72,9 @@ libs/install/platforms/   Multi-agent platform install
 libs/vendor-memory/       Local maps + proposals
 libs/proposal/            Validate gates (sources required)
 libs/domain/              Commerce intents, empty vendor slots
-evals/cases/              CI evals
+evals/harness/            Deterministic eval runner (merge bar)
+evals/gates/              CI gates (suite ci → npm run eval:ci)
+evals/cases/              Legacy thin re-exports of gates
 evals/map-quality-optimizer/
 evals/vendor-research-plan/
 skills/                   Agent skills
@@ -101,9 +103,13 @@ Maintainer launch checklist: [docs/OPEN_SOURCE_LAUNCH.md](./docs/OPEN_SOURCE_LAU
 npm test
 npm run smoke:codex
 npm run smoke:cursor
-npm run eval:proposal-sources
+npm run eval:ci                 # merge bar (deterministic gates)
+npm run eval:all
+npm run eval:proposal-sources   # legacy single-case aliases still work
 npm run eval:vendor-research-plan
 ```
+
+See [evals/README.md](./evals/README.md) for how to add a gate.
 
 ---
 

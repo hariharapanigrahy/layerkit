@@ -1,0 +1,9 @@
+{
+  "id": "map-v1-v2-migrate",
+  "suite": "ci",
+  "title": "asV2 migrates v1 skeleton preserving docs; operations.default from endpoint",
+  "owners": ["vendor-memory"],
+  "featurePr": "PR2",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network"]
+}
