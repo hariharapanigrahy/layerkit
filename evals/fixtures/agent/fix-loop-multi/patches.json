@@ -1,0 +1,16 @@
+[
+  {
+    "field": "fields.0.vendor",
+    "from": "evt_id",
+    "to": "event_id",
+    "reason": "Doc wire schema uses event_id, not legacy evt_id",
+    "evidenceExcerpt": "Required wire field: event_id (maps domain eventId). Do not use legacy evt_id."
+  },
+  {
+    "field": "intents.purchase.eventName",
+    "from": "PurchaseEvent",
+    "to": "Purchase",
+    "reason": "Doc event catalog names purchase conversions Purchase, not PurchaseEvent",
+    "evidenceExcerpt": "event_name must be Purchase for purchase intent conversions."
+  }
+]

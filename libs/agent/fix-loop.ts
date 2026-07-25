@@ -118,6 +118,7 @@ function getByDotPath(obj: unknown, path: string): unknown {
 
 /**
  * Apply a deterministic path (or nested field) fix to a vendor map clone.
+ * Dot paths support array indices (e.g. `fields.0.vendor`).
  */
 export function applyMapPathFix(map: VendorMap, patch: MapPathFixPatch): VendorMap {
   const clone = structuredClone(map) as VendorMap;
@@ -134,6 +135,118 @@ export function applyMapPathFix(map: VendorMap, patch: MapPathFixPatch): VendorM
 
   setByDotPath(clone as unknown as Record<string, unknown>, field, patch.to);
   return clone;
+}
+
+/**
+ * Apply an ordered sequence of map field patches. Each step clones; original is unchanged.
+ * Empty patches array returns a clone of the input map.
+ */
+export function applyMapPatches(map: VendorMap, patches: MapPathFixPatch[]): VendorMap {
+  let current = structuredClone(map) as VendorMap;
+  for (const patch of patches) {
+    current = applyMapPathFix(current, patch);
+  }
+  return current;
+}
+
+/** One step of a multi-step fix-loop simulation. */
+export interface FixLoopStepResult {
+  /** 0-based index of the applied patch */
+  index: number;
+  patch: MapPathFixPatch;
+  /** Map state after this patch */
+  map: VendorMap;
+}
+
+/**
+ * Run sequential patches and return every intermediate map (after each step) plus final.
+ * Deterministic pure-TS stand-in for "agent dry-run fails → patch → re-run".
+ */
+export function runSequentialMapFixes(
+  map: VendorMap,
+  patches: MapPathFixPatch[],
+): { steps: FixLoopStepResult[]; final: VendorMap } {
+  const steps: FixLoopStepResult[] = [];
+  let current = structuredClone(map) as VendorMap;
+  for (let i = 0; i < patches.length; i++) {
+    const patch = patches[i]!;
+    current = applyMapPathFix(current, patch);
+    steps.push({ index: i, patch, map: current });
+  }
+  return { steps, final: current };
+}
+
+/** Expected wire shape for pure dry-run checks (no network). */
+export interface WireExpectation {
+  /** When true (default), result must not be skipped */
+  notSkipped?: boolean;
+  /** Expected wire.event_name */
+  eventName?: string;
+  /** Exact equality checks for wire fields (dot paths supported) */
+  fields?: Record<string, unknown>;
+  /** Keys that must exist on wire (top-level or nested via dot path) */
+  requiredKeys?: string[];
+  /** Keys that must NOT exist on wire */
+  forbiddenKeys?: string[];
+}
+
+export interface DryRunCheckResult {
+  ok: boolean;
+  failures: string[];
+}
+
+/**
+ * Evaluate applyVendorMap output against an expected wire shape.
+ * Used by multi-step fix-loop gates to assert intermediate fails and final green.
+ */
+export function evaluateDryRunWire(
+  result: { skipped: boolean; reason?: string; wire: Record<string, unknown> | null },
+  expectation: WireExpectation,
+): DryRunCheckResult {
+  const failures: string[] = [];
+  const notSkipped = expectation.notSkipped !== false;
+
+  if (notSkipped && result.skipped) {
+    failures.push(`map apply skipped: ${result.reason ?? 'unknown'}`);
+  }
+  if (!result.skipped && result.wire == null) {
+    failures.push('map apply returned null wire without skip');
+  }
+
+  const wire = result.wire ?? {};
+
+  if (expectation.eventName !== undefined) {
+    if (wire.event_name !== expectation.eventName) {
+      failures.push(
+        `event_name: expected ${JSON.stringify(expectation.eventName)}, got ${JSON.stringify(wire.event_name)}`,
+      );
+    }
+  }
+
+  if (expectation.fields) {
+    for (const [path, expected] of Object.entries(expectation.fields)) {
+      const actual = getByDotPath(wire, path);
+      if (actual !== expected) {
+        failures.push(
+          `field ${path}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
+        );
+      }
+    }
+  }
+
+  for (const key of expectation.requiredKeys ?? []) {
+    if (getByDotPath(wire, key) === undefined) {
+      failures.push(`missing required wire key: ${key}`);
+    }
+  }
+
+  for (const key of expectation.forbiddenKeys ?? []) {
+    if (getByDotPath(wire, key) !== undefined) {
+      failures.push(`forbidden wire key present: ${key}`);
+    }
+  }
+
+  return { ok: failures.length === 0, failures };
 }
 
 /**
@@ -169,6 +282,22 @@ export function applyProposalMapFix(
   }
 
   return next;
+}
+
+/**
+ * Apply an ordered sequence of patches to a vendor_map proposal.
+ * Citations from each patch with evidence are appended (when enabled).
+ */
+export function applyProposalMapFixes(
+  proposal: Proposal,
+  patches: MapPathFixPatch[],
+  opts?: { addCitation?: boolean; sourceUrl?: string; sourceTitle?: string },
+): Proposal {
+  let current = proposal;
+  for (const patch of patches) {
+    current = applyProposalMapFix(current, patch, opts);
+  }
+  return current;
 }
 
 /**
