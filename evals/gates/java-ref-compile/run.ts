@@ -1,12 +1,13 @@
 /**
- * Lightweight gate: generateJavaScaffold emits pattern types + JaCoCo 0.95 pom.
- * Does not require Maven on the host (string / structure checks only).
+ * Gate: generateJavaScaffold emits pattern types + JaCoCo 0.95 pom,
+ * then actually compiles (mvn if available, else javac --release 17).
  */
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { assertTrue } from '../../harness/assert.js';
 import { withTempProject } from '../../harness/temp-project.js';
 import { generateJavaScaffold } from '../../../libs/generate/java-scaffold.js';
+import { compileJavaScaffold } from '../../../libs/generate/compile-java-scaffold.js';
 import {
   checkJavaQuality,
   defaultJacocoSearchRoots,
@@ -35,6 +36,14 @@ await withTempProject(async ({ store, projectDir }) => {
   assertTrue('pom has junit', /junit/i.test(pom));
   assertTrue('pom has jacoco', /jacoco/i.test(pom));
   assertTrue('pom jacoco minimum 0.95', /0\.95/.test(pom) && /COVEREDRATIO|jacoco\.minimum\.line/.test(pom));
+  // XML comments cannot contain "--"; broken comments make Maven unparseable
+  {
+    const commentBodies = [...pom.matchAll(/<!--([\s\S]*?)-->/g)].map((m) => m[1]);
+    assertTrue(
+      'pom XML comments valid (no -- inside)',
+      commentBodies.every((b) => !b.includes('--')),
+    );
+  }
 
   const patterns = byPath.get('DESIGN_PATTERNS.md')!;
   assertTrue('DESIGN_PATTERNS mentions Facade', /Facade/i.test(patterns));
@@ -60,6 +69,17 @@ await withTempProject(async ({ store, projectDir }) => {
     writeFileSync(p, f.content, 'utf8');
   }
   assertTrue('wrote DataLayerClient on disk', existsSync(join(out, files.find((f) => f.path.endsWith('DataLayerClient.java'))!.path)));
+
+  // Real compile: mvn if available, else javac --release 17
+  const compile = compileJavaScaffold({
+    scaffoldDir: out,
+    javaSourcePaths: javaFiles.map((f) => f.path),
+  });
+  assertTrue(
+    `scaffold compiles via ${compile.tool}`,
+    compile.ok,
+    compile.output || `compile failed with tool=${compile.tool}`,
+  );
 
   // doctor --quality without report: ok unless strict
   const roots = defaultJacocoSearchRoots(projectDir);
@@ -101,5 +121,5 @@ await withTempProject(async ({ store, projectDir }) => {
   const facadeSrc = readFileSync(join(out, facadePath), 'utf8');
   assertTrue('on-disk Facade track()', /TrackResult track/.test(facadeSrc));
 
-  console.log('java-ref-compile: all checks passed');
+  console.log(`java-ref-compile: all checks passed (compiled with ${compile.tool})`);
 }, { poc: true });
