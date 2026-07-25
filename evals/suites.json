@@ -9,7 +9,10 @@
     "schema-dual-read",
     "map-v1-v2-migrate",
     "strategy-execute-sha256",
-    "strategy-fail-closed"
+    "strategy-fail-closed",
+    "privacy-live-require",
+    "privacy-dry-run-warn",
+    "flow-oauth-then-post"
   ],
   "all": [
     "proposal-sources-required",
@@ -21,7 +24,10 @@
     "schema-dual-read",
     "map-v1-v2-migrate",
     "strategy-execute-sha256",
-    "strategy-fail-closed"
+    "strategy-fail-closed",
+    "privacy-live-require",
+    "privacy-dry-run-warn",
+    "flow-oauth-then-post"
   ],
   "nightly": []
 }

@@ -1,0 +1,10 @@
+{
+  "intent": "purchase",
+  "eventId": "ord_1",
+  "user": {
+    "email": "a@b.com"
+  },
+  "consent": {
+    "purposes": ["marketing"]
+  }
+}
