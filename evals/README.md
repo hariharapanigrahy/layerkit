@@ -94,5 +94,5 @@ console.log('my-gate: all checks passed');
 | `proposal-sources-required` | empty `sources[]` → error `sources` |
 | `processor-citation-required` | processor without sources fails |
 | `empty-map-skipped` | empty map → `empty_map_awaiting_agent_research` |
-| `sample-meta-map-apply` | Meta fixture apply + Purchase wire |
+| `sample-agent-map-apply` | Agent fixture apply + Purchase wire |
 | `install-platforms` | 8 platforms registered with installers |
