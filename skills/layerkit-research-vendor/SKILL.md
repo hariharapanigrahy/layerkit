@@ -1,16 +1,29 @@
 ---
 name: layerkit-research-vendor
-description: Read primary vendor documentation and draft a Layerkit vendor_map proposal with sources (agent knowledge work).
+description: Evidence-first vendor research — docs/OpenAPI/curl/code before human questionnaire; draft vendor_map proposal with sources.
 ---
 
 # layerkit-research-vendor
 
-You create the integration knowledge. Core ships empty maps.
+You create the integration knowledge. Core ships empty maps. **Evidence-first** (never invent).
 
-1. `layerkit map show <vendor>` — open skeleton
-2. Open every `documentation[].url`
-3. Draft proposal JSON with `sources: [{title,url,excerpt}]`
-4. `layerkit proposal validate ./proposal.json`
-5. Ask human before `layerkit proposal apply ./proposal.json`
+## Protocol
 
-Forbidden: inventing hash/phone rules without excerpts from docs.
+1. `layerkit map show <vendor>` — open skeleton / seed URLs
+2. Ingest **all** seeds: prose docs, OpenAPI/Swagger, curl samples, collections, customer code
+3. Use research libs (deterministic):
+   - `parseOpenAPI` → fill **Q1 auth** / **Q2 endpoints** (`source: openapi`)
+   - `parseCurl` → method, host, path, Authorization class (`source: curl`)
+   - `planDeepen` / hub links → enqueue `openapi.json` **before** asking humans
+4. Fill Q1–Q10 from evidence; record citations + `source` (not human when derived)
+5. If a dimension is empty → **deepen L0–L4** (expand links, `$ref`, repo samples). Residual questionnaire only after that (`residualGaps`)
+6. Draft proposal JSON with `sources: [{title,url,excerpt}]`
+7. `layerkit proposal validate ./proposal.json`
+8. Append research note to `{projectDir}/memory/research/` (emails redacted)
+9. Ask human only for residual gaps; then `layerkit proposal apply`
+
+## Forbidden
+
+- Inventing hash/phone/auth/endpoint rules when evidence is silent → mark `needs-evidence`
+- Opening full human questionnaire while OpenAPI/curl already answers Q1/Q2
+- Trusting `catalog/vendors/` without customer re-verify

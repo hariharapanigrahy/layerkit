@@ -1,0 +1,9 @@
+{
+  "id": "evidence-no-invent",
+  "suite": "ci",
+  "title": "empty seeds → unanswered/needs-evidence; no fabricated endpoint",
+  "owners": ["research"],
+  "featurePr": "W4",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network", "evidence"]
+}

@@ -1,0 +1,4 @@
+curl -X POST 'https://graph.facebook.com/v18.0/1234567890/events' \
+  -H 'Authorization: Bearer REPLACE_ACCESS_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{"data":[{"event_name":"Purchase","event_time":1700000000,"event_id":"order-1","user_data":{"em":["HASHED"]},"custom_data":{"currency":"USD","value":12.5}}]}'

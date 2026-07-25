@@ -4,14 +4,26 @@
     "processor-citation-required",
     "empty-map-skipped",
     "sample-meta-map-apply",
-    "install-platforms"
+    "install-platforms",
+    "evidence-openapi-q1q2",
+    "evidence-curl-parse",
+    "evidence-deepen-hub",
+    "evidence-no-invent",
+    "memory-index-append",
+    "delivery-shadow-no-network"
   ],
   "all": [
     "proposal-sources-required",
     "processor-citation-required",
     "empty-map-skipped",
     "sample-meta-map-apply",
-    "install-platforms"
+    "install-platforms",
+    "evidence-openapi-q1q2",
+    "evidence-curl-parse",
+    "evidence-deepen-hub",
+    "evidence-no-invent",
+    "memory-index-append",
+    "delivery-shadow-no-network"
   ],
   "nightly": []
 }
