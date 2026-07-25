@@ -48,6 +48,21 @@ assertTrue(
   INTEGRATION_PIPELINE.length >= REQUIRED_ORDER.length,
 );
 
+// --- every step has skill + non-empty cliHints (agent next / orchestrate skill) ---
+for (const step of INTEGRATION_PIPELINE) {
+  assertTrue(
+    `${step.id}: skill non-empty`,
+    typeof step.skill === 'string' && step.skill.trim().length > 0,
+  );
+  assertTrue(
+    `${step.id}: cliHints non-empty`,
+    Array.isArray(step.cliHints) &&
+      step.cliHints.length > 0 &&
+      step.cliHints.every((h) => typeof h === 'string' && h.trim().length > 0),
+    JSON.stringify(step.cliHints),
+  );
+}
+
 // --- getNextStep ---
 assertEqual('empty completed → discover', getNextStep([])?.id, 'discover');
 assertEqual(

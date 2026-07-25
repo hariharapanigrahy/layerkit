@@ -644,7 +644,10 @@ function runAgentStatus(_args: string[], ctx: CliContext): void {
   }
 }
 
-/** Print next skill + CLI hints. */
+/**
+ * Print next skill + exact CLI commands from INTEGRATION_PIPELINE.cliHints.
+ * Agents should run these, then `layerkit agent mark-done --step <id>`.
+ */
 function runAgentNext(_args: string[], ctx: CliContext): void {
   const completed = loadCompletedSteps(ctx.projectDir);
   const next = getNextStep(completed);
@@ -657,10 +660,11 @@ function runAgentNext(_args: string[], ctx: CliContext): void {
   console.log(`Skill: ${next.skill}`);
   if (next.requiresHuman) console.log('Requires human: yes');
   console.log(`Done when: ${next.doneWhen}`);
-  console.log('Commands / hints:');
+  console.log('CLI commands:');
   for (const h of next.cliHints) console.log(`  ${h}`);
   console.log('');
   console.log(`Mark complete: layerkit agent mark-done --step ${next.id}`);
+  console.log('Then: layerkit agent next');
 }
 
 /** Append a completed step marker under memory/runbooks/pipeline-status.md. */
