@@ -94,6 +94,8 @@ export {
   type PromoteGatesInput,
   type PromoteGatesResult,
 } from './promote-gates.js';
+
+export {
   decideShape,
   defaultRationale,
   designDecisionPath,

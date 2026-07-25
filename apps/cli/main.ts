@@ -208,6 +208,9 @@ const cliCommands: CliCommand[] = [
     usage:
       'discover scan [--root <dir>] [--out memory|path] [--proposal <path>] [--project-dir <path>]',
     handler: runDiscoverScan,
+    showInTopLevelHelp: true,
+  },
+  {
     path: ['design', 'decide'],
     usage:
       'design decide --vendor <v> [--shape linear_map|flow|hybrid] [--sequence] [--branch] [--foreach] [--oauth] [--multi-call] [--intent x]... [--evidence url]... [--out memory|path] [--json] [--project-dir <path>]',
@@ -1110,6 +1113,7 @@ function runDiscoverScan(args: string[], ctx: CliContext): void {
   if (proposalPath) {
     console.log(`Wrote domain_spec proposal → ${proposalPath}`);
   }
+}
 
 const DESIGN_SHAPES = new Set<string>(['linear_map', 'flow', 'hybrid']);
 
