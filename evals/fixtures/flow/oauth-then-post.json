@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 2,
+  "id": "oauth_then_post",
+  "description": "Assign token request → call oauth_token (responseInto) → call post_conversion with Bearer from vars",
+  "entry": "setup_token_request",
+  "nodes": [
+    {
+      "id": "setup_token_request",
+      "type": "assign",
+      "set": [
+        {
+          "path": "vars.tokenRequest",
+          "value": {
+            "grant_type": "client_credentials",
+            "client_id": "test-client",
+            "client_secret": "test-secret"
+          }
+        }
+      ],
+      "next": "get_token"
+    },
+    {
+      "id": "get_token",
+      "type": "call",
+      "operationId": "oauth_token",
+      "payloadFrom": "vars.tokenRequest",
+      "responseInto": "results.token",
+      "responseExtract": [
+        { "from": "body.access_token", "to": "vars.accessToken" }
+      ],
+      "next": "build_event"
+    },
+    {
+      "id": "build_event",
+      "type": "assign",
+      "set": [
+        {
+          "path": "payload",
+          "value": {
+            "event_name": "Purchase",
+            "event_id": "ord_1"
+          }
+        }
+      ],
+      "next": "post_event"
+    },
+    {
+      "id": "post_event",
+      "type": "call",
+      "operationId": "post_conversion",
+      "payloadFrom": "payload",
+      "headersFromVars": [
+        { "header": "Authorization", "varPath": "vars.accessToken", "prefix": "Bearer " }
+      ],
+      "responseInto": "results.post",
+      "next": "done"
+    },
+    {
+      "id": "done",
+      "type": "end",
+      "status": "success"
+    }
+  ]
+}

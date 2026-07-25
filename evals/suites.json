@@ -4,14 +4,20 @@
     "processor-citation-required",
     "empty-map-skipped",
     "sample-meta-map-apply",
-    "install-platforms"
+    "install-platforms",
+    "privacy-live-require",
+    "privacy-dry-run-warn",
+    "flow-oauth-then-post"
   ],
   "all": [
     "proposal-sources-required",
     "processor-citation-required",
     "empty-map-skipped",
     "sample-meta-map-apply",
-    "install-platforms"
+    "install-platforms",
+    "privacy-live-require",
+    "privacy-dry-run-warn",
+    "flow-oauth-then-post"
   ],
   "nightly": []
 }
