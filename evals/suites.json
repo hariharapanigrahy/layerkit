@@ -4,14 +4,20 @@
     "processor-citation-required",
     "empty-map-skipped",
     "sample-meta-map-apply",
-    "install-platforms"
+    "install-platforms",
+    "project-dir-resolve",
+    "schema-dual-read",
+    "map-v1-v2-migrate"
   ],
   "all": [
     "proposal-sources-required",
     "processor-citation-required",
     "empty-map-skipped",
     "sample-meta-map-apply",
-    "install-platforms"
+    "install-platforms",
+    "project-dir-resolve",
+    "schema-dual-read",
+    "map-v1-v2-migrate"
   ],
   "nightly": []
 }

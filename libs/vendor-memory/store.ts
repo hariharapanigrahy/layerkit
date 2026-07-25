@@ -1,22 +1,54 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { resolveProjectDir } from '../config/project-dir.js';
 import { buildPocVendorMaps, COMMERCE_DOMAIN } from '../domain/commerce.js';
 import type { DomainSpec, LayerProject, Proposal, VendorMap } from '../domain/types.js';
 import { validateProposal, validateVendorMap } from '../proposal/validate.js';
+import { mapSchemaVersion } from './migrate.js';
+
+const STORE_SUBDIRS = [
+  'maps',
+  'processors',
+  'proposals',
+  'out',
+  'sessions',
+  'memory',
+  'privacy',
+  'flows',
+  'audit',
+  'dlq',
+  'idempotency',
+] as const;
+
+const MEMORY_INDEX_SKELETON = `# Layerkit memory index
+
+Canonical markdown memory stack for this project.
+
+## Entries
+
+_None yet. Use \`layerkit memory append\` or agent skills to record research/approvals._
+`;
 
 /**
  * Local project store for vendor maps and proposals.
- * Agents write via proposals; store persists under .layerkit/
+ * Store root is the resolved projectDir (default: {repoRoot}/.layerkit).
  */
 export class VendorMemoryStore {
   readonly projectDir: string;
 
-  constructor(readonly repoRoot: string) {
-    this.projectDir = join(repoRoot, '.layerkit');
+  /**
+   * @param repoRoot - repository root
+   * @param projectDir - optional resolved store root; when omitted, uses resolveProjectDir(repoRoot)
+   */
+  constructor(
+    readonly repoRoot: string,
+    projectDir?: string,
+  ) {
+    this.projectDir = projectDir ?? resolveProjectDir(repoRoot);
   }
 
   ensureDirs(): void {
-    for (const d of ['maps', 'processors', 'proposals', 'out', 'sessions']) {
+    for (const d of STORE_SUBDIRS) {
       mkdirSync(join(this.projectDir, d), { recursive: true });
     }
   }
@@ -34,10 +66,19 @@ export class VendorMemoryStore {
     };
     this.writeJson(join(this.projectDir, 'project.json'), project);
     this.writeJson(join(this.projectDir, 'domain.json'), COMMERCE_DOMAIN);
+    this.ensureMemoryIndex();
     if (opts.poc) {
       for (const m of buildPocVendorMaps()) {
         this.saveMap(m);
       }
+    }
+  }
+
+  ensureMemoryIndex(): void {
+    const indexPath = join(this.projectDir, 'memory', 'INDEX.md');
+    if (!existsSync(indexPath)) {
+      mkdirSync(join(this.projectDir, 'memory'), { recursive: true });
+      writeFileSync(indexPath, MEMORY_INDEX_SKELETON, 'utf8');
     }
   }
 
@@ -109,9 +150,16 @@ export class VendorMemoryStore {
 
   doctor(): { ok: boolean; lines: string[] } {
     const lines: string[] = [];
+    lines.push(`projectDir: ${this.projectDir}`);
     const project = this.loadProject();
     if (!project) {
-      return { ok: false, lines: ['No .layerkit project — run layerkit install'] };
+      return {
+        ok: false,
+        lines: [
+          ...lines,
+          `No Layerkit project at ${this.projectDir} — run layerkit install`,
+        ],
+      };
     }
     lines.push(`Project: ${project.name}`);
     lines.push(`Languages: ${project.languages.join(', ')}`);
@@ -122,11 +170,12 @@ export class VendorMemoryStore {
     for (const m of maps) {
       const issues = validateVendorMap(m, domain);
       const errs = issues.filter((i) => i.level === 'error');
+      const ver = mapSchemaVersion(m);
       if (errs.length) {
         errors += errs.length;
-        lines.push(`  ✗ ${m.vendor}: ${errs.map((e) => e.message).join('; ')}`);
+        lines.push(`  ✗ ${m.vendor} (v${ver}): ${errs.map((e) => e.message).join('; ')}`);
       } else {
-        lines.push(`  ✓ ${m.vendor} (${m.status ?? '?'})`);
+        lines.push(`  ✓ ${m.vendor} (v${ver}, ${m.status ?? '?'})`);
       }
     }
     lines.push(errors ? `Doctor found ${errors} error(s)` : 'Doctor OK');
@@ -144,6 +193,10 @@ export class VendorMemoryStore {
   }
 }
 
-export function createVendorMemoryStore(repoRoot: string): VendorMemoryStore {
-  return new VendorMemoryStore(repoRoot);
+/**
+ * Create a store for repoRoot.
+ * @param projectDir - optional resolved absolute store root (from resolveProjectDir with CLI/env)
+ */
+export function createVendorMemoryStore(repoRoot: string, projectDir?: string): VendorMemoryStore {
+  return new VendorMemoryStore(repoRoot, projectDir);
 }

@@ -1,9 +1,10 @@
-import type { DomainSpec, VendorMap } from './types.js';
+import type { DomainSpec, VendorMap, VendorMapV1 } from './types.js';
 
 export const COMMERCE_DOMAIN: DomainSpec = {
   id: 'commerce',
-  version: '1.0.0',
-  description: 'Shared commerce intents; vendor wire shapes are agent-authored from docs',
+  version: '1.1.0',
+  description:
+    'Shared commerce intents with line-item and consent fields; vendor wire shapes are agent-authored from docs',
   intents: [
     { id: 'page_view', description: 'Page view' },
     { id: 'view_item', description: 'PDP' },
@@ -19,10 +20,17 @@ export const COMMERCE_DOMAIN: DomainSpec = {
     { path: 'user.email', type: 'string', description: 'Raw email' },
     { path: 'user.phone', type: 'string', description: 'Raw phone' },
     { path: 'user.externalId', type: 'string', description: 'User id' },
-    { path: 'product.id', type: 'string', description: 'SKU' },
+    { path: 'product.id', type: 'string', description: 'SKU (PDP singular)' },
+    { path: 'products', type: 'array', description: 'Cart/checkout line items' },
+    { path: 'products[].id', type: 'string', description: 'Line item SKU' },
+    { path: 'products[].quantity', type: 'number', description: 'Qty' },
+    { path: 'products[].price', type: 'number', description: 'Unit price' },
     { path: 'value.amount', type: 'number', description: 'Value' },
     { path: 'value.currency', type: 'string', description: 'Currency' },
     { path: 'context.url', type: 'string', description: 'URL' },
+    { path: 'consent.purposes', type: 'array', description: 'Consent purposes' },
+    { path: 'region', type: 'string', description: 'Processing region' },
+    { path: 'tenantId', type: 'string', description: 'Tenant id when multi mode' },
   ],
 };
 
@@ -191,7 +199,8 @@ export const VENDOR_SLOTS: readonly VendorSlot[] = [
   },
 ];
 
-export function emptyVendorMap(slot: (typeof VENDOR_SLOTS)[number]): VendorMap {
+/** Empty skeleton maps remain v1 until explicit migrate. */
+export function emptyVendorMap(slot: (typeof VENDOR_SLOTS)[number]): VendorMapV1 {
   return {
     vendor: slot.vendor,
     displayName: slot.displayName,
