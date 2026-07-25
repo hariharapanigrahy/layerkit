@@ -27,7 +27,7 @@ assertTrue(
 );
 assertTrue(
   'URL not high-entropy for scan purposes',
-  !isHighEntropyString('https://developers.facebook.com/docs/marketing-api/conversions-api'),
+  !isHighEntropyString('https://docs.example.com/api/events'),
 );
 assertTrue(
   'SecretRef shape recognized',

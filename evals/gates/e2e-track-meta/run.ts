@@ -1,5 +1,6 @@
 /**
- * E2E: install-style temp project → seed processor + map + privacy → track dry_run.
+ * E2E: temp project → seed processor + map + privacy → track dry_run.
+ * Generic agent fixture vendor only (not a product catalog).
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -15,38 +16,44 @@ const GOLDEN =
   'fb98d44ad7501a959f3f4f4a3f004fe2d9e581ea6207e218c4b02c08a4d75adf';
 
 await withTempProject(async ({ store, projectDir }) => {
-  const processor = loadFixture<ExecutableProcessor>('meta/processor-email-sha256.json');
+  const processor = loadFixture<ExecutableProcessor>('agent/processor-email-sha256.json');
   const procDir = join(projectDir, 'processors');
   mkdirSync(procDir, { recursive: true });
-  writeFileSync(join(procDir, 'meta_email_sha256_normalized.json'), JSON.stringify(processor, null, 2));
+  writeFileSync(
+    join(procDir, 'example_email_sha256_normalized.json'),
+    JSON.stringify(processor, null, 2),
+  );
 
   const mapPayload = {
-    vendor: 'meta',
-    displayName: 'Meta CAPI',
+    vendor: 'example_vendor',
+    displayName: 'Example Vendor',
     version: '1.0.0',
     auth: { type: 'bearer' as const },
-    endpoint: { method: 'POST' as const, path: '/events', baseUrl: 'https://graph.facebook.com' },
-    intents: { purchase: { eventName: 'Purchase' } },
+    endpoint: { method: 'POST' as const, path: '/v1/events', baseUrl: 'https://api.example.com' },
+    intents: { purchase: { eventName: 'purchase' } },
     fields: [
       { domain: 'eventId', vendor: 'event_id', transform: { type: 'identity' as const } },
       {
         domain: 'user.email',
-        vendor: 'user_data.em',
-        transform: { type: 'processor' as const, processorId: 'meta.email.sha256_normalized' },
+        vendor: 'user.email_hash',
+        transform: {
+          type: 'processor' as const,
+          processorId: 'example.email.sha256_normalized',
+        },
       },
     ],
-    documentation: [{ title: 'CAPI', url: 'https://developers.facebook.com/docs/marketing-api/conversions-api' }],
+    documentation: [{ title: 'Events', url: 'https://docs.example.com/api/events' }],
     status: 'map_complete' as const,
   };
 
   const proposal: Proposal = {
     schemaVersion: 1,
     kind: 'vendor_map',
-    id: 'e2e-meta',
-    summary: 'e2e meta',
-    vendor: 'meta',
+    id: 'e2e-example',
+    summary: 'e2e example agent map',
+    vendor: 'example_vendor',
     payload: mapPayload,
-    sources: [{ title: 'CAPI', url: 'https://developers.facebook.com/docs/marketing-api/conversions-api' }],
+    sources: [{ title: 'Events', url: 'https://docs.example.com/api/events' }],
     authoredBy: 'agent',
     createdAt: new Date().toISOString(),
     status: 'pending',
@@ -57,8 +64,7 @@ await withTempProject(async ({ store, projectDir }) => {
   mkdirSync(join(projectDir, 'privacy'), { recursive: true });
   writeFileSync(join(projectDir, 'privacy', 'default.json'), JSON.stringify(policy, null, 2));
 
-  const map = store.loadMap('meta') as VendorMap;
-  // Processors resolve from projectDir/processors via store path convention
+  const map = store.loadMap('example_vendor') as VendorMap;
   const result = await track(
     {
       intent: 'purchase',
@@ -79,7 +85,7 @@ await withTempProject(async ({ store, projectDir }) => {
   const r = result.results[0]!;
   assertTrue('not failure', r.outcome !== 'failure', r.reason);
   assertTrue('has wire', r.wire != null);
-  const em = (r.wire?.user_data as Record<string, unknown> | undefined)?.em;
+  const em = (r.wire?.user as Record<string, unknown> | undefined)?.email_hash;
   assertEqual('hashed email', em, GOLDEN);
   console.log('e2e-track-meta: all checks passed');
 }, { poc: false });

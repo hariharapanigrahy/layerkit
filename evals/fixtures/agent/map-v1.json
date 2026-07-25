@@ -1,0 +1,34 @@
+{
+  "vendor": "example_vendor",
+  "displayName": "Example Vendor (fixture)",
+  "version": "1.0.0",
+  "auth": { "type": "bearer", "notes": "from docs" },
+  "endpoint": {
+    "method": "POST",
+    "path": "/v1/events",
+    "baseUrl": "https://api.example.com"
+  },
+  "intents": { "purchase": { "eventName": "purchase" } },
+  "fields": [
+    {
+      "domain": "eventId",
+      "vendor": "event_id",
+      "transform": { "type": "identity" }
+    },
+    {
+      "domain": "user.email",
+      "vendor": "user.email_hash",
+      "transform": {
+        "type": "processor",
+        "processorId": "example.email.sha256_normalized"
+      }
+    }
+  ],
+  "documentation": [
+    {
+      "title": "Events API",
+      "url": "https://docs.example.com/api/events"
+    }
+  ],
+  "status": "map_complete"
+}

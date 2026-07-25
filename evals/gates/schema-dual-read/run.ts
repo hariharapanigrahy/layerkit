@@ -8,22 +8,22 @@ import { COMMERCE_DOMAIN } from '../../../libs/domain/commerce.js';
 import type { Proposal, VendorMapV2 } from '../../../libs/domain/types.js';
 import { validateProposal, validateVendorMap } from '../../../libs/proposal/validate.js';
 
-const metaDocs = [
+const exampleDocs = [
   {
-    title: 'Meta CAPI',
-    url: 'https://developers.facebook.com/docs/marketing-api/conversions-api',
+    title: 'Example Events API',
+    url: 'https://docs.example.com/api/events',
   },
 ];
 
 const v1Payload = {
-  vendor: 'meta',
-  displayName: 'Meta',
+  vendor: 'example_vendor',
+  displayName: 'Example',
   version: '1',
   auth: { type: 'bearer' as const },
-  endpoint: { method: 'POST' as const, path: '/events', baseUrl: 'https://example.com' },
-  intents: { purchase: { eventName: 'Purchase' } },
+  endpoint: { method: 'POST' as const, path: '/events', baseUrl: 'https://api.example.com' },
+  intents: { purchase: { eventName: 'purchase' } },
   fields: [{ domain: 'eventId', vendor: 'event_id', transform: { type: 'identity' as const } }],
-  documentation: metaDocs,
+  documentation: exampleDocs,
 };
 
 const baseV1: Proposal = {
@@ -32,7 +32,7 @@ const baseV1: Proposal = {
   id: 'dual-v1',
   summary: 'v1 proposal',
   payload: v1Payload,
-  sources: metaDocs,
+  sources: exampleDocs,
   authoredBy: 'agent',
   createdAt: '2026-01-01T00:00:00.000Z',
   status: 'pending',
@@ -179,7 +179,7 @@ const baseV1: Proposal = {
     id: 'pp-1',
     summary: 'privacy policy',
     payload: { id: 'default', defaultAction: 'deny', rules: [] },
-    sources: metaDocs,
+    sources: exampleDocs,
     authoredBy: 'human',
     createdAt: '2026-01-01T00:00:00.000Z',
     status: 'draft',
@@ -207,11 +207,11 @@ const baseV1: Proposal = {
 {
   const validV2: VendorMapV2 = {
     schemaVersion: 2,
-    vendor: 'meta',
-    displayName: 'Meta',
+    vendor: 'example_vendor',
+    displayName: 'Example',
     version: '1.0.0',
     status: 'map_complete',
-    documentation: metaDocs,
+    documentation: exampleDocs,
     auth: { type: 'bearer' },
     operations: {
       default: {
@@ -237,11 +237,11 @@ const baseV1: Proposal = {
 {
   const missingOp: VendorMapV2 = {
     schemaVersion: 2,
-    vendor: 'meta',
-    displayName: 'Meta',
+    vendor: 'example_vendor',
+    displayName: 'Example',
     version: '1.0.0',
     status: 'map_complete',
-    documentation: metaDocs,
+    documentation: exampleDocs,
     auth: { type: 'bearer' },
     operations: {
       default: {
@@ -265,11 +265,11 @@ const baseV1: Proposal = {
 {
   const badOp: VendorMapV2 = {
     schemaVersion: 2,
-    vendor: 'meta',
-    displayName: 'Meta',
+    vendor: 'example_vendor',
+    displayName: 'Example',
     version: '1.0.0',
     status: 'map_complete',
-    documentation: metaDocs,
+    documentation: exampleDocs,
     auth: { type: 'bearer' },
     operations: {
       default: {
@@ -293,11 +293,11 @@ const baseV1: Proposal = {
 {
   const emptyOps: VendorMapV2 = {
     schemaVersion: 2,
-    vendor: 'meta',
-    displayName: 'Meta',
+    vendor: 'example_vendor',
+    displayName: 'Example',
     version: '1.0.0',
     status: 'map_complete',
-    documentation: metaDocs,
+    documentation: exampleDocs,
     auth: { type: 'bearer' },
     operations: {},
     intents: {

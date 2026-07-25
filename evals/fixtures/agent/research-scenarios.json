@@ -1,0 +1,28 @@
+[
+  {
+    "id": "example-http-api",
+    "vendor": "example_vendor",
+    "displayName": "Example HTTP API (fixture only)",
+    "documentation": [
+      {
+        "title": "Example Events API",
+        "url": "https://docs.example.com/api/events"
+      },
+      {
+        "title": "Auth",
+        "url": "https://docs.example.com/api/auth"
+      }
+    ]
+  },
+  {
+    "id": "example-openapi",
+    "vendor": "example_openapi",
+    "displayName": "Example OpenAPI vendor (fixture only)",
+    "documentation": [
+      {
+        "title": "OpenAPI",
+        "url": "https://api.example.com/openapi.json"
+      }
+    ]
+  }
+]

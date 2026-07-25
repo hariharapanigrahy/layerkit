@@ -9,9 +9,9 @@ const noCite: Proposal = {
   schemaVersion: 1,
   kind: 'processor',
   id: 'proc-bad',
-  processorId: 'meta.phone.x',
+  processorId: 'example.phone.normalize',
   summary: 'phone transform',
-  payload: { id: 'meta.phone.x', kind: 'agent', description: 'x' },
+  payload: { id: 'example.phone.normalize', kind: 'agent', description: 'x' },
   sources: [],
   authoredBy: 'agent',
   createdAt: new Date().toISOString(),
@@ -28,19 +28,19 @@ const ok: Proposal = {
   id: 'proc-good',
   sources: [
     {
-      title: 'Meta phone',
-      url: 'https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/customer-information-parameters',
+      title: 'Example phone docs',
+      url: 'https://docs.example.com/api/pii',
       excerpt: 'phone numbers should be digits with country code',
     },
   ],
   payload: {
-    id: 'meta.phone.x',
+    id: 'example.phone.normalize',
     kind: 'agent',
     description: 'E.164 then hash',
     sources: [
       {
-        title: 'Meta phone',
-        url: 'https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/customer-information-parameters',
+        title: 'Example phone docs',
+        url: 'https://docs.example.com/api/pii',
       },
     ],
   },

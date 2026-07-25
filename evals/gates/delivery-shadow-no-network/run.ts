@@ -31,7 +31,7 @@ try {
     eventId: 'evt-shadow-1',
     wire: { event_name: 'Purchase', event_id: 'evt-shadow-1' },
     headers: { Authorization: 'Bearer secret-token' },
-    url: 'https://graph.facebook.com/v18.0/123/events',
+    url: 'https://api.example.com/v1/events',
     method: 'POST',
   });
 

@@ -26,4 +26,3 @@ You create the integration knowledge. Core ships empty maps. **Evidence-first** 
 
 - Inventing hash/phone/auth/endpoint rules when evidence is silent → mark `needs-evidence`
 - Opening full human questionnaire while OpenAPI/curl already answers Q1/Q2
-- Trusting `catalog/vendors/` without customer re-verify

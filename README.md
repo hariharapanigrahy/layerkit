@@ -4,11 +4,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](./package.json)
 
-### Agent-first multi-vendor data-layer toolkit (Java-first for enterprises)
+### Agent toolkit: AI agents that build vendor integrations **like developers**
 
-Vendor field names, auth, and email/phone processing are **authored by coding agents** from **primary vendor documentation** — not hardcoded as fake universal truth. The package installs skills/hooks, stores proposals, and runs evals.
+Layerkit does **not** ship or maintain a vendor catalog. Agents research **any** vendor from docs/OpenAPI/curl, author customer-owned maps/processors/flows, pass evals + maker-checker, and generate client code — then runtime `track()` stays deterministic (no LLM on the hot path).
 
-**Contributions welcome** — see [CONTRIBUTING.md](./CONTRIBUTING.md). Good first issues: fill empty vendor maps from official docs.
+**Contributions welcome** — see [CONTRIBUTING.md](./CONTRIBUTING.md). Best contributions: **skills** and **process evals**, not pre-built vendor maps.
 
 ---
 
