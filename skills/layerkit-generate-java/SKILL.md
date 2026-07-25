@@ -11,6 +11,20 @@ Scaffold + implement the deterministic Java client from applied maps/flows. **St
 layerkit generate --lang java
 ```
 
+## TypeScript parity (optional)
+
+Same maps/domain input; second runtime language **dry-run scaffold** (not the enterprise Java path):
+
+```bash
+layerkit generate --lang ts
+# aliases: --lang typescript
+# default out: {projectDir}/out/ts
+```
+
+Emits `package.json` (`"type": "module"`), `src/index.ts` (`DataLayerClient.track` with `dry_run`),
+`src/vendor/types.ts`, `src/apply-map.ts` (stub returning `{ mode: 'dry_run', intent, vendor }`), and `README.md`.
+Prefer **Java** for promote / JaCoCo quality gates until the TS client is fully implemented.
+
 ## What the CLI scaffolds
 
 Under `{projectDir}/out/java`:

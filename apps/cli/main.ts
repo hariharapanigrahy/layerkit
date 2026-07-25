@@ -28,6 +28,7 @@ import {
   defaultJacocoSearchRoots,
   JACOCO_MIN_LINE_COVERAGE,
 } from '../../libs/generate/quality.js';
+import { generateTsScaffold } from '../../libs/generate/ts-scaffold.js';
 import { layerkitHookGuidance } from '../../libs/hooks/guidance.js';
 import { installLayerkit } from '../../libs/install/install.js';
 import {
@@ -487,27 +488,54 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['generate'],
-    usage: 'generate --lang java [--out <dir>] [--project-dir <path>]',
+    usage: 'generate --lang java|typescript|ts [--out <dir>] [--project-dir <path>]',
     handler: (args, ctx) => {
-      const lang = flag(args, '--lang') ?? 'java';
-      if (lang !== 'java') {
-        throw new Error('Only --lang java is supported in v0.1 (enterprise first).');
-      }
+      const lang = (flag(args, '--lang') ?? 'java').toLowerCase();
       const store = openStore(ctx);
       const project = store.loadProject();
       const domain = store.loadDomain();
       if (!project || !domain) throw new Error('No project — run layerkit install --poc');
       const maps = store.listMaps();
-      const out = flag(args, '--out') ?? join(store.projectDir, 'out', 'java');
-      const files = generateJavaScaffold({ project, domain, maps });
-      for (const f of files) {
-        const p = join(out, f.path);
-        mkdirSync(join(p, '..'), { recursive: true });
-        writeFileSync(p, f.content, 'utf8');
+
+      if (lang === 'java') {
+        const out = flag(args, '--out') ?? join(store.projectDir, 'out', 'java');
+        const files = generateJavaScaffold({ project, domain, maps });
+        for (const f of files) {
+          const p = join(out, f.path);
+          mkdirSync(join(p, '..'), { recursive: true });
+          writeFileSync(p, f.content, 'utf8');
+        }
+        console.log(`Scaffolded ${files.length} files → ${out}`);
+        console.log(
+          'Includes: Facade, Strategy, PrivacyGate, DeliveryClient, JaCoCo 0.95 pom, DESIGN_PATTERNS.md',
+        );
+        console.log(
+          'Next: skill layerkit-generate-java; then mvn test && layerkit doctor --quality --strict',
+        );
+        return;
       }
-      console.log(`Scaffolded ${files.length} files → ${out}`);
-      console.log('Includes: Facade, Strategy, PrivacyGate, DeliveryClient, JaCoCo 0.95 pom, DESIGN_PATTERNS.md');
-      console.log('Next: skill layerkit-generate-java; then mvn test && layerkit doctor --quality --strict');
+
+      if (lang === 'typescript' || lang === 'ts') {
+        const out = flag(args, '--out') ?? join(store.projectDir, 'out', 'ts');
+        const files = generateTsScaffold({ project, domain, maps });
+        for (const f of files) {
+          const p = join(out, f.path);
+          mkdirSync(join(p, '..'), { recursive: true });
+          writeFileSync(p, f.content, 'utf8');
+        }
+        console.log(`Scaffolded ${files.length} files → ${out}`);
+        console.log(
+          'Includes: DataLayerClient facade, vendor types, apply-map dry_run stub, package.json (type module)',
+        );
+        console.log(
+          'Next: dry-run demos via DataLayerClient.track; full maps via layerkit process dry-run (same maps as Java)',
+        );
+        return;
+      }
+
+      throw new Error(
+        `Unsupported --lang ${lang}. Supported: java | typescript | ts`,
+      );
     },
     showInTopLevelHelp: true,
   },
