@@ -1,0 +1,9 @@
+{
+  "id": "proposal-write-cli",
+  "suite": "ci",
+  "title": "Scaffold + write map/processor proposals via libs; validate kind/sources/vendor",
+  "owners": ["proposal", "cli"],
+  "featurePr": "proposal-write-cli",
+  "fixtures": ["agent/map-v1.json", "agent/processor-email-sha256.json"],
+  "tags": ["deterministic", "no-network"]
+}
