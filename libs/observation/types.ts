@@ -1,14 +1,40 @@
 /**
- * Observation & audit config (v0.2 sinks: noop, stdout_json, file).
+ * Observation & audit config (v0.2 sinks: noop, stdout_json, file, SPI, OTel placeholder).
+ *
+ * Real OTLP/export integrations should use `{ type: 'spi', name }` with a
+ * customer-registered ObservationSinkSpi — no OpenTelemetry SDK dependency in Layerkit.
  */
 
 export type TelemetryPii = 'never' | 'hashed' | 'allowlist';
 export type EmitFailurePolicy = 'best_effort' | 'fail_track';
 
+/** Shared sink variants available on tracing and audit. */
+export type OtelOtlpHttpSinkV02 = {
+  type: 'otel_otlp_http';
+  endpoint: string;
+  headers?: Record<string, string>;
+  /**
+   * Optional injectable fetch for tests / advanced hosts.
+   * When omitted (default), events are buffered in-memory and never sent over the network.
+   */
+  fetchImpl?: (
+    input: string,
+    init?: { method?: string; headers?: Record<string, string>; body?: string },
+  ) => Promise<unknown>;
+};
+
+export type SpiSinkV02 = {
+  type: 'spi';
+  name: string;
+  options?: Record<string, unknown>;
+};
+
 export type TraceSinkV02 =
   | { type: 'noop' }
   | { type: 'stdout_json' }
-  | { type: 'file'; path: string };
+  | { type: 'file'; path: string }
+  | OtelOtlpHttpSinkV02
+  | SpiSinkV02;
 
 export type MetricSinkV02 = TraceSinkV02;
 export type LogSinkV02 = TraceSinkV02;
@@ -17,7 +43,9 @@ export type AuditSinkV02 =
   | { type: 'noop' }
   | { type: 'stdout_json' }
   | { type: 'file'; path: string }
-  | { type: 'custom_java'; className: string };
+  | { type: 'custom_java'; className: string }
+  | OtelOtlpHttpSinkV02
+  | SpiSinkV02;
 
 export interface ObservationConfig {
   schemaVersion: 2;

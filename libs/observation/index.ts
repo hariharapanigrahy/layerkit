@@ -5,6 +5,8 @@ export type {
   LogSinkV02,
   MetricSinkV02,
   ObservationConfig,
+  OtelOtlpHttpSinkV02,
+  SpiSinkV02,
   TelemetryPii,
   TraceSinkV02,
 } from './types.js';
@@ -22,6 +24,19 @@ export {
   noopSink,
   stdoutJsonSink,
   fileSink,
+  spiSink,
+  otelOtlpHttpSink,
+  getOtelOtlpHttpBuffer,
+  clearOtelOtlpHttpBuffer,
   type EmitContext,
   type ObservationBus,
+  type OtelOtlpHttpBufferEntry,
 } from './sinks.js';
+
+export {
+  registerSinkSpi,
+  getSinkSpi,
+  listSinkSpi,
+  clearSinkSpi,
+  type ObservationSinkSpi,
+} from './spi.js';
