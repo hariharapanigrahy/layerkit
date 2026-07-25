@@ -1,14 +1,38 @@
 # Layerkit
 
 [![CI](https://github.com/hariharapanigrahy/layerkit/actions/workflows/ci.yml/badge.svg)](https://github.com/hariharapanigrahy/layerkit/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/layerkit.svg)](https://www.npmjs.com/package/layerkit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](./package.json)
 
 ### Agent toolkit: AI agents that build vendor integrations **like developers**
 
-Layerkit does **not** ship or maintain a vendor catalog. Agents research **any** vendor from docs/OpenAPI/curl, author customer-owned maps/processors/flows, pass evals + maker-checker, and generate client code — then runtime `track()` stays deterministic (no LLM on the hot path).
+Layerkit does **not** ship or maintain a vendor catalog. Agents research **any** vendor from docs/OpenAPI/curl, author customer-owned maps/processors/flows, pass maker-checker + dry-run, then your app sends for real (adapters/SDK or Layerkit live delivery). Runtime `track()` stays deterministic — **no LLM on the hot path**.
 
 **Contributions welcome** — see [CONTRIBUTING.md](./CONTRIBUTING.md). Best contributions: **skills** and **process evals**, not pre-built vendor maps.
+
+---
+
+## Install (npm)
+
+```bash
+# CLI (recommended for agents)
+npm install -g layerkit
+# or one-shot
+npx layerkit --help
+
+# In an app (maps + optional runtime imports)
+npm install layerkit
+```
+
+Library imports (optional):
+
+```ts
+import { track } from 'layerkit';
+import { applyVendorMap } from 'layerkit/map-engine';
+import { createVendorMemoryStore } from 'layerkit/store';
+import { createDeliverySimulator } from 'layerkit/delivery';
+```
 
 ---
 
@@ -25,12 +49,10 @@ Install Layerkit for this repo using https://raw.githubusercontent.com/hariharap
 Manual:
 
 ```bash
-git clone https://github.com/hariharapanigrahy/layerkit.git
-cd layerkit
-npm install && npm run build && npm link
+npm install -g layerkit
 
 cd /path/to/your/app
-layerkit install --platform codex --hooks enabled --auto-map-updates enabled --poc
+layerkit install --platform claude --hooks enabled --auto-map-updates enabled --poc
 # platforms: codex|claude|cursor|copilot|opencode|openhands|factory-droid|antigravity
 # optional: --project-dir integrations/layerkit  (default .layerkit)
 layerkit doctor
@@ -75,9 +97,9 @@ Agent golden path: [docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GOLDEN_PATH.md).
 | Plane | Who | What |
 |-------|-----|------|
 | Research | **Your AI agent** | Reads vendor docs → map/processor proposals with `sources[]` |
-| Gates | CLI | `proposal validate` / `apply`, doctor, install |
-| Ship | Agent + scaffold | Java client for enterprises (`generate --lang java` + skill) |
-| Runtime | Your JVM | Deterministic `track()` — **no LLM on the hot path** |
+| Gates | CLI | `proposal validate` / dry-run / apply, doctor, install |
+| Runtime | Your app or Layerkit delivery | Deterministic map apply + HTTP — **no LLM on the hot path** |
+| Optional generate | Scaffold only | Starter code — not required for production send |
 
 20 commerce vendor **slots** ship empty (doc URLs only). Community + agents fill them.
 
