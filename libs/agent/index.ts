@@ -94,3 +94,17 @@ export {
   type PromoteGatesInput,
   type PromoteGatesResult,
 } from './promote-gates.js';
+  decideShape,
+  defaultRationale,
+  designDecisionPath,
+  designDecisionRunbookRel,
+  formatDesignDecisionMarkdown,
+  loadDesignDecision,
+  parseDesignDecisionJson,
+  parseDesignDecisionMarkdown,
+  writeDesignDecision,
+  type DecideShapeInput,
+  type DesignDecision,
+  type IntegrationShape,
+  type WriteDesignDecisionOpts,
+} from './design-decision.js';

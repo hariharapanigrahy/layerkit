@@ -7,6 +7,8 @@ import { join, resolve } from 'node:path';
 import {
   evaluatePromoteGates,
   formatPromoteGateFailures,
+  decideShape,
+  defaultRationale,
   formatNextStepLine,
   formatPipelineStatus,
   getNextStep,
@@ -19,6 +21,9 @@ import {
   PIPELINE_STATUS_REL,
   scanAndWriteDomainDiscovery,
   scanAndWriteStyleProfile,
+  writeDesignDecision,
+  type DesignDecision,
+  type IntegrationShape,
 } from '../../libs/agent/index.js';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
@@ -203,6 +208,10 @@ const cliCommands: CliCommand[] = [
     usage:
       'discover scan [--root <dir>] [--out memory|path] [--proposal <path>] [--project-dir <path>]',
     handler: runDiscoverScan,
+    path: ['design', 'decide'],
+    usage:
+      'design decide --vendor <v> [--shape linear_map|flow|hybrid] [--sequence] [--branch] [--foreach] [--oauth] [--multi-call] [--intent x]... [--evidence url]... [--out memory|path] [--json] [--project-dir <path>]',
+    handler: runDesignDecide,
     showInTopLevelHelp: true,
   },
 
@@ -1101,6 +1110,82 @@ function runDiscoverScan(args: string[], ctx: CliContext): void {
   if (proposalPath) {
     console.log(`Wrote domain_spec proposal → ${proposalPath}`);
   }
+
+const DESIGN_SHAPES = new Set<string>(['linear_map', 'flow', 'hybrid']);
+
+/**
+ * Emit map-vs-flow design decision artifact under memory/runbooks/design-<vendor>.md
+ */
+function runDesignDecide(args: string[], ctx: CliContext): void {
+  const vendor = flag(args, '--vendor');
+  if (!vendor?.trim()) {
+    throw new Error(
+      'Usage: layerkit design decide --vendor <v> [--shape linear_map|flow|hybrid] [--sequence] [--branch] [--foreach] [--oauth] [--multi-call] [--intent x]... [--evidence url]... [--out memory|path] [--json]',
+    );
+  }
+
+  const shapeFlag = flag(args, '--shape');
+  if (shapeFlag && !DESIGN_SHAPES.has(shapeFlag)) {
+    throw new Error(
+      `design decide: invalid --shape "${shapeFlag}" (expected linear_map|flow|hybrid)`,
+    );
+  }
+
+  const input = {
+    hasSequence: hasFlag(args, '--sequence'),
+    hasBranch: hasFlag(args, '--branch'),
+    hasForeach: hasFlag(args, '--foreach'),
+    hasOauthThenPost: hasFlag(args, '--oauth'),
+    multiCall: hasFlag(args, '--multi-call'),
+  };
+
+  const shape: IntegrationShape = shapeFlag
+    ? (shapeFlag as IntegrationShape)
+    : decideShape(input);
+
+  const intents = collectFlags(args, '--intent');
+  const evidence = collectFlags(args, '--evidence');
+  const outRaw = flag(args, '--out') ?? 'memory';
+  const out = outRaw === 'memory' ? 'memory' : resolve(outRaw);
+  const alsoJson = wantJson(args);
+
+  let authSteps: DesignDecision['authSteps'] = 'none';
+  if (input.hasOauthThenPost) authSteps = 'token_then_post';
+
+  let batch: DesignDecision['batch'] = 'none';
+  if (input.hasForeach) batch = 'foreach';
+
+  const decision: DesignDecision = {
+    schemaVersion: 1,
+    vendor: vendor.trim(),
+    shape,
+    intents,
+    operations: [],
+    batch,
+    authSteps,
+    privacyRequired: false,
+    evidence,
+    openQuestions: [],
+    rationale: defaultRationale(shape, input),
+    decidedAt: new Date().toISOString(),
+  };
+
+  const { mdPath, jsonPath } = writeDesignDecision({
+    projectDir: ctx.projectDir,
+    decision,
+    out,
+    alsoJson,
+  });
+
+  emitJsonOrText(args, { decision, mdPath, jsonPath }, () => {
+    console.log(`shape: ${decision.shape}`);
+    console.log(`vendor: ${decision.vendor}`);
+    console.log(`authSteps: ${decision.authSteps}`);
+    console.log(`batch: ${decision.batch}`);
+    console.log(`rationale: ${decision.rationale}`);
+    console.log(`Wrote design decision → ${mdPath}`);
+    if (jsonPath) console.log(`Wrote design decision JSON → ${jsonPath}`);
+  });
 }
 
 function flag(args: string[], name: string): string | undefined {

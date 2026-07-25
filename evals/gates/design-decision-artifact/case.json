@@ -1,0 +1,5 @@
+{
+  "id": "design-decision-artifact",
+  "suite": "ci",
+  "title": "design decide: sequence+oauth\u2192flow, default\u2192linear_map, runbook contains shape"
+}
