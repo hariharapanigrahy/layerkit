@@ -42,7 +42,16 @@ import {
   platformDisplayName,
   type InstallPlatform,
 } from '../../libs/install/paths.js';
-import type { Identity, Proposal } from '../../libs/domain/types.js';
+import type { Identity, IntentWire, Proposal } from '../../libs/domain/types.js';
+import {
+  parseEndpointFlag,
+  parseFieldFlag,
+  parseIntentFlag,
+  parseSourceFlag,
+  scaffoldProcessorProposal,
+  scaffoldVendorMapProposal,
+} from '../../libs/proposal/scaffold.js';
+import { validateProposal } from '../../libs/proposal/validate.js';
 import {
   createMemoryStack,
   type MemoryEntryType,
@@ -361,6 +370,24 @@ const cliCommands: CliCommand[] = [
     showInTopLevelHelp: true,
   },
   {
+      path: ['proposal', 'write', 'map'],
+      usage:
+        'proposal write map --vendor <v> --out <file> --source title=url [...] [--agent <id>] [--endpoint METHOD:path] [--intent purchase:EventName]... [--field domain:vendor]... [--validate]',
+      handler: (args) => {
+        runProposalWriteMap(args);
+      },
+      showInTopLevelHelp: true,
+    },
+    {
+      path: ['proposal', 'write', 'processor'],
+      usage:
+        'proposal write processor --id <id> --out <file> --source title=url [...] [--agent <id>] [--description <text>] [--builtin-op <op>] [--validate]',
+      handler: (args) => {
+        runProposalWriteProcessor(args);
+      },
+      showInTopLevelHelp: true,
+    },
+    {
     path: ['proposal', 'submit'],
     usage: 'proposal submit <file> [--by <actorId>] [--project-dir <path>]',
     handler: (args, ctx) => {
@@ -1191,6 +1218,112 @@ function runDesignDecide(args: string[], ctx: CliContext): void {
     if (jsonPath) console.log(`Wrote design decision JSON → ${jsonPath}`);
   });
 }
+
+function writeProposalFile(out: string, proposal: Proposal): void {
+  const path = resolve(out);
+  mkdirSync(join(path, '..'), { recursive: true });
+  writeFileSync(path, `${JSON.stringify(proposal, null, 2)}\n`, 'utf8');
+}
+
+function maybeValidateWrittenProposal(proposal: Proposal, out: string, doValidate: boolean): void {
+  if (doValidate) {
+    const issues = validateProposal(proposal);
+    const errors = issues.filter((i) => i.level === 'error');
+    const warnings = issues.filter((i) => i.level === 'warn');
+    if (errors.length === 0) {
+      console.log('Structural validate: ok');
+    } else {
+      console.log('Structural validate: errors');
+      for (const e of errors) console.log(`- [${e.code}] ${e.message}`);
+      process.exitCode = 1;
+    }
+    for (const w of warnings) console.log(`Warning: [${w.code}] ${w.message}`);
+  }
+  console.log(`Next: layerkit proposal validate ${out}`);
+  console.log('(Does not auto-submit — use proposal submit when ready for checker.)');
+}
+
+function runProposalWriteMap(args: string[]): void {
+  const vendor = flag(args, '--vendor');
+  const out = flag(args, '--out');
+  const agent = flag(args, '--agent');
+  const sourceRaws = collectFlags(args, '--source');
+  const endpointRaw = flag(args, '--endpoint');
+  const intentRaws = collectFlags(args, '--intent');
+  const fieldRaws = collectFlags(args, '--field');
+  const doValidate = args.includes('--validate');
+
+  if (!vendor || !out) {
+    throw new Error(
+      'Usage: layerkit proposal write map --vendor <v> --out <file> --source title=url [...] [--agent <id>] [--endpoint METHOD:path] [--intent purchase:EventName]... [--field domain:vendor]... [--validate]',
+    );
+  }
+  if (!sourceRaws.length) {
+    throw new Error(
+      'proposal write map requires at least one --source title=url (vendor documentation is the truth)',
+    );
+  }
+
+  const sources = sourceRaws.map(parseSourceFlag);
+  const intents: Record<string, IntentWire> = {};
+  for (const raw of intentRaws) {
+    const { intent, eventName } = parseIntentFlag(raw);
+    intents[intent] = { eventName };
+  }
+  const fields = fieldRaws.map(parseFieldFlag);
+  const endpoint = endpointRaw ? parseEndpointFlag(endpointRaw) : undefined;
+
+  const proposal = scaffoldVendorMapProposal({
+    vendor,
+    agentId: agent,
+    sources,
+    endpoint,
+    intents: Object.keys(intents).length ? intents : undefined,
+    fields: fields.length ? fields : undefined,
+  });
+
+  writeProposalFile(out, proposal);
+  console.log(`Wrote vendor_map proposal ${proposal.id} → ${resolve(out)}`);
+  console.log(`Sources: ${proposal.sources.length}`);
+  maybeValidateWrittenProposal(proposal, out, doValidate);
+}
+
+function runProposalWriteProcessor(args: string[]): void {
+  const id = flag(args, '--id');
+  const out = flag(args, '--out');
+  const agent = flag(args, '--agent');
+  const description = flag(args, '--description');
+  const builtinOp = flag(args, '--builtin-op');
+  const sourceRaws = collectFlags(args, '--source');
+  const doValidate = args.includes('--validate');
+
+  if (!id || !out) {
+    throw new Error(
+      'Usage: layerkit proposal write processor --id <id> --out <file> --source title=url [...] [--agent <id>] [--description <text>] [--builtin-op <op>] [--validate]',
+    );
+  }
+  if (!sourceRaws.length) {
+    throw new Error(
+      'proposal write processor requires at least one --source title=url (citation is mandatory)',
+    );
+  }
+
+  const sources = sourceRaws.map(parseSourceFlag);
+  const proposal = scaffoldProcessorProposal({
+    id,
+    description: description ?? `Processor ${id}`,
+    agentId: agent,
+    sources,
+    builtinOp: builtinOp,
+  });
+
+  writeProposalFile(out, proposal);
+  console.log(`Wrote processor proposal ${proposal.id} → ${resolve(out)}`);
+  console.log(`Sources: ${proposal.sources.length}`);
+  maybeValidateWrittenProposal(proposal, out, doValidate);
+}
+
+
 
 function flag(args: string[], name: string): string | undefined {
   const i = args.indexOf(name);
