@@ -48,9 +48,23 @@ export function hostnameFromUrl(url: string): string | null {
 }
 
 function loadScenarios(): ResearchScenario[] {
+  // Resolve from package root so both src and dist/ test runners work
   const here = dirname(fileURLToPath(import.meta.url));
-  const path = join(here, '../fixtures/agent/research-scenarios.json');
-  return JSON.parse(readFileSync(path, 'utf8')) as ResearchScenario[];
+  const candidates = [
+    join(here, '../fixtures/agent/research-scenarios.json'),
+    join(here, '../../evals/fixtures/agent/research-scenarios.json'),
+    join(process.cwd(), 'evals/fixtures/agent/research-scenarios.json'),
+  ];
+  for (const path of candidates) {
+    try {
+      return JSON.parse(readFileSync(path, 'utf8')) as ResearchScenario[];
+    } catch {
+      /* try next */
+    }
+  }
+  throw new Error(
+    'research-scenarios.json not found (evals/fixtures/agent/) — not a vendor catalog file',
+  );
 }
 
 export function buildResearchPrompt(opts: {
