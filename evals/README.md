@@ -96,3 +96,4 @@ console.log('my-gate: all checks passed');
 | `empty-map-skipped` | empty map → `empty_map_awaiting_agent_research` |
 | `sample-agent-map-apply` | Agent fixture apply + Purchase wire |
 | `install-platforms` | 8 platforms registered with installers |
+| `observation-otel-spi` | SPI audit sink receives events; file works; `otel_otlp_http` is no-network placeholder (real OTLP via customer SPI) |
