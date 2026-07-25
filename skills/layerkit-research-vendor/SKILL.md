@@ -25,19 +25,23 @@ layerkit research deepen ./hub.md --json
 layerkit research fill --openapi ./openapi.json --curl ./sample.curl --hub ./hub.md --vendor <id> --out ./sheet.json
 layerkit research gaps ./sheet.json
 ```
-   - OpenAPI → **Q1 auth** / **Q2 endpoints**
+   - OpenAPI → **Q1** auth (securitySchemes only), **Q2** endpoints, **Q3** intent *candidates* (operationId + opaque `x-*` values), **Q4** body schema fields, **Q5** PII-ish name hints
    - curl → method, host, path, auth class (parse-only)
    - deepen hub links → enqueue openapi **before** asking humans
-4. Fill Q1–Q10 from evidence; record citations + `source` (`doc|openapi|curl|code|…`, not `human` when derived).
-5. If a dimension is empty → **deepen L0–L4** (links, `$ref`, repo samples, optional customer-approved probe). Residual questionnaire only after that (`residualGaps`).
-6. Write research note (PII redacted):
+4. **Domain meaning is not vendor hardcoding.** Tools list evidence only. Binding wire ops → domain intents is:
+   - project convention (`layerkit domain-binding show|init` → `memory/runbooks/domain-binding.json`), and
+   - this skill + `layerkit-author-map` (cite extension / operationId / docs).
+   - Generic: any `x-*-domain-op` may be treated as a domain-op *encoding* when convention allows — never special-case one customer prefix in core.
+5. Fill remaining Q6–Q10 from evidence; record citations + `source` (`doc|openapi|curl|code|…`, not `human` when derived).
+6. If a dimension is empty → **deepen L0–L4**. Residual questionnaire only after that (`residualGaps`).
+7. Write research note (PII redacted):
 
 ```bash
 layerkit memory append --type research --title "<vendor> research" --vendor <vendor> --body-file ./research-note.md
 ```
 
-7. Hand off to `layerkit-design-integration` then `layerkit-author-map` (do not invent map rows here without evidence).
-8. Ask human **only** for residual gaps; never open full questionnaire while OpenAPI/curl already answers Q1/Q2.
+8. Hand off to `layerkit-design-integration` then `layerkit-author-map` (do not invent map rows here without evidence).
+9. Ask human **only** for residual gaps; never open full questionnaire while OpenAPI/curl already answers Q1/Q2.
 
 ## Customer-owned output
 

@@ -73,6 +73,30 @@ export interface DeepenLogEntry {
   enqueued?: string[];
 }
 
+/** Request body (or similar) property extracted from OpenAPI schema — evidence only. */
+export interface ParsedOpenApiProperty {
+  name: string;
+  type: string;
+  required?: boolean;
+  description?: string;
+}
+
+export interface ParsedOpenApiOperation {
+  method: string;
+  path: string;
+  operationId?: string;
+  summary?: string;
+  description?: string;
+  security?: string[];
+  /**
+   * Opaque OpenAPI extensions (keys starting with x-). Values are stringified.
+   * Semantics are NOT interpreted here — project domain-binding convention + skills decide.
+   */
+  extensions?: Record<string, string>;
+  /** application/json (or first) requestBody schema properties when present */
+  bodyFields?: ParsedOpenApiProperty[];
+}
+
 export interface ParsedOpenApi {
   title?: string;
   version?: string;
@@ -84,12 +108,7 @@ export interface ParsedOpenApi {
     in?: string;
     paramName?: string;
   }>;
-  operations: Array<{
-    method: string;
-    path: string;
-    operationId?: string;
-    security?: string[];
-  }>;
+  operations: ParsedOpenApiOperation[];
   raw: unknown;
 }
 

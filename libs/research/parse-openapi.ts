@@ -1,11 +1,73 @@
 /**
  * Deterministic OpenAPI 3 / Swagger-ish JSON parser (no network).
- * Supports JSON text; light YAML is not required for gates (JSON fixtures).
+ * Extracts operations, security schemes, request body fields, and opaque x-* extensions.
+ * Does not invent paths, auth, or domain meaning when the document is silent.
  */
-import type { ParsedOpenApi } from './types.js';
+import type { ParsedOpenApi, ParsedOpenApiOperation, ParsedOpenApiProperty } from './types.js';
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+/**
+ * Collect extension keys (x-*) from an object as opaque string values when scalar/string.
+ * Nested objects are JSON-stringified (evidence only — no semantic interpretation).
+ */
+export function collectXExtensions(obj: Record<string, unknown>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (!k.startsWith('x-') && !k.startsWith('X-')) continue;
+    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+      out[k] = String(v);
+    } else if (v != null) {
+      try {
+        out[k] = JSON.stringify(v);
+      } catch {
+        out[k] = String(v);
+      }
+    }
+  }
+  return out;
+}
+
+function schemaProperties(schema: unknown, required: Set<string>): ParsedOpenApiProperty[] {
+  if (!isRecord(schema)) return [];
+  // Resolve trivial local $ref is not supported — leave empty rather than invent
+  if (typeof schema.$ref === 'string') return [];
+  const props = isRecord(schema.properties) ? schema.properties : null;
+  if (!props) return [];
+  const out: ParsedOpenApiProperty[] = [];
+  for (const [name, raw] of Object.entries(props)) {
+    if (!isRecord(raw)) {
+      out.push({ name, type: 'unknown', required: required.has(name) });
+      continue;
+    }
+    out.push({
+      name,
+      type: typeof raw.type === 'string' ? raw.type : 'unknown',
+      required: required.has(name),
+      description: typeof raw.description === 'string' ? raw.description : undefined,
+    });
+  }
+  return out;
+}
+
+function bodyFieldsFromOp(op: Record<string, unknown>): ParsedOpenApiProperty[] {
+  const rb = op.requestBody;
+  if (!isRecord(rb)) return [];
+  const content = isRecord(rb.content) ? rb.content : null;
+  if (!content) return [];
+  // Prefer application/json, else first content type
+  const json =
+    (isRecord(content['application/json']) ? content['application/json'] : null) ??
+    (Object.values(content).find((c) => isRecord(c)) as Record<string, unknown> | undefined);
+  if (!json) return [];
+  const schema = json.schema;
+  const requiredList =
+    isRecord(schema) && Array.isArray(schema.required)
+      ? (schema.required.filter((x) => typeof x === 'string') as string[])
+      : [];
+  return schemaProperties(schema, new Set(requiredList));
 }
 
 /**
@@ -69,16 +131,19 @@ export function parseOpenAPI(input: string | unknown): ParsedOpenApi {
     }
   }
 
-  const operations: ParsedOpenApi['operations'] = [];
+  const operations: ParsedOpenApiOperation[] = [];
   const paths = isRecord(doc.paths) ? doc.paths : {};
   const httpMethods = new Set(['get', 'post', 'put', 'patch', 'delete', 'head', 'options']);
 
   for (const [path, pathItem] of Object.entries(paths)) {
     if (!isRecord(pathItem)) continue;
+    const pathExt = collectXExtensions(pathItem);
     for (const [method, op] of Object.entries(pathItem)) {
       if (!httpMethods.has(method.toLowerCase())) continue;
       if (!isRecord(op)) continue;
       const operationId = typeof op.operationId === 'string' ? op.operationId : undefined;
+      const summary = typeof op.summary === 'string' ? op.summary : undefined;
+      const description = typeof op.description === 'string' ? op.description : undefined;
       const securityNames: string[] = [];
       const sec = op.security ?? doc.security;
       if (Array.isArray(sec)) {
@@ -86,11 +151,17 @@ export function parseOpenAPI(input: string | unknown): ParsedOpenApi {
           if (isRecord(item)) securityNames.push(...Object.keys(item));
         }
       }
+      const extensions = { ...pathExt, ...collectXExtensions(op) };
+      const bodyFields = bodyFieldsFromOp(op);
       operations.push({
         method: method.toUpperCase(),
         path,
         operationId,
+        summary,
+        description,
         security: securityNames.length ? securityNames : undefined,
+        extensions: Object.keys(extensions).length ? extensions : undefined,
+        bodyFields: bodyFields.length ? bodyFields : undefined,
       });
     }
   }
@@ -137,4 +208,54 @@ export function describeEndpointsFromOpenApi(parsed: ParsedOpenApi): string | nu
     .join('; ');
   if (ops) return ops;
   return `servers: ${parsed.servers.join(', ')}`;
+}
+
+/**
+ * Intent candidates from evidence only (for Q3).
+ * Lists operationId + any x-* extension values — does NOT pick domain meaning.
+ */
+export function describeIntentCandidatesFromOpenApi(parsed: ParsedOpenApi): string | null {
+  if (!parsed.operations.length) return null;
+  const lines: string[] = [];
+  for (const o of parsed.operations) {
+    const parts: string[] = [`${o.method} ${o.path}`];
+    if (o.operationId) parts.push(`operationId=${o.operationId}`);
+    if (o.extensions) {
+      for (const [k, v] of Object.entries(o.extensions)) {
+        parts.push(`${k}=${v}`);
+      }
+    }
+    lines.push(parts.join(' '));
+  }
+  return lines.join('; ');
+}
+
+/**
+ * Field candidates from requestBody properties (for Q4). Evidence only.
+ */
+export function describeFieldsFromOpenApi(parsed: ParsedOpenApi): string | null {
+  const seen = new Map<string, ParsedOpenApiProperty>();
+  for (const o of parsed.operations) {
+    for (const f of o.bodyFields ?? []) {
+      if (!seen.has(f.name)) seen.set(f.name, f);
+    }
+  }
+  if (!seen.size) return null;
+  return [...seen.values()]
+    .map((f) => `${f.name}:${f.type}${f.required ? ' (required)' : ''}`)
+    .join('; ');
+}
+
+/** PII-ish field names present in schemas (heuristic labels only — not processors). */
+export function describePiiFieldHintsFromOpenApi(parsed: ParsedOpenApi): string | null {
+  const names = new Set<string>();
+  for (const o of parsed.operations) {
+    for (const f of o.bodyFields ?? []) {
+      if (/email|phone|msisdn|ssn|password|token|secret|pii/i.test(f.name)) {
+        names.add(f.name);
+      }
+    }
+  }
+  if (!names.size) return null;
+  return `Schema fields that look PII-sensitive (verify in privacy review): ${[...names].sort().join(', ')}`;
 }

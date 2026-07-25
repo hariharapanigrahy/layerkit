@@ -8,6 +8,8 @@ export type {
   EvidenceSourceKind,
   ParsedCurl,
   ParsedOpenApi,
+  ParsedOpenApiOperation,
+  ParsedOpenApiProperty,
   ResearchSeed,
   ResidualGap,
 } from './types.js';
@@ -15,8 +17,12 @@ export { DIMENSION_TOPICS } from './types.js';
 
 export {
   parseOpenAPI,
+  collectXExtensions,
   describeAuthFromOpenApi,
   describeEndpointsFromOpenApi,
+  describeIntentCandidatesFromOpenApi,
+  describeFieldsFromOpenApi,
+  describePiiFieldHintsFromOpenApi,
 } from './parse-openapi.js';
 
 export { parseCurl } from './parse-curl.js';

@@ -35,6 +35,11 @@ import {
   writeHandoffRunbook,
   STYLE_PROFILE_RUNBOOK_REL,
   type StyleProfile,
+  loadDomainBinding,
+  writeDomainBinding,
+  DEFAULT_DOMAIN_BINDING,
+  domainBindingPath,
+  resolveIntentsFromOpenApi,
 } from '../../libs/agent/index.js';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
@@ -61,6 +66,7 @@ import {
   parseSourceFlag,
   scaffoldProcessorProposal,
   scaffoldVendorMapProposal,
+  scaffoldVendorMapFromOpenApi,
 } from '../../libs/proposal/scaffold.js';
 import { validateProposal } from '../../libs/proposal/validate.js';
 import {
@@ -401,23 +407,48 @@ const cliCommands: CliCommand[] = [
     showInTopLevelHelp: true,
   },
   {
-      path: ['proposal', 'write', 'map'],
-      usage:
-        'proposal write map --vendor <v> --out <file> --source title=url [...] [--agent <id>] [--endpoint METHOD:path] [--intent purchase:EventName]... [--field domain:vendor]... [--validate]',
-      handler: (args) => {
-        runProposalWriteMap(args);
-      },
-      showInTopLevelHelp: true,
+    path: ['proposal', 'write', 'map'],
+    usage:
+      'proposal write map --vendor <v> --out <file> --source title=url [...] [--agent <id>] [--endpoint METHOD:path] [--intent purchase:EventName]... [--field domain:vendor]... [--validate]',
+    handler: (args) => {
+      runProposalWriteMap(args);
     },
-    {
-      path: ['proposal', 'write', 'processor'],
-      usage:
-        'proposal write processor --id <id> --out <file> --source title=url [...] [--agent <id>] [--description <text>] [--builtin-op <op>] [--validate]',
-      handler: (args) => {
-        runProposalWriteProcessor(args);
-      },
-      showInTopLevelHelp: true,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['proposal', 'write', 'map-from-openapi'],
+    usage:
+      'proposal write map-from-openapi --vendor <v> --openapi <file> --out <file> [--agent <id>] [--validate] [--project-dir <path>]',
+    handler: (args, ctx) => {
+      runProposalWriteMapFromOpenApi(args, ctx);
     },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['proposal', 'write', 'processor'],
+    usage:
+      'proposal write processor --id <id> --out <file> --source title=url [...] [--agent <id>] [--description <text>] [--builtin-op <op>] [--validate]',
+    handler: (args) => {
+      runProposalWriteProcessor(args);
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['domain-binding', 'show'],
+    usage: 'domain-binding show [--project-dir <path>]',
+    handler: (_args, ctx) => {
+      runDomainBindingShow(ctx);
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['domain-binding', 'init'],
+    usage: 'domain-binding init [--project-dir <path>]',
+    handler: (_args, ctx) => {
+      runDomainBindingInit(ctx);
+    },
+    showInTopLevelHelp: true,
+  },
     {
     path: ['proposal', 'submit'],
     usage: 'proposal submit <file> [--by <actorId>] [--project-dir <path>]',
@@ -1314,6 +1345,63 @@ function runProposalWriteMap(args: string[]): void {
   console.log(`Wrote vendor_map proposal ${proposal.id} → ${resolve(out)}`);
   console.log(`Sources: ${proposal.sources.length}`);
   maybeValidateWrittenProposal(proposal, out, doValidate);
+}
+
+/**
+ * Scaffold map from OpenAPI evidence + project domain-binding convention.
+ * No vendor hardcoding — intent ids from convention (x-*-domain-op / operationId / path).
+ */
+function runProposalWriteMapFromOpenApi(args: string[], ctx: CliContext): void {
+  const vendor = flag(args, '--vendor');
+  const openapi = flag(args, '--openapi');
+  const out = flag(args, '--out');
+  const agent = flag(args, '--agent');
+  const doValidate = args.includes('--validate');
+
+  if (!vendor || !openapi || !out) {
+    throw new Error(
+      'Usage: layerkit proposal write map-from-openapi --vendor <v> --openapi <file> --out <file> [--agent <id>] [--validate]',
+    );
+  }
+  const abs = resolve(openapi);
+  if (!existsSync(abs)) {
+    throw new Error(`OpenAPI file not found: ${abs}`);
+  }
+  const content = readFileSync(abs, 'utf8');
+  const convention = loadDomainBinding(ctx.projectDir);
+  const proposal = scaffoldVendorMapFromOpenApi({
+    vendor,
+    openapiContent: content,
+    openapiRef: abs,
+    agentId: agent,
+    convention,
+  });
+  writeProposalFile(out, proposal);
+
+  const parsed = parseOpenAPI(content);
+  const resolved = resolveIntentsFromOpenApi(parsed, convention);
+  console.log(`Wrote vendor_map proposal ${proposal.id} → ${resolve(out)}`);
+  console.log(`Operations: ${parsed.operations.length}`);
+  for (const r of resolved) {
+    console.log(`  ${r.operation.method} ${r.operation.path} → intent=${r.intentId || '(unresolved)'} [${r.source}]`);
+  }
+  console.log(`Domain binding: ${domainBindingPath(ctx.projectDir)}`);
+  console.log('(Convention is customer-owned; use domain-binding init/show to configure.)');
+  maybeValidateWrittenProposal(proposal, out, doValidate);
+}
+
+function runDomainBindingShow(ctx: CliContext): void {
+  const c = loadDomainBinding(ctx.projectDir);
+  const path = domainBindingPath(ctx.projectDir);
+  console.log(`Path: ${path}${existsSync(path) ? '' : ' (defaults — file not written yet)'}`);
+  console.log(JSON.stringify(c, null, 2));
+}
+
+function runDomainBindingInit(ctx: CliContext): void {
+  const path = writeDomainBinding(ctx.projectDir, { ...DEFAULT_DOMAIN_BINDING });
+  console.log(`Wrote domain-binding convention → ${path}`);
+  console.log('Edit openapiExtensionKeys if your org uses a fixed x-* key.');
+  console.log('acceptXStarDomainOp=true matches any x-*-domain-op without per-company code.');
 }
 
 function runProposalWriteProcessor(args: string[]): void {

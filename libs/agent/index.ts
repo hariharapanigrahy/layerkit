@@ -121,3 +121,17 @@ export {
   writeHandoffRunbook,
   handoffHasRequiredHeadings,
 } from './handoff.js';
+
+export {
+  DOMAIN_BINDING_REL,
+  DEFAULT_DOMAIN_BINDING,
+  domainBindingPath,
+  loadDomainBinding,
+  writeDomainBinding,
+  formatDomainBindingMarkdown,
+  resolveIntentForOperation,
+  resolveIntentsFromOpenApi,
+  type DomainBindingConvention,
+  type DomainIntentSource,
+  type ResolvedDomainIntent,
+} from './domain-binding.js';
