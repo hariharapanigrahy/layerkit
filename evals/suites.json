@@ -44,6 +44,7 @@
     "strategy-execute-sha256",
     "strategy-fail-closed",
     "style-profile-cli",
+    "style-steer-generate",
     "ts-client-scaffold"
   ],
   "all": [
@@ -91,6 +92,7 @@
     "strategy-execute-sha256",
     "strategy-fail-closed",
     "style-profile-cli",
+    "style-steer-generate",
     "ts-client-scaffold",
     "vendor-research-plan"
   ],
