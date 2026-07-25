@@ -17,10 +17,17 @@ layerkit memory list --vendor <vendor>
 ```
 
 2. Ingest **all** seeds the customer accepts: prose docs, OpenAPI/Swagger, curl samples, collections, customer code.
-3. Use deterministic research helpers (libs/research):
-   - `parseOpenAPI` → **Q1 auth** / **Q2 endpoints** (`source: openapi`)
-   - `parseCurl` → method, host, path, Authorization class (`source: curl`) — **parse-only** by default
-   - `planDeepen` / hub links → enqueue `openapi.json` **before** asking humans
+3. Prefer CLI (same as libs/research):
+```bash
+layerkit research openapi ./openapi.json --json
+layerkit research curl ./sample.curl --json
+layerkit research deepen ./hub.md --json
+layerkit research fill --openapi ./openapi.json --curl ./sample.curl --hub ./hub.md --vendor <id> --out ./sheet.json
+layerkit research gaps ./sheet.json
+```
+   - OpenAPI → **Q1 auth** / **Q2 endpoints**
+   - curl → method, host, path, auth class (parse-only)
+   - deepen hub links → enqueue openapi **before** asking humans
 4. Fill Q1–Q10 from evidence; record citations + `source` (`doc|openapi|curl|code|…`, not `human` when derived).
 5. If a dimension is empty → **deepen L0–L4** (links, `$ref`, repo samples, optional customer-approved probe). Residual questionnaire only after that (`residualGaps`).
 6. Write research note (PII redacted):
