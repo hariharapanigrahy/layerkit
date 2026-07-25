@@ -1,0 +1,17 @@
+{
+  "ci": [
+    "proposal-sources-required",
+    "processor-citation-required",
+    "empty-map-skipped",
+    "sample-meta-map-apply",
+    "install-platforms"
+  ],
+  "all": [
+    "proposal-sources-required",
+    "processor-citation-required",
+    "empty-map-skipped",
+    "sample-meta-map-apply",
+    "install-platforms"
+  ],
+  "nightly": []
+}

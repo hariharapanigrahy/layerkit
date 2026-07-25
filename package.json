@@ -55,6 +55,8 @@
     "smoke:copilot": "npm run build && node scripts/smoke-copilot.mjs",
     "smoke:opencode": "npm run build && node scripts/smoke-opencode.mjs",
     "smoke:openhands": "npm run build && node scripts/smoke-openhands.mjs",
+    "eval:ci": "npm run build && node dist/evals/harness/runner.js --suite ci",
+    "eval:all": "npm run build && node dist/evals/harness/runner.js --suite all",
     "eval:proposal-sources": "npm run build && node dist/evals/cases/proposal-sources-required/run.js",
     "eval:empty-map": "npm run build && node dist/evals/cases/empty-map-skipped/run.js",
     "eval:install-platforms": "npm run build && node dist/evals/cases/install-platforms/run.js",
@@ -62,6 +64,7 @@
     "eval:processor-citation": "npm run build && node dist/evals/cases/processor-citation-required/run.js",
     "eval:map-quality": "npm run build && node dist/evals/map-quality-optimizer/train.js",
     "eval:vendor-research-plan": "npm run build && node dist/evals/vendor-research-plan/run.js",
+
     "layerkit": "node dist/apps/cli/main.js",
     "prepare": "npm run build"
   },

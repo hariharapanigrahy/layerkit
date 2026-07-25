@@ -1,0 +1,9 @@
+{
+  "id": "empty-map-skipped",
+  "suite": "ci",
+  "title": "Empty POC maps skip with empty_map_awaiting_agent_research",
+  "owners": ["map-engine"],
+  "featurePr": "G0",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network"]
+}

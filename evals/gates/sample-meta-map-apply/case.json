@@ -1,0 +1,9 @@
+{
+  "id": "sample-meta-map-apply",
+  "suite": "ci",
+  "title": "Agent-shaped Meta map fixture validates, applies, and maps Purchase",
+  "owners": ["proposal", "map-engine", "store"],
+  "featurePr": "G0",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network"]
+}
