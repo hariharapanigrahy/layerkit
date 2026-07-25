@@ -4,7 +4,7 @@
  */
 
 export interface ConsentContext {
-  purposes: string[];
+  purposes?: string[];
   lawfulBasis?: string;
   gpc?: boolean;
   doNotSell?: boolean;

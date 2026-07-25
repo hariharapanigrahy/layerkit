@@ -18,7 +18,8 @@
     "evidence-deepen-hub",
     "evidence-no-invent",
     "memory-index-append",
-    "delivery-shadow-no-network"
+    "delivery-shadow-no-network",
+    "e2e-track-meta"
   ],
   "all": [
     "proposal-sources-required",
@@ -39,7 +40,8 @@
     "evidence-deepen-hub",
     "evidence-no-invent",
     "memory-index-append",
-    "delivery-shadow-no-network"
+    "delivery-shadow-no-network",
+    "e2e-track-meta"
   ],
   "nightly": []
 }

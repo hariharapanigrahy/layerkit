@@ -33,6 +33,8 @@ export interface TrackOptions {
   /** Sequential (default) or parallel vendor fan-out */
   vendorExecution?: 'sequential' | 'parallel';
   vendorFailurePolicy?: 'continue_all' | 'fail_fast';
+  /** Load agent processors from this directory during map apply */
+  processorsDir?: string;
 }
 
 export interface VendorTrackResult {
@@ -179,7 +181,9 @@ async function runOne(
   }
 
   // Legacy linear: map → privacy
-  const mapped = applyVendorMap(event, map);
+  const mapped = applyVendorMap(event, map, {
+    processorsDir: opts.processorsDir,
+  });
   if (mapped.skipped) {
     return {
       ...base,
