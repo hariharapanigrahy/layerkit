@@ -1,0 +1,13 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+.env
+.env.*
+coverage/
+.layerkit/
+*.log
+.idea/
+.vscode/
+*.swp
+.npm-cache/

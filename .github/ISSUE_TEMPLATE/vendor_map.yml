@@ -1,0 +1,36 @@
+name: Vendor map request / contribution
+description: Request or track research for a vendor data-layer map
+title: "[vendor] "
+labels: ["vendor-map", "help wanted"]
+body:
+  - type: input
+    id: vendor
+    attributes:
+      label: Vendor id
+      description: e.g. meta, snapchat, tiktok
+      placeholder: snapchat
+    validations:
+      required: true
+  - type: textarea
+    id: docs
+    attributes:
+      label: Official documentation URLs
+      description: Primary sources only
+    validations:
+      required: true
+  - type: dropdown
+    id: status
+    attributes:
+      label: Status
+      options:
+        - Wanted (please research)
+        - In progress
+        - Ready for PR
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes (auth type, intents needed, pitfalls)
+    validations:
+      required: false

@@ -1,0 +1,24 @@
+name: Feature request
+description: Idea for platforms, evals, Java output, or DX
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What pain does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alts
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false

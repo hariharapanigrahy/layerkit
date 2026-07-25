@@ -1,0 +1,22 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm test
+      - run: npm run smoke:codex
+      - run: npm run smoke:openhands
+      - run: npm run eval:proposal-sources
+      - run: npm run eval:empty-map
+      - run: npm run eval:install-platforms
+      - run: npm run eval:sample-meta-map
+      - run: npm run eval:processor-citation

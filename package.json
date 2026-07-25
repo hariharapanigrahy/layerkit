@@ -1,0 +1,72 @@
+{
+  "name": "layerkit",
+  "version": "0.1.0",
+  "description": "Agent-first multi-vendor data-layer toolkit: install skills/hooks into Codex, Claude Code, Cursor, Copilot, OpenCode, OpenHands; research vendor docs; proposal pipeline; Java-first client output; evals.",
+  "license": "MIT",
+  "private": false,
+  "type": "module",
+  "author": "Harihara Panigrahy <hhp263@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hariharapanigrahy/layerkit.git"
+  },
+  "homepage": "https://github.com/hariharapanigrahy/layerkit#readme",
+  "bugs": {
+    "url": "https://github.com/hariharapanigrahy/layerkit/issues"
+  },
+  "keywords": [
+    "data-layer",
+    "multi-vendor",
+    "ai-agents",
+    "codex",
+    "claude-code",
+    "cursor",
+    "copilot",
+    "opencode",
+    "openhands",
+    "java",
+    "field-mapping",
+    "evals",
+    "integrations"
+  ],
+  "bin": {
+    "layerkit": "dist/apps/cli/main.js"
+  },
+  "files": [
+    "dist/apps",
+    "dist/libs",
+    "skills",
+    "catalog",
+    "docs",
+    "README.md",
+    "LICENSE",
+    "CONTRIBUTING.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "npm run build && node scripts/check-install-options.js && node scripts/check-proposal-validate.js && node scripts/check-empty-map-skip.js",
+    "smoke:codex": "npm run build && node scripts/smoke-codex.mjs",
+    "smoke:claude": "npm run build && node scripts/smoke-claude.mjs",
+    "smoke:cursor": "npm run build && node scripts/smoke-cursor.mjs",
+    "smoke:copilot": "npm run build && node scripts/smoke-copilot.mjs",
+    "smoke:opencode": "npm run build && node scripts/smoke-opencode.mjs",
+    "smoke:openhands": "npm run build && node scripts/smoke-openhands.mjs",
+    "eval:proposal-sources": "npm run build && node dist/evals/cases/proposal-sources-required/run.js",
+    "eval:empty-map": "npm run build && node dist/evals/cases/empty-map-skipped/run.js",
+    "eval:install-platforms": "npm run build && node dist/evals/cases/install-platforms/run.js",
+    "eval:sample-meta-map": "npm run build && node dist/evals/cases/sample-meta-map-apply/run.js",
+    "eval:processor-citation": "npm run build && node dist/evals/cases/processor-citation-required/run.js",
+    "eval:map-quality": "npm run build && node dist/evals/map-quality-optimizer/train.js",
+    "eval:vendor-research-plan": "npm run build && node dist/evals/vendor-research-plan/run.js",
+    "layerkit": "node dist/apps/cli/main.js",
+    "prepare": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "typescript": "^5.8.3"
+  }
+}
