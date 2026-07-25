@@ -78,3 +78,19 @@ export {
   pipelineStatusPath,
   type PipelineStep,
 } from './pipeline.js';
+
+export {
+  checkDryRunGate,
+  checkMapStatusGate,
+  collectSecretFindings,
+  criticalSecretFindings,
+  evaluatePromoteGates,
+  formatPromoteGateFailures,
+  hasPrivacyPolicyForVendor,
+  listPrivacyPolicyIds,
+  mapHasPiiLookingFields,
+  type PromoteGateFailure,
+  type PromoteGateId,
+  type PromoteGatesInput,
+  type PromoteGatesResult,
+} from './promote-gates.js';
