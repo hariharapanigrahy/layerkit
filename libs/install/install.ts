@@ -5,6 +5,7 @@ import {
   ensureLayerkitConfig,
   layerkitConfigPath,
 } from '../config/layerkit-config.js';
+import { isDefaultProjectDir, writePathPointer } from '../config/project-dir.js';
 import { layerkitHookGuidance } from '../hooks/guidance.js';
 import { createVendorMemoryStore } from '../vendor-memory/store.js';
 import { platformInstaller } from './platforms/index.js';
@@ -18,6 +19,11 @@ export interface InstallOptions {
   autoMapUpdates: boolean;
   poc: boolean;
   name?: string;
+  /**
+   * Resolved absolute store root (from CLI --project-dir / resolveProjectDir).
+   * When omitted, store uses resolveProjectDir(repoRoot) (env → pointer → default).
+   */
+  projectDir?: string;
 }
 
 export interface InstallResult {
@@ -55,11 +61,21 @@ export async function installLayerkit(opts: InstallOptions): Promise<InstallResu
     hooksEnabled: opts.hooksEnabled,
   });
 
-  const store = createVendorMemoryStore(opts.repoRoot);
+  const store = createVendorMemoryStore(opts.repoRoot, opts.projectDir);
   store.initProject({
     name: opts.name ?? 'commerce-datalayer',
     poc: opts.poc,
   });
+
+  // Persist pointer at repo root when store is non-default so later commands find it
+  if (!isDefaultProjectDir(opts.repoRoot, store.projectDir)) {
+    const ptr = writePathPointer(opts.repoRoot, store.projectDir);
+    if (ptr) {
+      platformResult.notes.push(
+        `Wrote ${ptr} so subsequent commands resolve this projectDir without --project-dir`,
+      );
+    }
+  }
 
   appendAgents(join(opts.repoRoot, 'AGENTS.md'));
 

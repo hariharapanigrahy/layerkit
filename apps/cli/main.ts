@@ -121,8 +121,10 @@ const cliCommands: CliCommand[] = [
       const maps = args[0] ? [store.loadMap(args[0])].filter(Boolean) : store.listMaps();
       for (const m of maps) {
         if (!m) continue;
+        const isV2 = m.schemaVersion === 2;
+        // Structural-only review: v2 uses draft so maker is not required
         const review = store.reviewProposal({
-          schemaVersion: 1,
+          schemaVersion: isV2 ? 2 : 1,
           kind: 'vendor_map',
           id: `validate-${m.vendor}`,
           summary: 'validate',
@@ -130,7 +132,7 @@ const cliCommands: CliCommand[] = [
           sources: m.documentation,
           authoredBy: 'human',
           createdAt: new Date().toISOString(),
-          status: 'pending',
+          status: isV2 ? 'draft' : 'pending',
         });
         console.log(`== ${m.vendor} ==`);
         if (review.valid) console.log('  OK (structural)');
@@ -261,6 +263,7 @@ async function runInstall(args: string[], ctx: CliContext): Promise<void> {
   const result = await installLayerkit({
     repoRoot: ctx.repoRoot,
     ...options,
+    projectDir: ctx.projectDir,
   });
   printInstallResult(result);
 }

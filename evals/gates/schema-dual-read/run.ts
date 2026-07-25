@@ -1,11 +1,12 @@
 /**
  * Gate: dual-schema proposal validation (schemaVersion 1|2).
  * v1 fixtures never hard-fail on version alone; sources still required.
+ * Also covers validateVendorMap v2 operations/operationId rules.
  */
 import { assertTrue } from '../../harness/assert.js';
 import { COMMERCE_DOMAIN } from '../../../libs/domain/commerce.js';
-import type { Proposal } from '../../../libs/domain/types.js';
-import { validateProposal } from '../../../libs/proposal/validate.js';
+import type { Proposal, VendorMapV2 } from '../../../libs/domain/types.js';
+import { validateProposal, validateVendorMap } from '../../../libs/proposal/validate.js';
 
 const metaDocs = [
   {
@@ -199,6 +200,115 @@ const baseV1: Proposal = {
   assertTrue(
     'commerce version 1.1.0',
     COMMERCE_DOMAIN.version === '1.1.0',
+  );
+}
+
+// 11) validateVendorMap v2: valid map with operationId
+{
+  const validV2: VendorMapV2 = {
+    schemaVersion: 2,
+    vendor: 'meta',
+    displayName: 'Meta',
+    version: '1.0.0',
+    status: 'map_complete',
+    documentation: metaDocs,
+    auth: { type: 'bearer' },
+    operations: {
+      default: {
+        id: 'default',
+        endpoint: { method: 'POST', path: '/events', baseUrl: 'https://example.com' },
+      },
+    },
+    intents: {
+      purchase: { operationId: 'default', eventName: 'Purchase' },
+      lead: { skip: true },
+    },
+    fields: [{ domain: 'eventId', vendor: 'event_id', transform: { type: 'identity' } }],
+  };
+  const issues = validateVendorMap(validV2);
+  assertTrue(
+    'v2 map with operationId has no errors',
+    issues.filter((i) => i.level === 'error').length === 0,
+    issues.map((i) => i.message).join('; '),
+  );
+}
+
+// 12) missing operationId on non-skip intent → operation_id
+{
+  const missingOp: VendorMapV2 = {
+    schemaVersion: 2,
+    vendor: 'meta',
+    displayName: 'Meta',
+    version: '1.0.0',
+    status: 'map_complete',
+    documentation: metaDocs,
+    auth: { type: 'bearer' },
+    operations: {
+      default: {
+        id: 'default',
+        endpoint: { method: 'POST', path: '/events', baseUrl: 'https://example.com' },
+      },
+    },
+    intents: {
+      purchase: { eventName: 'Purchase' },
+    },
+    fields: [{ domain: 'eventId', vendor: 'event_id', transform: { type: 'identity' } }],
+  };
+  const issues = validateVendorMap(missingOp);
+  assertTrue(
+    'v2 missing operationId → operation_id',
+    issues.some((i) => i.code === 'operation_id' && i.level === 'error'),
+  );
+}
+
+// 13) unknown operationId → operation_missing
+{
+  const badOp: VendorMapV2 = {
+    schemaVersion: 2,
+    vendor: 'meta',
+    displayName: 'Meta',
+    version: '1.0.0',
+    status: 'map_complete',
+    documentation: metaDocs,
+    auth: { type: 'bearer' },
+    operations: {
+      default: {
+        id: 'default',
+        endpoint: { method: 'POST', path: '/events', baseUrl: 'https://example.com' },
+      },
+    },
+    intents: {
+      purchase: { operationId: 'not_a_real_op', eventName: 'Purchase' },
+    },
+    fields: [{ domain: 'eventId', vendor: 'event_id', transform: { type: 'identity' } }],
+  };
+  const issues = validateVendorMap(badOp);
+  assertTrue(
+    'v2 unknown operationId → operation_missing',
+    issues.some((i) => i.code === 'operation_missing' && i.level === 'error'),
+  );
+}
+
+// 14) empty operations on non-empty map → operations
+{
+  const emptyOps: VendorMapV2 = {
+    schemaVersion: 2,
+    vendor: 'meta',
+    displayName: 'Meta',
+    version: '1.0.0',
+    status: 'map_complete',
+    documentation: metaDocs,
+    auth: { type: 'bearer' },
+    operations: {},
+    intents: {
+      purchase: { operationId: 'default', eventName: 'Purchase' },
+    },
+    fields: [{ domain: 'eventId', vendor: 'event_id', transform: { type: 'identity' } }],
+  };
+  const issues = validateVendorMap(emptyOps);
+  assertTrue(
+    'v2 empty operations → operations error',
+    issues.some((i) => i.code === 'operations' && i.level === 'error'),
   );
 }
 

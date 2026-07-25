@@ -1,5 +1,6 @@
 /**
  * Gate: project store path resolution (CLI → env → pointer → default .layerkit).
+ * Also asserts installLayerkit honors projectDir (Issue 1 fix).
  */
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -11,6 +12,7 @@ import {
   resolveProjectDir,
   writePathPointer,
 } from '../../../libs/config/project-dir.js';
+import { installLayerkit } from '../../../libs/install/install.js';
 import { createVendorMemoryStore } from '../../../libs/vendor-memory/store.js';
 
 const root = mkdtempSync(join(tmpdir(), 'layerkit-project-dir-'));
@@ -81,6 +83,38 @@ try {
     resolveProjectDir(root, { cliProjectDir: abs, env: {} }),
     abs,
   );
+
+  // 9) installLayerkit honors projectDir (does not fall back to .layerkit)
+  const installRoot = mkdtempSync(join(tmpdir(), 'layerkit-install-pd-'));
+  try {
+    const customPd = join(installRoot, 'custom-pd');
+    const result = await installLayerkit({
+      repoRoot: installRoot,
+      platform: 'codex',
+      hooksEnabled: false,
+      autoMapUpdates: false,
+      poc: false,
+      name: 'pd-install-eval',
+      projectDir: customPd,
+    });
+    assertEqual('install result.projectDir', result.projectDir, customPd);
+    assertTrue(
+      'install wrote project.json under custom-pd',
+      existsSync(join(customPd, 'project.json')),
+    );
+    assertTrue(
+      'install did not create default .layerkit project',
+      !existsSync(join(installRoot, DEFAULT_PROJECT_DIR_NAME, 'project.json')),
+    );
+    const installPtr = readPathPointer(installRoot);
+    assertTrue('install wrote path pointer for non-default', installPtr !== null);
+    assertTrue(
+      'pointer points at custom-pd',
+      installPtr?.projectDir === 'custom-pd' || installPtr?.projectDir === customPd,
+    );
+  } finally {
+    rmSync(installRoot, { recursive: true, force: true });
+  }
 
   console.log('project-dir-resolve: all checks passed');
 } finally {

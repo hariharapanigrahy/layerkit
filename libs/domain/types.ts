@@ -137,7 +137,11 @@ export interface OperationSpec {
 }
 
 export interface IntentBinding {
-  operationId: string;
+  /**
+   * Required when skip is not true (validated by validateVendorMapV2).
+   * Optional for skip-only bindings.
+   */
+  operationId?: string;
   eventName?: string;
   staticFields?: Record<string, unknown>;
   skip?: boolean;
