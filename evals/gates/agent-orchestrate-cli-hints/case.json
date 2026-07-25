@@ -1,0 +1,9 @@
+{
+  "id": "agent-orchestrate-cli-hints",
+  "suite": "ci",
+  "title": "Every INTEGRATION_PIPELINE step has non-empty skill and cliHints for agent next",
+  "owners": ["agent"],
+  "featurePr": "orchestrate-agent-wire",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network", "agent", "pipeline", "orchestrate"]
+}
