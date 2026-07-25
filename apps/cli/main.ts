@@ -15,7 +15,10 @@ import {
   markStepDone,
   pipelineStatusPath,
   PIPELINE_STATUS_REL,
+  parseStyleProfileMarkdown,
   scanAndWriteStyleProfile,
+  STYLE_PROFILE_RUNBOOK_REL,
+  type StyleProfile,
 } from '../../libs/agent/index.js';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
@@ -488,13 +491,22 @@ const cliCommands: CliCommand[] = [
       if (!project || !domain) throw new Error('No project — run layerkit install --poc');
       const maps = store.listMaps();
       const out = flag(args, '--out') ?? join(store.projectDir, 'out', 'java');
-      const files = generateJavaScaffold({ project, domain, maps });
+      // Prefer style profile from memory/runbooks when present (steers package/HTTP/DI/tests)
+      let style: Partial<StyleProfile> | undefined;
+      const stylePath = join(store.projectDir, STYLE_PROFILE_RUNBOOK_REL);
+      if (existsSync(stylePath)) {
+        style = parseStyleProfileMarkdown(readFileSync(stylePath, 'utf8'));
+      }
+      const files = generateJavaScaffold({ project, domain, maps, style });
       for (const f of files) {
         const p = join(out, f.path);
         mkdirSync(join(p, '..'), { recursive: true });
         writeFileSync(p, f.content, 'utf8');
       }
       console.log(`Scaffolded ${files.length} files → ${out}`);
+      if (style) {
+        console.log(`Style profile applied from ${STYLE_PROFILE_RUNBOOK_REL}`);
+      }
       console.log('Includes: Facade, Strategy, PrivacyGate, DeliveryClient, JaCoCo 0.95 pom, DESIGN_PATTERNS.md');
       console.log('Next: skill layerkit-generate-java; then mvn test && layerkit doctor --quality --strict');
     },

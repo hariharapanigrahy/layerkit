@@ -1,0 +1,8 @@
+{
+  "id": "style-steer-generate",
+  "suite": "ci",
+  "title": "Style profile steers Java generate templates (package, OkHttp, Spring)",
+  "owners": ["generate", "agent"],
+  "fixtures": [],
+  "tags": ["deterministic", "no-network", "java", "style"]
+}

@@ -36,7 +36,8 @@
     "schema-dual-read",
     "strategy-execute-sha256",
     "strategy-fail-closed",
-    "style-profile-cli"
+    "style-profile-cli",
+    "style-steer-generate"
   ],
   "all": [
     "agent-citation-required-on-map",
@@ -76,6 +77,7 @@
     "strategy-execute-sha256",
     "strategy-fail-closed",
     "style-profile-cli",
+    "style-steer-generate",
     "vendor-research-plan"
   ],
   "nightly": []
