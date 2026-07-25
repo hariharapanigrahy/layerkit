@@ -12,7 +12,13 @@
     "strategy-fail-closed",
     "privacy-live-require",
     "privacy-dry-run-warn",
-    "flow-oauth-then-post"
+    "flow-oauth-then-post",
+    "evidence-openapi-q1q2",
+    "evidence-curl-parse",
+    "evidence-deepen-hub",
+    "evidence-no-invent",
+    "memory-index-append",
+    "delivery-shadow-no-network"
   ],
   "all": [
     "proposal-sources-required",
@@ -27,7 +33,13 @@
     "strategy-fail-closed",
     "privacy-live-require",
     "privacy-dry-run-warn",
-    "flow-oauth-then-post"
+    "flow-oauth-then-post",
+    "evidence-openapi-q1q2",
+    "evidence-curl-parse",
+    "evidence-deepen-hub",
+    "evidence-no-invent",
+    "memory-index-append",
+    "delivery-shadow-no-network"
   ],
   "nightly": []
 }

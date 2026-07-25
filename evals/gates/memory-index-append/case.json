@@ -1,0 +1,9 @@
+{
+  "id": "memory-index-append",
+  "suite": "ci",
+  "title": "append research note updates INDEX.md; list returns entry; emails redacted",
+  "owners": ["memory"],
+  "featurePr": "W4",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network", "memory"]
+}

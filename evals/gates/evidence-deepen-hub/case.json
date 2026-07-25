@@ -1,0 +1,9 @@
+{
+  "id": "evidence-deepen-hub",
+  "suite": "ci",
+  "title": "hub-index.md deepen enqueues openapi path before needs-human",
+  "owners": ["research"],
+  "featurePr": "W4",
+  "fixtures": ["docs/hub-index.md"],
+  "tags": ["deterministic", "no-network", "evidence"]
+}
