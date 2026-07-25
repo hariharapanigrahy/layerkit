@@ -47,6 +47,25 @@ Layerkit stores maps, proposals, and memory under a **project directory** (defau
 
 Install may prompt on TTY. Doctor prints the resolved path. Memory lives at `{projectDir}/memory/`.
 
+### Maker-checker (strict by default)
+
+New installs default to **strict** maker-checker: `proposal apply` requires status `ready_to_apply` (submit → validate → approve). Doctor prints the resolved mode (`STRICT` or `LEGACY`).
+
+**Re-enable legacy apply** (pending/validated/approved without checker) if you need the old path:
+
+```jsonc
+// {projectDir}/project.json  (project wins over user config)
+{
+  "makerChecker": {
+    "legacyApplyWithoutApprove": true
+  }
+}
+```
+
+Or pin in `~/.layerkit/config.json` under `makerChecker.legacyApplyWithoutApprove`. Doctor warns when legacy is on. Prefer the strict path for production.
+
+Agent golden path: [docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GOLDEN_PATH.md).
+
 ---
 
 ## How it works

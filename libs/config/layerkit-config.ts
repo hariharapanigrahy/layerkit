@@ -11,8 +11,11 @@ export interface MakerCheckerConfig {
   /** Allow maker to self-approve (default false) */
   allowSelfApprove: boolean;
   /**
-   * When true, apply accepts pending|validated|approved after structural validate.
-   * Default true until strict maker-checker flip.
+   * When true, apply accepts pending|validated|approved after structural validate
+   * (emits LEGACY_APPLY warning). Default **false** (strict): apply requires
+   * `ready_to_apply` after submit → validate → approve.
+   * Re-enable legacy: set makerChecker.legacyApplyWithoutApprove=true in
+   * project.json or ~/.layerkit/config.json.
    */
   legacyApplyWithoutApprove: boolean;
 }
@@ -40,7 +43,8 @@ export const DEFAULT_MAKER_CHECKER: MakerCheckerConfig = {
   requireDistinctChecker: true,
   requirePrivacyReviewForPii: true,
   allowSelfApprove: false,
-  legacyApplyWithoutApprove: true,
+  /** Strict by default — pin true in project/user config to restore legacy apply. */
+  legacyApplyWithoutApprove: false,
 };
 
 export const DEFAULT_CONFIG: LayerkitConfig = {

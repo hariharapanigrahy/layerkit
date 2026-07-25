@@ -1,13 +1,25 @@
 /**
- * Gate: with legacyApplyWithoutApprove default true, apply of pending proposal
- * succeeds and emits LEGACY_APPLY: maker-checker bypass active on stderr.
+ * Gate: with makerChecker.legacyApplyWithoutApprove=true (explicit config override),
+ * apply of pending proposal succeeds and emits LEGACY_APPLY warning on stderr.
+ * (Default is strict/false — this gate opts into legacy.)
  */
 import { assertTrue } from '../../harness/assert.js';
 import { withTempProject } from '../../harness/temp-project.js';
 import type { Proposal, VendorMap } from '../../../libs/domain/types.js';
 
 await withTempProject(async ({ store }) => {
-  assertTrue('legacy apply enabled by default', store.isLegacyApplyEnabled());
+  // Opt into legacy apply via project config (default is now strict/false)
+  const project = store.loadProject()!;
+  project.makerChecker = {
+    ...project.makerChecker,
+    legacyApplyWithoutApprove: true,
+    requireDistinctChecker: true,
+    allowSelfApprove: false,
+    requirePrivacyReviewForPii: true,
+  };
+  store.saveProject(project);
+
+  assertTrue('legacy apply enabled via config override', store.isLegacyApplyEnabled());
 
   const map: VendorMap = {
     vendor: 'legacy_vendor',

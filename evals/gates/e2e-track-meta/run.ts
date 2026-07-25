@@ -15,6 +15,11 @@ const GOLDEN =
   'fb98d44ad7501a959f3f4f4a3f004fe2d9e581ea6207e218c4b02c08a4d75adf';
 
 await withTempProject(async ({ store, projectDir }) => {
+  // Enable legacy apply so pending proposals can apply without full maker-checker path
+  const project = store.loadProject()!;
+  project.makerChecker = { ...project.makerChecker, legacyApplyWithoutApprove: true };
+  store.saveProject(project);
+
   const processor = loadFixture<ExecutableProcessor>('agent/processor-email-sha256.json');
   const procDir = join(projectDir, 'processors');
   mkdirSync(procDir, { recursive: true });

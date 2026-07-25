@@ -1,6 +1,6 @@
 /**
- * Gate: legacyApplyWithoutApprove=false → apply pending fails;
- * submit → validate → approve → apply succeeds.
+ * Gate: default strict maker-checker (legacyApplyWithoutApprove=false) →
+ * apply pending fails; submit → validate → approve → apply succeeds.
  * Also: self-approve denied when requireDistinctChecker.
  */
 import { assertThrows, assertTrue } from '../../harness/assert.js';
@@ -8,8 +8,10 @@ import { withTempProject } from '../../harness/temp-project.js';
 import type { Proposal, VendorMap } from '../../../libs/domain/types.js';
 
 await withTempProject(async ({ store }) => {
+  // Default is strict (legacyApplyWithoutApprove=false). Set reviewers + distinct checker.
   const project = store.loadProject()!;
   project.makerChecker = {
+    // explicit false documents intent; also matches DEFAULT_MAKER_CHECKER
     legacyApplyWithoutApprove: false,
     requireDistinctChecker: true,
     allowSelfApprove: false,
@@ -25,7 +27,23 @@ await withTempProject(async ({ store }) => {
   };
   store.saveProject(project);
 
-  assertTrue('legacy apply disabled', !store.isLegacyApplyEnabled());
+  assertTrue(
+    'legacy apply disabled by default / config',
+    !store.isLegacyApplyEnabled(),
+  );
+
+  // Doctor should report STRICT mode clearly
+  const doc = store.doctor();
+  assertTrue(
+    'doctor prints STRICT makerChecker mode',
+    doc.lines.some((l) => l.includes('mode=STRICT') || l.includes('STRICT (requires ready_to_apply)')),
+    doc.lines.join('\n'),
+  );
+  assertTrue(
+    'doctor prints legacyApplyWithoutApprove=false',
+    doc.lines.some((l) => l.includes('legacyApplyWithoutApprove=false')),
+    doc.lines.join('\n'),
+  );
 
   const map: VendorMap = {
     vendor: 'strict_vendor',
