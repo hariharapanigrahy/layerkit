@@ -89,7 +89,9 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
     cliHints: [
       'layerkit promote --vendor <id>',
       'layerkit agent status',
+      'layerkit handoff write --vendor <id> --goal "<outcome>" --next "<skill-named action>"',
       'Use skill layerkit-checker-assist (read-only risk checklist)',
+      'Use skill layerkit-session-handoff',
     ],
     requiresHuman: true,
     doneWhen:

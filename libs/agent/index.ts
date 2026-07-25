@@ -110,3 +110,14 @@ export {
   type IntegrationShape,
   type WriteDesignDecisionOpts,
 } from './design-decision.js';
+
+export {
+  HANDOFF_REQUIRED_HEADINGS,
+  HANDOFF_TEMPLATE,
+  type HandoffRunbookInput,
+  type WriteHandoffRunbookInput,
+  handoffRunbookRel,
+  buildHandoffRunbook,
+  writeHandoffRunbook,
+  handoffHasRequiredHeadings,
+} from './handoff.js';

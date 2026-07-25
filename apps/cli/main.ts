@@ -31,6 +31,7 @@ import {
   type MapPathFixPatch,
   type WireExpectation,
   extractPathFromDocExcerpt,
+  writeHandoffRunbook,
 } from '../../libs/agent/index.js';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
@@ -245,6 +246,13 @@ const cliCommands: CliCommand[] = [
     path: ['fix', 'suggest'],
     usage: 'fix suggest --map <map.json> --doc <file.md> [--json]',
     handler: runFixSuggest,
+    showInTopLevelHelp: true,
+  },
+{
+    path: ['handoff', 'write'],
+    usage:
+      'handoff write [--vendor <v>] [--goal <text>] [--done <item>]... [--next <action>]... [--blocked <q>]... [--in-progress <item>]... [--evidence <item>]... [--quality <text>] [--out memory|path] [--project-dir <path>]',
+    handler: runHandoffWrite,
     showInTopLevelHelp: true,
   },
   {
@@ -1520,6 +1528,39 @@ function runFixSuggest(args: string[]): void {
       console.log('suggested patch: (none — no invent when doc has no path or paths match)');
     }
   });
+}
+
+function runHandoffWrite(args: string[], ctx: CliContext): void {
+  const vendor = flag(args, '--vendor');
+  const goal = flag(args, '--goal');
+  const quality = flag(args, '--quality');
+  const out = flag(args, '--out') ?? 'memory';
+  const done = collectFlags(args, '--done');
+  const nextActions = collectFlags(args, '--next');
+  const blocked = collectFlags(args, '--blocked');
+  const inProgress = collectFlags(args, '--in-progress');
+  const evidence = collectFlags(args, '--evidence');
+
+  const outPath = writeHandoffRunbook({
+    projectDir: ctx.projectDir,
+    vendor,
+    goal,
+    quality,
+    done: done.length ? done : undefined,
+    nextActions: nextActions.length ? nextActions : undefined,
+    blocked: blocked.length ? blocked : undefined,
+    inProgress: inProgress.length ? inProgress : undefined,
+    evidence: evidence.length ? evidence : undefined,
+    out: out === 'memory' ? 'memory' : resolve(out),
+  });
+
+  console.log(`Wrote handoff runbook → ${outPath}`);
+  if (vendor) console.log(`Vendor: ${vendor}`);
+  if (goal) console.log(`Goal: ${goal}`);
+  if (nextActions.length) {
+    console.log('Next actions:');
+    for (const a of nextActions) console.log(`  - ${a}`);
+  }
 }
 
 function flag(args: string[], name: string): string | undefined {
