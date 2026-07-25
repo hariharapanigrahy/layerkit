@@ -121,6 +121,15 @@ function applyEgressChecks(
   return {};
 }
 
+export interface EvaluatePrivacyOptions {
+  /**
+   * When true (default), live mode without a policy hard-fails with
+   * `privacy_policy_required`. When false, live uses the dry_run posture
+   * (allow + warn `privacy_policy_missing`).
+   */
+  requirePrivacyPolicyForLive?: boolean;
+}
+
 /**
  * Evaluate privacy before vendor egress.
  *
@@ -128,18 +137,21 @@ function applyEgressChecks(
  * @param wire  Mapped vendor payload (mutated copy; original not modified)
  * @param policy Applied policy or null
  * @param mode  live | dry_run | shadow
+ * @param options Optional; `requirePrivacyPolicyForLive` defaults true
  */
 export function evaluatePrivacy(
   event: PrivacyEvent,
   wire: Record<string, unknown> | null,
   policy: PrivacyPolicy | null,
   mode: RuntimeMode,
+  options?: EvaluatePrivacyOptions,
 ): PrivacyResult {
   const warnings: string[] = [];
   const redactedPaths: string[] = [];
+  const requirePolicyForLive = options?.requirePrivacyPolicyForLive !== false;
 
   if (!policy) {
-    if (mode === 'live') {
+    if (mode === 'live' && requirePolicyForLive) {
       return {
         action: 'fail',
         payload: null,
@@ -148,7 +160,7 @@ export function evaluatePrivacy(
         warnings: [],
       };
     }
-    // dry_run / shadow: allow with warn
+    // dry_run / shadow, or live with requirePrivacyPolicyForLive=false: allow with warn
     warnings.push('privacy_policy_missing');
     return {
       action: 'allow',

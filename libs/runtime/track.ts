@@ -5,12 +5,13 @@
  * - live   → only maps with status `live`
  * - dry_run / shadow → `live` + `map_complete`
  *
- * Pipeline per vendor: applyVendorMap → evaluatePrivacy → result.
- * (Flow path: executeFlow when map carries a flow; legacy linear otherwise.)
+ * Pipeline per vendor:
+ * - legacy: applyVendorMap → evaluatePrivacy
+ * - flow:   executeFlow → evaluatePrivacy (always; injects gate if flow had no privacy node)
  */
 import type { VendorMap } from '../domain/types.js';
 import { evaluatePrivacy } from '../privacy/gate.js';
-import type { PrivacyPolicy, RuntimeMode } from '../privacy/types.js';
+import type { PrivacyEvent, PrivacyPolicy, PrivacyResult, RuntimeMode } from '../privacy/types.js';
 import { executeFlow } from '../flow/engine.js';
 import type { IntegrationFlow } from '../flow/types.js';
 import { applyVendorMap, type DomainEvent, type MapResult } from '../vendor-memory/map-engine.js';
@@ -23,7 +24,11 @@ export interface TrackOptions {
   includeStatuses?: Array<'live' | 'map_complete' | 'skeleton' | 'deprecated'>;
   /** Privacy policy (null/undefined → gate missing-policy posture) */
   privacyPolicy?: PrivacyPolicy | null;
-  /** Default true — live requires policy */
+  /**
+   * Default true — live mode requires an applied privacy policy.
+   * When false, live + missing policy allows with warn `privacy_policy_missing`
+   * (same posture as dry_run).
+   */
   requirePrivacyPolicyForLive?: boolean;
   /** Sequential (default) or parallel vendor fan-out */
   vendorExecution?: 'sequential' | 'parallel';
@@ -69,109 +74,132 @@ function mapStatus(map: VendorMap): string {
   return map.status ?? 'skeleton';
 }
 
+function resolvePolicy(opts: TrackOptions): PrivacyPolicy | null {
+  return opts.privacyPolicy === undefined ? null : opts.privacyPolicy;
+}
+
+function privacyOpts(opts: TrackOptions): { requirePrivacyPolicyForLive: boolean } {
+  return {
+    requirePrivacyPolicyForLive: opts.requirePrivacyPolicyForLive !== false,
+  };
+}
+
+/** Map a PrivacyResult onto a VendorTrackResult (shared by linear + flow paths). */
+function fromPrivacy(
+  base: Omit<VendorTrackResult, 'skipped' | 'outcome' | 'reason' | 'wire' | 'warnings'> & {
+    mapResult?: MapResult;
+    httpStatus?: number;
+  },
+  privacy: PrivacyResult,
+): VendorTrackResult {
+  if (privacy.action === 'fail') {
+    return {
+      ...base,
+      skipped: false,
+      reason: privacy.reasonCode,
+      outcome: 'failure',
+      wire: null,
+      warnings: privacy.warnings,
+    };
+  }
+  if (privacy.action === 'drop') {
+    return {
+      ...base,
+      skipped: true,
+      reason: privacy.reasonCode,
+      outcome: 'skipped',
+      wire: null,
+      warnings: privacy.warnings,
+    };
+  }
+  return {
+    ...base,
+    skipped: false,
+    outcome: 'success',
+    wire: privacy.payload,
+    warnings: privacy.warnings,
+  };
+}
+
 async function runOne(
   map: MapWithFlow,
   event: DomainEvent,
   mode: TrackMode,
   opts: TrackOptions,
 ): Promise<VendorTrackResult> {
+  const policy = resolvePolicy(opts);
+  const pOpts = privacyOpts(opts);
+  const base = { vendor: map.vendor, mode };
+
   // Prefer inline flow when present
   if (map.flow) {
     const flowResult = executeFlow(map.flow, event, {
       mode,
-      privacyPolicy: opts.privacyPolicy ?? null,
+      privacyPolicy: policy,
     });
     if (flowResult.status === 'skip') {
       return {
-        vendor: map.vendor,
+        ...base,
         skipped: true,
         reason: flowResult.reasonCode ?? flowResult.reason,
         outcome: 'skipped',
-        mode,
         wire: null,
         warnings: [],
       };
     }
     if (flowResult.status === 'abort' || flowResult.status === 'failure') {
       return {
-        vendor: map.vendor,
+        ...base,
         skipped: false,
         reason: flowResult.reasonCode ?? flowResult.reason,
         outcome: 'failure',
-        mode,
         wire: flowResult.memory.payload,
         warnings: [],
       };
     }
-    return {
-      vendor: map.vendor,
-      skipped: false,
-      outcome: 'success',
+
+    // Always inject privacy after successful flow (covers graphs with no privacy node).
+    // Design: privacy before egress; track is the last gate before vendor result.
+    const privacy = evaluatePrivacy(
+      event as PrivacyEvent,
+      flowResult.memory.payload,
+      policy,
       mode,
-      wire: flowResult.memory.payload,
-      httpStatus: flowResult.callLog[flowResult.callLog.length - 1]?.response.httpStatus,
-      warnings: [],
-    };
+      pOpts,
+    );
+    const lastHttp =
+      flowResult.callLog[flowResult.callLog.length - 1]?.response.httpStatus;
+    return fromPrivacy(
+      {
+        ...base,
+        httpStatus: privacy.action === 'allow' ? lastHttp : undefined,
+      },
+      privacy,
+    );
   }
 
   // Legacy linear: map → privacy
   const mapped = applyVendorMap(event, map);
   if (mapped.skipped) {
     return {
-      vendor: map.vendor,
+      ...base,
       skipped: true,
       reason: mapped.reason,
       outcome: 'skipped',
-      mode,
       wire: null,
       mapResult: mapped,
     };
   }
 
-  const policy =
-    opts.privacyPolicy === undefined ? null : opts.privacyPolicy;
-  // requirePrivacyPolicyForLive is enforced inside evaluatePrivacy for live+null
   const privacy = evaluatePrivacy(
-    event,
+    event as PrivacyEvent,
     mapped.wire,
     policy,
     mode,
+    pOpts,
   );
 
-  if (privacy.action === 'fail') {
-    return {
-      vendor: map.vendor,
-      skipped: false,
-      reason: privacy.reasonCode,
-      outcome: 'failure',
-      mode,
-      wire: null,
-      mapResult: mapped,
-      warnings: privacy.warnings,
-    };
-  }
-  if (privacy.action === 'drop') {
-    return {
-      vendor: map.vendor,
-      skipped: true,
-      reason: privacy.reasonCode,
-      outcome: 'skipped',
-      mode,
-      wire: null,
-      mapResult: mapped,
-      warnings: privacy.warnings,
-    };
-  }
-
-  return {
-    vendor: map.vendor,
-    skipped: false,
-    outcome: 'success',
-    mode,
-    wire: privacy.payload,
-    mapResult: mapped,
-    warnings: privacy.warnings,
-  };
+  return fromPrivacy({ ...base, mapResult: mapped }, privacy);
 }
 
 /**
