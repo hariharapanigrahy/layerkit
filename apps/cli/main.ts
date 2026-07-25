@@ -5,6 +5,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
+import { resolveProjectDir } from '../../libs/config/project-dir.js';
 import { generateJavaScaffold } from '../../libs/generate/java-scaffold.js';
 import { layerkitHookGuidance } from '../../libs/hooks/guidance.js';
 import { installLayerkit } from '../../libs/install/install.js';
@@ -16,29 +17,66 @@ import {
 } from '../../libs/install/paths.js';
 import type { Proposal } from '../../libs/domain/types.js';
 import { applyVendorMap } from '../../libs/vendor-memory/map-engine.js';
-import { createVendorMemoryStore } from '../../libs/vendor-memory/store.js';
+import { createVendorMemoryStore, type VendorMemoryStore } from '../../libs/vendor-memory/store.js';
 
 interface CliCommand {
   path: readonly string[];
   usage: string;
-  handler: (args: string[]) => void | Promise<void>;
+  handler: (args: string[], ctx: CliContext) => void | Promise<void>;
   showInTopLevelHelp?: boolean;
+}
+
+interface CliContext {
+  repoRoot: string;
+  /** Raw --project-dir flag value if present */
+  projectDirFlag?: string;
+  /** Resolved absolute store root */
+  projectDir: string;
 }
 
 function detectRepoRoot(): string {
   return process.cwd();
 }
 
+/** Strip global flags (--project-dir) from argv; returns remaining args + flag values. */
+export function extractGlobalFlags(argv: string[]): {
+  rest: string[];
+  projectDir?: string;
+} {
+  const rest: string[] = [];
+  let projectDir: string | undefined;
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]!;
+    if (a === '--project-dir') {
+      const v = argv[++i];
+      if (!v) throw new Error('--project-dir requires a path');
+      projectDir = v;
+      continue;
+    }
+    if (a.startsWith('--project-dir=')) {
+      projectDir = a.slice('--project-dir='.length);
+      if (!projectDir) throw new Error('--project-dir requires a path');
+      continue;
+    }
+    rest.push(a);
+  }
+  return { rest, projectDir };
+}
+
+function openStore(ctx: CliContext): VendorMemoryStore {
+  return createVendorMemoryStore(ctx.repoRoot, ctx.projectDir);
+}
+
 const cliCommands: CliCommand[] = [
   {
     path: ['install'],
-    usage: `install --platform ${installPlatformUsage} [--hooks enabled|disabled] [--auto-map-updates enabled|disabled] [--poc] [--name <name>]`,
+    usage: `install --platform ${installPlatformUsage} [--hooks enabled|disabled] [--auto-map-updates enabled|disabled] [--poc] [--name <name>] [--project-dir <path>]`,
     handler: runInstall,
     showInTopLevelHelp: true,
   },
   {
     path: ['doctor'],
-    usage: 'doctor',
+    usage: 'doctor [--project-dir <path>]',
     handler: runDoctor,
     showInTopLevelHelp: true,
   },
@@ -50,15 +88,15 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['repo', 'status'],
-    usage: 'repo status',
+    usage: 'repo status [--project-dir <path>]',
     handler: runRepoStatus,
     showInTopLevelHelp: true,
   },
   {
     path: ['map', 'list'],
-    usage: 'map list',
-    handler: () => {
-      const store = createVendorMemoryStore(detectRepoRoot());
+    usage: 'map list [--project-dir <path>]',
+    handler: (_args, ctx) => {
+      const store = openStore(ctx);
       for (const m of store.listMaps()) {
         console.log(`${m.vendor}\t${m.status ?? '?'}\t${m.displayName}`);
       }
@@ -67,24 +105,26 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['map', 'show'],
-    usage: 'map show <vendor>',
-    handler: (args) => {
+    usage: 'map show <vendor> [--project-dir <path>]',
+    handler: (args, ctx) => {
       const vendor = args[0];
       if (!vendor) throw new Error('Usage: layerkit map show <vendor>');
-      console.log(join(detectRepoRoot(), '.layerkit', 'maps', `${vendor}.json`));
+      console.log(join(ctx.projectDir, 'maps', `${vendor}.json`));
     },
     showInTopLevelHelp: true,
   },
   {
     path: ['map', 'validate'],
-    usage: 'map validate [vendor]',
-    handler: (args) => {
-      const store = createVendorMemoryStore(detectRepoRoot());
+    usage: 'map validate [vendor] [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const store = openStore(ctx);
       const maps = args[0] ? [store.loadMap(args[0])].filter(Boolean) : store.listMaps();
       for (const m of maps) {
         if (!m) continue;
+        const isV2 = m.schemaVersion === 2;
+        // Structural-only review: v2 uses draft so maker is not required
         const review = store.reviewProposal({
-          schemaVersion: 1,
+          schemaVersion: isV2 ? 2 : 1,
           kind: 'vendor_map',
           id: `validate-${m.vendor}`,
           summary: 'validate',
@@ -92,7 +132,7 @@ const cliCommands: CliCommand[] = [
           sources: m.documentation,
           authoredBy: 'human',
           createdAt: new Date().toISOString(),
-          status: 'pending',
+          status: isV2 ? 'draft' : 'pending',
         });
         console.log(`== ${m.vendor} ==`);
         if (review.valid) console.log('  OK (structural)');
@@ -104,11 +144,11 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['proposal', 'validate'],
-    usage: 'proposal validate <file>',
-    handler: (args) => {
+    usage: 'proposal validate <file> [--project-dir <path>]',
+    handler: (args, ctx) => {
       const file = requireArg(args[0], 'proposal validate <file>');
       const proposal = readProposal(file);
-      const store = createVendorMemoryStore(detectRepoRoot());
+      const store = openStore(ctx);
       const result = store.reviewProposal(proposal);
       if (result.valid) {
         proposal.status = 'validated';
@@ -125,11 +165,11 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['proposal', 'apply'],
-    usage: 'proposal apply <file>',
-    handler: (args) => {
+    usage: 'proposal apply <file> [--project-dir <path>]',
+    handler: (args, ctx) => {
       const file = requireArg(args[0], 'proposal apply <file>');
       const proposal = readProposal(file);
-      const store = createVendorMemoryStore(detectRepoRoot());
+      const store = openStore(ctx);
       const applied = store.applyProposal(proposal);
       console.log('Applied proposal to vendor memory.');
       console.log(`Kind: ${applied.kind}`);
@@ -139,12 +179,12 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['process', 'dry-run'],
-    usage: 'process dry-run --vendor <v> --intent <i>',
-    handler: (args) => {
+    usage: 'process dry-run --vendor <v> --intent <i> [--project-dir <path>]',
+    handler: (args, ctx) => {
       const vendor = flag(args, '--vendor');
       const intent = flag(args, '--intent') ?? 'purchase';
       if (!vendor) throw new Error('Usage: layerkit process dry-run --vendor <v> --intent <i>');
-      const store = createVendorMemoryStore(detectRepoRoot());
+      const store = openStore(ctx);
       const map = store.loadMap(vendor);
       if (!map) throw new Error(`No map for ${vendor}`);
       const result = applyVendorMap(
@@ -162,13 +202,13 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['generate'],
-    usage: 'generate --lang java [--out <dir>]',
-    handler: (args) => {
+    usage: 'generate --lang java [--out <dir>] [--project-dir <path>]',
+    handler: (args, ctx) => {
       const lang = flag(args, '--lang') ?? 'java';
       if (lang !== 'java') {
         throw new Error('Only --lang java is supported in v0.1 (enterprise first).');
       }
-      const store = createVendorMemoryStore(detectRepoRoot());
+      const store = openStore(ctx);
       const project = store.loadProject();
       const domain = store.loadDomain();
       if (!project || !domain) throw new Error('No project — run layerkit install --poc');
@@ -218,11 +258,12 @@ const cliCommands: CliCommand[] = [
   },
 ];
 
-async function runInstall(args: string[]): Promise<void> {
+async function runInstall(args: string[], ctx: CliContext): Promise<void> {
   const options = parseInstallArgs(args);
   const result = await installLayerkit({
-    repoRoot: detectRepoRoot(),
+    repoRoot: ctx.repoRoot,
     ...options,
+    projectDir: ctx.projectDir,
   });
   printInstallResult(result);
 }
@@ -323,8 +364,8 @@ function printInstallResult(result: Awaited<ReturnType<typeof installLayerkit>>)
   for (const n of result.notes) console.log(`- ${n}`);
 }
 
-function runDoctor(): void {
-  const store = createVendorMemoryStore(detectRepoRoot());
+function runDoctor(_args: string[], ctx: CliContext): void {
+  const store = openStore(ctx);
   const result = store.doctor();
   for (const line of result.lines) console.log(line);
   if (!result.ok) process.exitCode = 1;
@@ -339,8 +380,8 @@ function runConfig(): void {
   console.log(`Platforms: ${installPlatformUsage}`);
 }
 
-function runRepoStatus(): void {
-  const store = createVendorMemoryStore(detectRepoRoot());
+function runRepoStatus(_args: string[], ctx: CliContext): void {
+  const store = openStore(ctx);
   const project = store.loadProject();
   if (!project) {
     console.log('Layerkit is not installed for this repository.');
@@ -348,6 +389,7 @@ function runRepoStatus(): void {
     return;
   }
   console.log(`Project: ${project.name}`);
+  console.log(`projectDir: ${store.projectDir}`);
   console.log(`Version: ${project.version}`);
   console.log(`Languages: ${project.languages.join(', ')}`);
   console.log(`Vendors: ${store.listMaps().length}`);
@@ -383,7 +425,8 @@ function printHelp(): void {
   for (const c of cliCommands.filter((x) => x.showInTopLevelHelp)) {
     console.log(`  layerkit ${c.usage}`);
   }
-  console.log('\nPlatforms: ' + installPlatformUsage);
+  console.log('\nGlobal flags: --project-dir <path>  (store root; default .layerkit)');
+  console.log('Platforms: ' + installPlatformUsage);
   console.log('Agent install: docs/agent-install-prompt.md');
 }
 
@@ -392,13 +435,19 @@ async function main(argv: string[]): Promise<void> {
     printHelp();
     return;
   }
-  const cmd = matchCommand(argv);
+
+  const { rest, projectDir: projectDirFlag } = extractGlobalFlags(argv);
+  const repoRoot = detectRepoRoot();
+  const projectDir = resolveProjectDir(repoRoot, { cliProjectDir: projectDirFlag });
+  const ctx: CliContext = { repoRoot, projectDirFlag, projectDir };
+
+  const cmd = matchCommand(rest);
   if (!cmd) {
     printHelp();
     process.exitCode = 1;
     return;
   }
-  await cmd.handler(argv.slice(cmd.path.length));
+  await cmd.handler(rest.slice(cmd.path.length), ctx);
 }
 
 main(process.argv.slice(2)).catch((err) => {

@@ -1,0 +1,9 @@
+{
+  "id": "schema-dual-read",
+  "suite": "ci",
+  "title": "Proposal schemaVersion 1 and 2 both validate; sources required",
+  "owners": ["domain", "proposal"],
+  "featurePr": "PR1",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network"]
+}

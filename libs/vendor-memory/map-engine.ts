@@ -1,14 +1,8 @@
+import type { DomainEvent } from '../domain/event.js';
 import type { VendorMap } from '../domain/types.js';
 
-export interface DomainEvent {
-  intent: string;
-  eventId?: string;
-  user?: Record<string, unknown>;
-  product?: Record<string, unknown>;
-  value?: Record<string, unknown>;
-  context?: Record<string, unknown>;
-  [key: string]: unknown;
-}
+/** Re-export DomainEvent from domain for one minor version of import compatibility. */
+export type { DomainEvent } from '../domain/event.js';
 
 export interface MapResult {
   vendor: string;
@@ -37,6 +31,17 @@ function setPath(obj: Record<string, unknown>, path: string, value: unknown): vo
   cur[parts[parts.length - 1]!] = value;
 }
 
+function intentEventName(map: VendorMap, intent: string): { skip?: boolean; eventName?: string; staticFields?: Record<string, unknown> } | undefined {
+  const wire = map.intents?.[intent];
+  if (!wire) return undefined;
+  // V1 IntentWire and V2 IntentBinding both support skip/eventName/staticFields
+  return {
+    skip: wire.skip,
+    eventName: 'eventName' in wire ? wire.eventName : undefined,
+    staticFields: wire.staticFields,
+  };
+}
+
 /** Execute agent-authored maps only. Empty maps skip. */
 export function applyVendorMap(event: DomainEvent, map: VendorMap): MapResult {
   if (!map.fields?.length && !Object.keys(map.intents ?? {}).length) {
@@ -47,7 +52,7 @@ export function applyVendorMap(event: DomainEvent, map: VendorMap): MapResult {
       wire: null,
     };
   }
-  const intentWire = map.intents[event.intent];
+  const intentWire = intentEventName(map, event.intent);
   if (!intentWire || intentWire.skip) {
     return {
       vendor: map.vendor,

@@ -35,7 +35,8 @@ export function scoreMap(map: VendorMap): MapQualityScore {
   score += Math.min(15, withProcessor * 3);
   reasons.push(`processors:${withProcessor}`);
 
-  if (!map.endpoint.path.includes('REPLACE')) {
+  const endpointPath = map.endpoint?.path ?? '';
+  if (endpointPath && !endpointPath.includes('REPLACE')) {
     score += 5;
     reasons.push('endpoint_set');
   }
