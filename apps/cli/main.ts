@@ -277,6 +277,10 @@ const cliCommands: CliCommand[] = [
     usage: 'map list [--project-dir <path>]',
     handler: (_args, ctx) => {
       const store = openStore(ctx);
+      if (!store.loadProject()) {
+        for (const line of installGuidanceLines()) console.log(line);
+        return;
+      }
       const maps = store.listMaps();
       if (maps.length === 0) {
         for (const line of emptyMapGuidanceLines()) console.log(line);
@@ -854,13 +858,21 @@ function hasFlag(args: string[], name: string): boolean {
   return args.includes(name);
 }
 
+function installGuidanceLines(): string[] {
+  return [
+    'No Layerkit project found yet.',
+    'Next step: run layerkit install',
+  ];
+}
+
 function emptyMapGuidanceLines(): string[] {
   return [
-    'No vendor maps found yet.',
+    'No vendor maps found yet — zero maps is normal because Layerkit does not ship a vendor catalog.',
     'Next commands:',
-    '  - layerkit research openapi <file>',
+    '  - layerkit research openapi <file> (or skill layerkit-research-vendor)',
     '  - layerkit proposal validate <proposal.json>',
     '  - layerkit proposal apply <proposal.json>',
+    '  - Follow strict maker-checker: submit -> validate -> approve',
   ];
 }
 
@@ -870,9 +882,12 @@ function runDoctor(args: string[], ctx: CliContext): void {
   for (const line of result.lines) console.log(line);
   let ok = result.ok;
 
-  if (store.listMaps().length === 0) {
+  if (store.loadProject() && store.listMaps().length === 0) {
     console.log('');
     for (const line of emptyMapGuidanceLines()) console.log(line);
+  } else if (!store.loadProject()) {
+    console.log('');
+    for (const line of installGuidanceLines()) console.log(line);
   }
 
   // One-line agent pipeline hint when a project exists
@@ -894,6 +909,10 @@ function runDoctor(args: string[], ctx: CliContext): void {
     if (!q.ok) ok = false;
   } else if (hasFlag(args, '--strict')) {
     console.log('Note: --strict applies with --quality (JaCoCo report required).');
+        if (!store.loadProject()) {
+          for (const line of installGuidanceLines()) console.log(line);
+          return;
+        }
   }
 
   if (!ok) process.exitCode = 1;
