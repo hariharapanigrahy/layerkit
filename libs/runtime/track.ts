@@ -27,6 +27,7 @@ import {
 import type { ObservationConfig } from '../observation/types.js';
 import { applyVendorMap, type DomainEvent, type MapResult } from '../vendor-memory/map-engine.js';
 import { resolveMapFlow } from './load-flow.js';
+import { hasTimeoutBudget, runWithTimeout } from './timeout.js';
 
 export type TrackMode = RuntimeMode;
 
@@ -65,6 +66,17 @@ export interface TrackOptions {
    * Pass `false` to disable. Default: auto when projectDir set.
    */
   observation?: ObservationBus | ObservationConfig | false;
+  /**
+   * Wall-clock budget (ms) for the entire track() call.
+   * On expiry: diagnostics include `timeout_overall`; results collected so far
+   * are returned; vendors not yet finished are marked failure with reason `timeout`.
+   */
+  timeoutMs?: number;
+  /**
+   * Per-vendor budget (ms) for a single runOne() call (Promise.race via runWithTimeout).
+   * On expiry: VendorTrackResult outcome `failure`, reason `timeout`, skipped false.
+   */
+  vendorTimeoutMs?: number;
 }
 
 export interface VendorTrackResult {
@@ -305,8 +317,67 @@ async function runOne(
   return result;
 }
 
+/** Failure result when a vendor (or pending vendor) hits a timeout budget. */
+function timeoutVendorResult(vendor: string, mode: TrackMode): VendorTrackResult {
+  return {
+    vendor,
+    skipped: false,
+    reason: 'timeout',
+    outcome: 'failure',
+    mode,
+    errorClass: 'timeout',
+  };
+}
+
+function emitTimeoutAudit(
+  bus: ObservationBus | undefined,
+  map: MapWithFlow | { vendor: string; version?: string },
+  event: DomainEvent,
+  durationMs?: number,
+): void {
+  if (!bus) return;
+  bus.emitAudit({
+    vendor: map.vendor,
+    intent: event.intent,
+    eventId: event.eventId,
+    stage: 'orchestrate',
+    outcome: 'failure',
+    reasonCode: 'timeout',
+    durationMs,
+    mapVersion: 'version' in map ? map.version : undefined,
+  });
+}
+
+/**
+ * Run one vendor with optional per-vendor budget (`vendorTimeoutMs`).
+ * Uses runWithTimeout so late completion cannot hang track or leak rejections.
+ */
+async function runOneWithVendorTimeout(
+  map: MapWithFlow,
+  event: DomainEvent,
+  mode: TrackMode,
+  opts: TrackOptions,
+  bus?: ObservationBus,
+): Promise<VendorTrackResult> {
+  const work = runOne(map, event, mode, opts, bus);
+  if (!hasTimeoutBudget(opts.vendorTimeoutMs)) {
+    return work;
+  }
+  const raced = await runWithTimeout(work, opts.vendorTimeoutMs, map.vendor);
+  if (!raced.ok) {
+    const result = timeoutVendorResult(map.vendor, mode);
+    emitTimeoutAudit(bus, map, event, opts.vendorTimeoutMs);
+    return result;
+  }
+  return raced.value;
+}
+
 /**
  * Fan-out domain event across vendor maps with status filter + privacy gate.
+ *
+ * Timeouts (optional):
+ * - `vendorTimeoutMs` — Promise.race around each runOne (via runWithTimeout)
+ * - `timeoutMs` — wall clock for the whole fan-out; pending vendors → failure/timeout
  */
 export async function track(
   event: DomainEvent,
@@ -328,6 +399,9 @@ export async function track(
   const exec = opts.vendorExecution ?? 'sequential';
   const bus = resolveObservation(opts);
   const results: VendorTrackResult[] = [];
+  const finished = new Set<string>();
+  /** Once true, late vendor completions are ignored (overall timeout won). */
+  let closed = false;
 
   // Default processorsDir from projectDir when not set
   const runOpts: TrackOptions = {
@@ -337,23 +411,75 @@ export async function track(
       (opts.projectDir ? `${opts.projectDir}/processors` : undefined),
   };
 
-  if (exec === 'parallel') {
-    const settled = await Promise.all(
-      selected.map((m) => runOne(m as MapWithFlow, event, mode, runOpts, bus)),
-    );
-    results.push(...settled);
-  } else {
-    for (const m of selected) {
-      const r = await runOne(m as MapWithFlow, event, mode, runOpts, bus);
-      results.push(r);
-      if (failPolicy === 'fail_fast' && r.outcome === 'failure') break;
+  const record = (r: VendorTrackResult): void => {
+    if (closed) return;
+    finished.add(r.vendor);
+    results.push(r);
+  };
+
+  const runAll = async (): Promise<void> => {
+    if (exec === 'parallel') {
+      await Promise.all(
+        selected.map(async (m) => {
+          const r = await runOneWithVendorTimeout(
+            m as MapWithFlow,
+            event,
+            mode,
+            runOpts,
+            bus,
+          );
+          record(r);
+        }),
+      );
+    } else {
+      for (const m of selected) {
+        if (closed) break;
+        const r = await runOneWithVendorTimeout(
+          m as MapWithFlow,
+          event,
+          mode,
+          runOpts,
+          bus,
+        );
+        record(r);
+        if (failPolicy === 'fail_fast' && r.outcome === 'failure') break;
+      }
     }
+  };
+
+  let overallTimedOut = false;
+
+  if (hasTimeoutBudget(opts.timeoutMs)) {
+    const raced = await runWithTimeout(runAll(), opts.timeoutMs, 'track');
+    if (!raced.ok) {
+      overallTimedOut = true;
+      closed = true;
+      // Mark vendors not yet finished as timeout failures (do not omit).
+      for (const m of selected) {
+        if (finished.has(m.vendor)) continue;
+        const tr = timeoutVendorResult(m.vendor, mode);
+        results.push(tr);
+        finished.add(m.vendor);
+        emitTimeoutAudit(bus, m as MapWithFlow, event, opts.timeoutMs);
+      }
+    }
+  } else {
+    await runAll();
   }
 
-  const diagnostics =
+  const emptyDiagnostics =
     results.length === 0
       ? buildEmptyTrackDiagnostics(maps, mode, allowed, filteredOut)
       : undefined;
+
+  const diagnostics: string[] | undefined = overallTimedOut
+    ? [
+        'timeout_overall',
+        `timeoutMs=${opts.timeoutMs}`,
+        `finished=${[...finished].length}/${selected.length}`,
+        ...(emptyDiagnostics ?? []),
+      ]
+    : emptyDiagnostics;
 
   return {
     eventId: event.eventId,

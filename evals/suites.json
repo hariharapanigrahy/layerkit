@@ -51,6 +51,7 @@
     "track-privacy-autoload",
     "track-flowref-resolve",
     "track-observation-emit",
+    "track-timeout",
     "map-missing-fields",
     "promote-non-java-quality"
   ],
@@ -106,6 +107,7 @@
     "track-privacy-autoload",
     "track-flowref-resolve",
     "track-observation-emit",
+    "track-timeout",
     "map-missing-fields",
     "promote-non-java-quality",
     "vendor-research-plan"
