@@ -26,37 +26,92 @@ export type TimeoutResult<T> = TimeoutOk<T> | TimeoutExpired;
  * - Rejects with the original error if `promise` rejects before the timer.
  * - After a timeout win, fulfillment/rejection of `promise` is swallowed (no unhandled rejections).
  * - Timer is always cleared when the race settles.
+ * - When `signal` is already aborted on entry, resolves immediately with a timeout sentinel
+ *   and swallows `promise` settlement (no unhandled rejections).
  *
  * Non-positive or non-finite `ms` is treated as "no timeout" (await promise only).
+ *
+ * @param signal  Optional AbortSignal. When provided and the signal fires first,
+ *                the race resolves with the timeout sentinel and the underlying
+ *                promise is swallowed.
  */
 export function withTimeout<T>(
   promise: Promise<T>,
   ms: number,
   label?: string,
+  signal?: AbortSignal,
 ): Promise<TimeoutResult<T>> {
+  // Fast path: signal already aborted — treat as immediate timeout.
+  if (signal?.aborted) {
+    promise.then(undefined, () => undefined); // swallow late rejection
+    return Promise.resolve({ ok: false, reason: 'timeout', label });
+  }
+
   if (!Number.isFinite(ms) || ms <= 0) {
-    return promise.then((value): TimeoutResult<T> => ({ ok: true, value }));
+    // No timer budget, but still honour an aborting signal.
+    if (!signal) {
+      return promise.then((value): TimeoutResult<T> => ({ ok: true, value }));
+    }
+    return new Promise<TimeoutResult<T>>((resolve, reject) => {
+      let settled = false;
+
+      const onAbort = () => {
+        if (settled) return;
+        settled = true;
+        promise.then(undefined, () => undefined);
+        resolve({ ok: false, reason: 'timeout', label });
+      };
+      signal.addEventListener('abort', onAbort, { once: true });
+
+      promise.then(
+        (value) => {
+          if (settled) return;
+          settled = true;
+          signal.removeEventListener('abort', onAbort);
+          resolve({ ok: true, value });
+        },
+        (err: unknown) => {
+          if (settled) return;
+          settled = true;
+          signal.removeEventListener('abort', onAbort);
+          reject(err);
+        },
+      );
+    });
   }
 
   return new Promise<TimeoutResult<T>>((resolve, reject) => {
     let settled = false;
-    const timer = setTimeout(() => {
+
+    const settle = (result: TimeoutResult<T>) => {
       if (settled) return;
       settled = true;
-      resolve({ ok: false, reason: 'timeout', label });
+      clearTimeout(timer);
+      onAbort && signal?.removeEventListener('abort', onAbort);
+      resolve(result);
+    };
+
+    const timer = setTimeout(() => {
+      promise.then(undefined, () => undefined); // swallow after timeout
+      settle({ ok: false, reason: 'timeout', label });
     }, ms);
 
+    let onAbort: (() => void) | undefined;
+    if (signal) {
+      onAbort = () => {
+        promise.then(undefined, () => undefined);
+        settle({ ok: false, reason: 'timeout', label });
+      };
+      signal.addEventListener('abort', onAbort, { once: true });
+    }
+
     promise.then(
-      (value) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        resolve({ ok: true, value });
-      },
+      (value) => settle({ ok: true, value }),
       (err: unknown) => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
+        onAbort && signal?.removeEventListener('abort', onAbort);
         reject(err);
       },
     );
@@ -71,11 +126,34 @@ export function runWithTimeout<T>(
   promise: Promise<T>,
   ms: number,
   label?: string,
+  signal?: AbortSignal,
 ): Promise<TimeoutResult<T>> {
-  return withTimeout(promise, ms, label);
+  return withTimeout(promise, ms, label, signal);
 }
 
 /** True when a positive finite timeout budget is configured. */
 export function hasTimeoutBudget(ms: number | undefined): ms is number {
   return typeof ms === 'number' && Number.isFinite(ms) && ms > 0;
+}
+
+/**
+ * Create an AbortController whose signal fires after `ms` milliseconds,
+ * or that can be aborted early via the returned `abort()` function.
+ *
+ * The internal timer is cleared automatically when `abort()` is called early,
+ * so there is no timer leak if the caller aborts before the deadline.
+ */
+export function createTimeoutController(ms: number): {
+  signal: AbortSignal;
+  abort: () => void;
+} {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+
+  const abort = () => {
+    clearTimeout(timer);
+    if (!controller.signal.aborted) controller.abort();
+  };
+
+  return { signal: controller.signal, abort };
 }

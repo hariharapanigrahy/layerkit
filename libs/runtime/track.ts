@@ -27,7 +27,7 @@ import {
 import type { ObservationConfig } from '../observation/types.js';
 import { applyVendorMap, type DomainEvent, type MapResult } from '../vendor-memory/map-engine.js';
 import { resolveMapFlow } from './load-flow.js';
-import { hasTimeoutBudget, runWithTimeout } from './timeout.js';
+import { createTimeoutController, hasTimeoutBudget, runWithTimeout } from './timeout.js';
 
 export type TrackMode = RuntimeMode;
 
@@ -68,13 +68,19 @@ export interface TrackOptions {
   observation?: ObservationBus | ObservationConfig | false;
   /**
    * Wall-clock budget (ms) for the entire track() call.
-   * On expiry: diagnostics include `timeout_overall`; results collected so far
-   * are returned; vendors not yet finished are marked failure with reason `timeout`.
+   *
+   * On expiry: an AbortSignal is fired that propagates into every in-flight
+   * runOne() call, suppressing any late audit emissions from those vendors.
+   * Vendors not yet started are marked failure with reason `timeout`.
+   * Diagnostics include `timeout_overall`.
    */
   timeoutMs?: number;
   /**
    * Per-vendor budget (ms) for a single runOne() call (Promise.race via runWithTimeout).
-   * On expiry: VendorTrackResult outcome `failure`, reason `timeout`, skipped false.
+   *
+   * On expiry: an AbortSignal is fired into that vendor's runOne(), suppressing
+   * any late audit it would otherwise emit. VendorTrackResult outcome `failure`,
+   * reason `timeout`, skipped false.
    */
   vendorTimeoutMs?: number;
 }
@@ -206,6 +212,8 @@ async function runOne(
   mode: TrackMode,
   opts: TrackOptions,
   bus?: ObservationBus,
+  /** When aborted before the audit step, the audit is suppressed. */
+  signal?: AbortSignal,
 ): Promise<VendorTrackResult> {
   const t0 = Date.now();
   const policy = resolvePolicyForMap(map, opts);
@@ -291,7 +299,10 @@ async function runOne(
     }
   }
 
-  if (bus) {
+  // Suppress the audit when the caller has already timed out and moved on.
+  // Without this guard, a late-finishing runOne would emit a spurious audit
+  // entry after track() has already returned a timeout result.
+  if (bus && !signal?.aborted) {
     const durationMs = Date.now() - t0;
     const stage =
       result.outcome === 'skipped'
@@ -350,7 +361,10 @@ function emitTimeoutAudit(
 
 /**
  * Run one vendor with optional per-vendor budget (`vendorTimeoutMs`).
- * Uses runWithTimeout so late completion cannot hang track or leak rejections.
+ *
+ * A dedicated AbortController is created for each vendor when a budget is set.
+ * When the timer fires, its signal is aborted — causing runOne() to suppress
+ * any late audit emission even if the underlying work eventually settles.
  */
 async function runOneWithVendorTimeout(
   map: MapWithFlow,
@@ -358,12 +372,31 @@ async function runOneWithVendorTimeout(
   mode: TrackMode,
   opts: TrackOptions,
   bus?: ObservationBus,
+  /** Propagated from the overall track() timeout; already-aborted → fast-path. */
+  parentSignal?: AbortSignal,
 ): Promise<VendorTrackResult> {
-  const work = runOne(map, event, mode, opts, bus);
   if (!hasTimeoutBudget(opts.vendorTimeoutMs)) {
-    return work;
+    return runOne(map, event, mode, opts, bus, parentSignal);
   }
-  const raced = await runWithTimeout(work, opts.vendorTimeoutMs, map.vendor);
+
+  // Create a per-vendor controller so we can cancel it early (e.g. parentSignal fires).
+  const { signal: vendorSignal, abort: abortVendor } = createTimeoutController(opts.vendorTimeoutMs);
+
+  // If the overall track() times out first, propagate into this vendor slot.
+  let parentAbortListener: (() => void) | undefined;
+  if (parentSignal) {
+    parentAbortListener = () => abortVendor();
+    parentSignal.addEventListener('abort', parentAbortListener, { once: true });
+  }
+
+  const work = runOne(map, event, mode, opts, bus, vendorSignal);
+  const raced = await runWithTimeout(work, opts.vendorTimeoutMs, map.vendor, vendorSignal);
+
+  // Clean up cross-signal listener regardless of outcome.
+  if (parentSignal && parentAbortListener) {
+    parentSignal.removeEventListener('abort', parentAbortListener);
+  }
+
   if (!raced.ok) {
     const result = timeoutVendorResult(map.vendor, mode);
     emitTimeoutAudit(bus, map, event, opts.vendorTimeoutMs);
@@ -376,8 +409,10 @@ async function runOneWithVendorTimeout(
  * Fan-out domain event across vendor maps with status filter + privacy gate.
  *
  * Timeouts (optional):
- * - `vendorTimeoutMs` — Promise.race around each runOne (via runWithTimeout)
- * - `timeoutMs` — wall clock for the whole fan-out; pending vendors → failure/timeout
+ * - `vendorTimeoutMs` — AbortSignal + Promise.race around each runOne (via runWithTimeout)
+ * - `timeoutMs` — wall clock for the whole fan-out via AbortController;
+ *                  the signal fires into all in-flight runOne() calls so late
+ *                  audits are suppressed; pending vendors → failure/timeout
  */
 export async function track(
   event: DomainEvent,
@@ -411,6 +446,19 @@ export async function track(
       (opts.projectDir ? `${opts.projectDir}/processors` : undefined),
   };
 
+  // Overall AbortController: signal fires when the track() wall-clock budget expires.
+  // It is threaded into every runOne() call so that in-flight audits know to suppress.
+  let overallSignal: AbortSignal | undefined;
+  let abortOverall: (() => void) | undefined;
+
+  if (hasTimeoutBudget(opts.timeoutMs)) {
+    const controller = new AbortController();
+    overallSignal = controller.signal;
+    abortOverall = () => {
+      if (!controller.signal.aborted) controller.abort();
+    };
+  }
+
   const record = (r: VendorTrackResult): void => {
     if (closed) return;
     finished.add(r.vendor);
@@ -427,6 +475,7 @@ export async function track(
             mode,
             runOpts,
             bus,
+            overallSignal,
           );
           record(r);
         }),
@@ -440,6 +489,7 @@ export async function track(
           mode,
           runOpts,
           bus,
+          overallSignal,
         );
         record(r);
         if (failPolicy === 'fail_fast' && r.outcome === 'failure') break;
@@ -450,10 +500,14 @@ export async function track(
   let overallTimedOut = false;
 
   if (hasTimeoutBudget(opts.timeoutMs)) {
-    const raced = await runWithTimeout(runAll(), opts.timeoutMs, 'track');
+    // Pass overallSignal into runWithTimeout so it also fires into runAll's
+    // await chain — the signal propagates all the way into each runOne() call.
+    const raced = await runWithTimeout(runAll(), opts.timeoutMs, 'track', overallSignal);
     if (!raced.ok) {
       overallTimedOut = true;
       closed = true;
+      // Fire the signal so any still-running runOne calls suppress their audits.
+      abortOverall?.();
       // Mark vendors not yet finished as timeout failures (do not omit).
       for (const m of selected) {
         if (finished.has(m.vendor)) continue;
@@ -462,6 +516,9 @@ export async function track(
         finished.add(m.vendor);
         emitTimeoutAudit(bus, m as MapWithFlow, event, opts.timeoutMs);
       }
+    } else {
+      // Clean up: abort the controller (no-op if timer already fired).
+      abortOverall?.();
     }
   } else {
     await runAll();
