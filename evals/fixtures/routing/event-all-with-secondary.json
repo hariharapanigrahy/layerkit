@@ -1,0 +1,7 @@
+{
+  "intent": "base_intent",
+  "eventId": "e_all_special_1",
+  "product": { "id": "sku_special" },
+  "context": { "segment": "default" },
+  "user": { "externalId": "u2" }
+}

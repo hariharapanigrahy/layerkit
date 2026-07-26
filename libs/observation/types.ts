@@ -73,7 +73,7 @@ export interface AuditEvent {
   vendor: string;
   intent: string;
   eventId?: string;
-  stage: 'map' | 'privacy' | 'deliver' | 'skip' | 'dlq' | 'orchestrate';
+  stage: 'map' | 'privacy' | 'deliver' | 'skip' | 'dlq' | 'orchestrate' | 'route';
   outcome: 'success' | 'failure' | 'skipped' | 'shadow';
   reasonCode?: string;
   durationMs?: number;
@@ -82,6 +82,8 @@ export interface AuditEvent {
   proposalId?: string;
   mapVersion?: string;
   privacyPolicyVersion?: string;
+  /** Routing rule ids (expansion + route) when stage is map/route */
+  ruleIds?: string[];
 }
 
 export const DEFAULT_OBSERVATION_CONFIG: ObservationConfig = {

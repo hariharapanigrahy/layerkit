@@ -78,6 +78,11 @@
       "import": "./dist/libs/hallucination/index.js",
       "default": "./dist/libs/hallucination/index.js"
     },
+    "./routing": {
+      "types": "./dist/libs/routing/index.d.ts",
+      "import": "./dist/libs/routing/index.js",
+      "default": "./dist/libs/routing/index.js"
+    },
     "./package.json": "./package.json"
   },
   "typesVersions": {
@@ -89,7 +94,8 @@
       "observation": ["dist/libs/observation/index.d.ts"],
       "strategy": ["dist/libs/strategy/index.d.ts"],
       "flow": ["dist/libs/flow/index.d.ts"],
-      "hallucination": ["dist/libs/hallucination/index.d.ts"]
+      "hallucination": ["dist/libs/hallucination/index.d.ts"],
+      "routing": ["dist/libs/routing/index.d.ts"]
     }
   },
   "files": [

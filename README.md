@@ -28,15 +28,18 @@ npm install layerkit
 Library imports (ESM, Node ≥20):
 
 ```ts
-import { track } from 'layerkit';
+import { track, trackRouted } from 'layerkit';
 import { applyVendorMap } from 'layerkit/map-engine';
 import { createVendorMemoryStore } from 'layerkit/store';
 import { createDeliverySimulator } from 'layerkit/delivery';
 import { loadPrivacyPolicy, evaluatePrivacy } from 'layerkit/privacy';
 import { createObservationBus } from 'layerkit/observation';
+import { evaluateRouting, loadRoutingPolicy } from 'layerkit/routing';
 ```
 
 `track(event, maps, { projectDir, mode })` loads privacy policies and flow refs from the project store, emits audit events when `projectDir` is set, and returns `diagnostics` / `filteredOut` when no vendor is eligible (never silent empty success).
+
+**Routing (declarative fan-out):** author a customer-owned `RoutingPolicy` (vendor sets + optional intent expansions + routes). Use `trackRouted` or CLI `route plan` / `process dry-run --route` so attribute-based vendor selection stays out of app `if/else` and tag matrices. See skill `layerkit-design-routing`.
 
 ---
 

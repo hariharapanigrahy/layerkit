@@ -246,7 +246,8 @@ export type ProposalKind =
   | 'privacy_policy'
   | 'observation_config'
   | 'delivery_policy'
-  | 'domain_spec';
+  | 'domain_spec'
+  | 'routing_policy';
 
 export type ProposalStatusV1 = 'pending' | 'validated' | 'applied' | 'rejected';
 
@@ -312,6 +313,7 @@ export const PROPOSAL_KINDS: readonly ProposalKind[] = [
   'observation_config',
   'delivery_policy',
   'domain_spec',
+  'routing_policy',
 ] as const;
 
 export const PROPOSAL_STATUS_V1: readonly ProposalStatusV1[] = [

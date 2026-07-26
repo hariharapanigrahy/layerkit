@@ -77,6 +77,16 @@ export interface TrackOptions {
    * On expiry: VendorTrackResult outcome `failure`, reason `timeout`, skipped false.
    */
   vendorTimeoutMs?: number;
+  /**
+   * Declarative routing policy (or load from projectDir when `true` / policy id string).
+   * When set, use `trackRouted` semantics: expand + filter vendors before map apply.
+   */
+  routing?: import('../routing/types.js').RoutingPolicy | string | true;
+  /**
+   * When routing.requireRouteMatch and a base/expanded intent has zero plan entries,
+   * fail the whole track with diagnostics (default false — soft skip).
+   */
+  failOnNoRoute?: boolean;
 }
 
 export interface VendorTrackResult {
@@ -85,6 +95,8 @@ export interface VendorTrackResult {
   reason?: string;
   outcome: 'success' | 'failure' | 'skipped';
   mode: TrackMode;
+  /** Intent actually applied (may differ from base after expansion) */
+  intent?: string;
   operationId?: string;
   httpStatus?: number;
   errorClass?: string;
@@ -93,6 +105,8 @@ export interface VendorTrackResult {
   wire?: Record<string, unknown> | null;
   mapResult?: MapResult;
   warnings?: string[];
+  /** Routing rule ids (expansion + route) that selected this vendor/intent */
+  ruleIds?: string[];
 }
 
 export interface TrackResult {
@@ -105,6 +119,8 @@ export interface TrackResult {
    * Production apps must treat empty results as a diagnosable condition.
    */
   diagnostics?: string[];
+  /** Present when routing was evaluated */
+  plan?: import('../routing/types.js').RoutePlan;
 }
 
 export function defaultStatusesForMode(
@@ -309,11 +325,13 @@ async function runOne(
         reasonCode: result.reason,
         durationMs,
         mapVersion: map.version,
+        ruleIds: result.ruleIds,
       },
       result.wire ?? undefined,
     );
   }
 
+  result.intent = event.intent;
   return result;
 }
 
@@ -508,4 +526,171 @@ function buildEmptyTrackDiagnostics(
       : 'all maps excluded by status filter',
     'next: finish map to map_complete, dry-run, then layerkit promote --vendor <id> for live',
   ];
+}
+
+/**
+ * Track with declarative routing (P0–P4): expand intents → vendor sets → map/privacy per entry.
+ * Prefer this over app-level if/else or combinatorial tag managers.
+ */
+export async function trackRouted(
+  event: DomainEvent,
+  maps: VendorMap[],
+  opts: TrackOptions & {
+    routing: import('../routing/types.js').RoutingPolicy | string | true;
+  },
+): Promise<TrackResult> {
+  const { evaluateRouting } = await import('../routing/evaluate.js');
+  const { loadRoutingPolicy } = await import('../routing/load.js');
+  const { createObservationBus } = await import('../observation/sinks.js');
+
+  let policy: import('../routing/types.js').RoutingPolicy | null = null;
+  if (opts.routing === true) {
+    if (!opts.projectDir) {
+      throw new Error('trackRouted: routing=true requires projectDir to load routing.json');
+    }
+    policy = loadRoutingPolicy(opts.projectDir);
+  } else if (typeof opts.routing === 'string') {
+    if (!opts.projectDir) {
+      throw new Error('trackRouted: routing id requires projectDir');
+    }
+    policy = loadRoutingPolicy(opts.projectDir, opts.routing);
+  } else {
+    policy = opts.routing;
+  }
+  if (!policy) {
+    throw new Error('trackRouted: routing policy not found');
+  }
+
+  const knownVendors = maps.map((m) => m.vendor);
+  const plan = evaluateRouting(event, policy, { knownVendors });
+
+  const bus =
+    opts.observation === false
+      ? undefined
+      : opts.projectDir
+        ? createObservationBus({
+            projectDir: opts.projectDir,
+            config:
+              opts.observation &&
+              typeof opts.observation === 'object' &&
+              'schemaVersion' in opts.observation
+                ? opts.observation
+                : undefined,
+          })
+        : undefined;
+
+  if (bus) {
+    bus.emitAudit({
+      vendor: '_routing',
+      intent: event.intent,
+      eventId: event.eventId,
+      stage: 'route',
+      outcome: plan.entries.length ? 'success' : 'skipped',
+      reasonCode: plan.entries.length ? undefined : 'empty_plan',
+      ruleIds: plan.entries.flatMap((e) => e.ruleIds).slice(0, 32),
+    });
+  }
+
+  if (
+    opts.failOnNoRoute ||
+    (policy.requireRouteMatch &&
+      plan.diagnostics.some((d) => d.code === 'no_route_match'))
+  ) {
+    if (plan.entries.length === 0) {
+      return {
+        eventId: event.eventId,
+        results: [],
+        plan,
+        diagnostics: [
+          'routing_no_entries',
+          ...plan.diagnostics.map((d) => `${d.code}:${d.message}`),
+        ],
+      };
+    }
+  }
+
+  const mapByVendor = new Map(maps.map((m) => [m.vendor, m]));
+  const results: VendorTrackResult[] = [];
+  const mode: TrackMode = opts.mode ?? 'live';
+  const failPolicy = opts.vendorFailurePolicy ?? 'continue_all';
+
+  for (const entry of plan.entries) {
+    const map = mapByVendor.get(entry.vendor);
+    if (!map) {
+      results.push({
+        vendor: entry.vendor,
+        intent: entry.intent,
+        skipped: true,
+        reason: 'map_not_loaded',
+        outcome: 'skipped',
+        mode,
+        ruleIds: entry.ruleIds,
+      });
+      continue;
+    }
+    // Status filter per map
+    const allowed = new Set(opts.includeStatuses ?? defaultStatusesForMode(mode));
+    if (!allowed.has(map.status ?? 'skeleton')) {
+      results.push({
+        vendor: entry.vendor,
+        intent: entry.intent,
+        skipped: true,
+        reason: `status_not_eligible:${map.status ?? 'skeleton'}`,
+        outcome: 'skipped',
+        mode,
+        ruleIds: entry.ruleIds,
+      });
+      continue;
+    }
+
+    const r = await runOneWithVendorTimeout(
+      map as MapWithFlow,
+      entry.event,
+      mode,
+      {
+        ...opts,
+        processorsDir:
+          opts.processorsDir ??
+          (opts.projectDir ? `${opts.projectDir}/processors` : undefined),
+      },
+      bus,
+    );
+    r.ruleIds = entry.ruleIds;
+    r.intent = entry.intent;
+    results.push(r);
+    if (failPolicy === 'fail_fast' && r.outcome === 'failure') break;
+  }
+
+  return {
+    eventId: event.eventId,
+    results,
+    plan,
+    ...(results.length === 0
+      ? {
+          diagnostics: [
+            'routing_zero_results',
+            ...plan.diagnostics.map((d) => `${d.code}:${d.message}`),
+          ],
+        }
+      : plan.diagnostics.length
+        ? { diagnostics: plan.diagnostics.map((d) => `${d.code}:${d.message}`) }
+        : {}),
+  };
+}
+
+/**
+ * Convenience: if opts.routing is set, delegate to trackRouted; else classic track().
+ */
+export async function trackWithOptionalRouting(
+  event: DomainEvent,
+  maps: VendorMap[],
+  opts: TrackOptions = {},
+): Promise<TrackResult> {
+  if (opts.routing !== undefined && opts.routing !== null) {
+    return trackRouted(event, maps, {
+      ...opts,
+      routing: opts.routing as import('../routing/types.js').RoutingPolicy | string | true,
+    });
+  }
+  return track(event, maps, opts);
 }

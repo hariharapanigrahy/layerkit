@@ -32,6 +32,8 @@ import {
   hasHallucinationErrors,
 } from '../hallucination/index.js';
 import { validateProposal, validateVendorMap } from '../proposal/validate.js';
+import { assertValidRoutingPolicy } from '../routing/validate.js';
+import type { RoutingPolicy } from '../routing/types.js';
 import { mapSchemaVersion, migrateMapV1toV2 } from './migrate.js';
 
 /** Read user config without creating ~/.layerkit (eval-safe). */
@@ -61,6 +63,7 @@ const STORE_SUBDIRS = [
   'audit',
   'dlq',
   'idempotency',
+  'routing',
 ] as const;
 
 const MEMORY_INDEX_SKELETON = `# Layerkit memory index
@@ -545,6 +548,8 @@ export class VendorMemoryStore {
         return this.applyDomainSpecKind(proposal);
       case 'java_artifact':
         return this.applyJavaArtifactKind(proposal);
+      case 'routing_policy':
+        return this.applyRoutingPolicyKind(proposal);
       default:
         throw new Error(`Apply not implemented for kind=${String((proposal as Proposal).kind)}`);
     }
@@ -773,6 +778,26 @@ export class VendorMemoryStore {
       writeFileSync(abs, f.content, 'utf8');
     }
     return { kind: 'java_artifact', target: files[0]!.path };
+  }
+
+  /**
+   * Payload: RoutingPolicy. Writes routing.json (id default) or routing/{id}.json.
+   */
+  private applyRoutingPolicyKind(proposal: Proposal): { kind: string; target: string } {
+    const policy = proposal.payload as RoutingPolicy;
+    if (!policy || typeof policy !== 'object') {
+      throw new Error('routing_policy payload must be a RoutingPolicy object');
+    }
+    assertValidRoutingPolicy(policy);
+
+    this.ensureDirs();
+    const id = (policy.id ?? 'default').trim() || 'default';
+    if (id === 'default') {
+      this.writeJson(join(this.projectDir, 'routing.json'), policy);
+      return { kind: 'routing_policy', target: 'routing.json' };
+    }
+    this.writeJson(join(this.projectDir, 'routing', `${id}.json`), policy);
+    return { kind: 'routing_policy', target: `routing/${id}.json` };
   }
 
   private writeJson(path: string, data: unknown): void {
