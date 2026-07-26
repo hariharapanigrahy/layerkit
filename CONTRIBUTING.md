@@ -71,6 +71,31 @@ If the PR is an **example fixture** (not core catalog), put it under `evals/fixt
 - [ ] Any vendor-facing knowledge cites official URLs (and is fixture/example, not core catalog)
 - [ ] Does not add package-shipped maps for real ad/commerce vendors as “official” Layerkit truth
 
+## Find an issue (community first)
+
+Maintainers alone do not scale. **Claim an open issue** (comment “I’d like to take this”) before large work.
+
+| Start here | Filter |
+|------------|--------|
+| [Good first contributions map (#48)](https://github.com/hariharapanigrahy/layerkit/issues/48) | Landing pad |
+| Easy | [`good first issue`](https://github.com/hariharapanigrahy/layerkit/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) |
+| Reliability (hallucination, timeout, transactions) | [`area: reliability`](https://github.com/hariharapanigrahy/layerkit/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+reliability%22) |
+| Runtime / delivery | [`area: runtime`](https://github.com/hariharapanigrahy/layerkit/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+runtime%22) |
+| Evals | [`area: evals`](https://github.com/hariharapanigrahy/layerkit/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+evals%22) |
+| Skills / docs | [`area: skills`](https://github.com/hariharapanigrahy/layerkit/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+skills%22) |
+
+Labels: `difficulty: easy|medium|hard`, `help wanted`. Each issue lists **where to look** and **acceptance criteria**.
+
+### Reliability workflows (parallel tracks)
+
+These are intentionally separate so different people can own them:
+
+1. [#49 Hallucination detector](https://github.com/hariharapanigrahy/layerkit/issues/49) — fail-closed invent signals before apply  
+2. [#50 track() timeouts](https://github.com/hariharapanigrahy/layerkit/issues/50) — overall + per-vendor budgets (`libs/runtime/timeout.ts` head start)  
+3. [#51 Store transaction + rollback](https://github.com/hariharapanigrahy/layerkit/issues/51) — atomic multi-proposal apply  
+4. [#52 track + delivery compose](https://github.com/hariharapanigrahy/layerkit/issues/52) — sendEvent / fail-fast  
+5. [#60 Circuit breaker](https://github.com/hariharapanigrahy/layerkit/issues/60) — per-vendor open/half-open  
+
 ## Reporting bugs & ideas
 
 - **Bugs:** [GitHub Issues](https://github.com/hariharapanigrahy/layerkit/issues/new?template=bug_report.yml)

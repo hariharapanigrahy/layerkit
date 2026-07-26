@@ -149,11 +149,13 @@ docs/                     Install prompt, launch guide
 
 Layerkit is an **agent toolkit + eval harness**, not a community vendor-map catalog. Maps stay **customer-owned** under each project's store.
 
-**Highest-value PRs:** skills, process evals/gates, platform installers, docs/UX.  
+**Highest-value PRs:** skills, process evals/gates, platform installers, reliability, docs/UX.  
 See [CONTRIBUTING.md](./CONTRIBUTING.md) and the [no-catalog design](./docs/designs/agent-as-developer-no-catalog.md).
 
+**New here?** Start at [good first contributions map (#48)](https://github.com/hariharapanigrahy/layerkit/issues/48) or filter [`good first issue`](https://github.com/hariharapanigrahy/layerkit/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22). Reliability tracks (hallucination / timeout / transactions) are separate issues so multiple people can work in parallel.
+
 1. Read [CONTRIBUTING.md](./CONTRIBUTING.md)
-2. Grab `help wanted` / `good first issue`, or open a [feature](https://github.com/hariharapanigrahy/layerkit/issues/new?template=feature_request.yml) / [bug](https://github.com/hariharapanigrahy/layerkit/issues/new?template=bug_report.yml)
+2. Claim a `help wanted` / `good first issue` (comment on the issue), or open a [feature](https://github.com/hariharapanigrahy/layerkit/issues/new?template=feature_request.yml) / [bug](https://github.com/hariharapanigrahy/layerkit/issues/new?template=bug_report.yml)
 3. Optional: track **research notes** with the [vendor research template](https://github.com/hariharapanigrahy/layerkit/issues/new?template=vendor_map.yml) (examples/fixtures only — not official connectors)
 4. PR with tests/evals and citations where knowledge is claimed
 
