@@ -868,11 +868,12 @@ function installGuidanceLines(): string[] {
 function emptyMapGuidanceLines(): string[] {
   return [
     'No vendor maps found yet — zero maps is normal because Layerkit does not ship a vendor catalog.',
-    'Next commands:',
+    'Next commands (evidence-first):',
     '  - layerkit research openapi <file> (or skill layerkit-research-vendor)',
-    '  - layerkit proposal validate <proposal.json>',
-    '  - layerkit proposal apply <proposal.json>',
-    '  - Follow strict maker-checker: submit -> validate -> approve',
+    '  - layerkit proposal write map-from-openapi --vendor <v> --openapi <file> --out p.json',
+    '  - layerkit proposal submit p.json --by <agentId>   # then validate / approve (strict)',
+    '  - layerkit proposal apply p.json                   # POC legacy may apply without approve',
+    '  - layerkit agent next',
   ];
 }
 
@@ -909,10 +910,6 @@ function runDoctor(args: string[], ctx: CliContext): void {
     if (!q.ok) ok = false;
   } else if (hasFlag(args, '--strict')) {
     console.log('Note: --strict applies with --quality (JaCoCo report required).');
-        if (!store.loadProject()) {
-          for (const line of installGuidanceLines()) console.log(line);
-          return;
-        }
   }
 
   if (!ok) process.exitCode = 1;
