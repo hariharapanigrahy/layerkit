@@ -308,6 +308,11 @@ const cliCommands: CliCommand[] = [
       const pathOnly = hasFlag(args, '--path');
       const mapPath = join(ctx.projectDir, 'maps', `${vendor}.json`);
       if (pathOnly) {
+        if (!existsSync(mapPath)) {
+          throw new Error(
+            `No map for ${vendor} at ${mapPath}. Use map list; author via proposal pipeline.`,
+          );
+        }
         console.log(mapPath);
         return;
       }
