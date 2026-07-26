@@ -77,6 +77,7 @@ export function createObservationBus(ctx: EmitContext): ObservationBus {
       proposalId: partial.proposalId,
       mapVersion: partial.mapVersion,
       privacyPolicyVersion: partial.privacyPolicyVersion,
+      ruleIds: partial.ruleIds,
     };
 
     for (const sink of config.audit) {

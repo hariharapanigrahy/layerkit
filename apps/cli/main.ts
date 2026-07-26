@@ -50,7 +50,14 @@ import {
   hasJavaProjectSignal,
   JACOCO_MIN_LINE_COVERAGE,
 } from '../../libs/generate/quality.js';
-import { track } from '../../libs/runtime/track.js';
+import { track, trackRouted } from '../../libs/runtime/track.js';
+import {
+  evaluateRouting,
+  loadRoutingPolicy,
+  listRoutingPolicies,
+  validateRoutingPolicy,
+  type RoutingPolicy,
+} from '../../libs/routing/index.js';
 import { generateTsScaffold } from '../../libs/generate/ts-scaffold.js';
 import { layerkitHookGuidance } from '../../libs/hooks/guidance.js';
 import { installLayerkit } from '../../libs/install/install.js';
@@ -588,20 +595,84 @@ const cliCommands: CliCommand[] = [
     showInTopLevelHelp: true,
   },
   {
+    path: ['route', 'plan'],
+    usage:
+      'route plan [--event-file <json>] [--intent <i>] [--policy <id|path>] [--json] [--project-dir <path>]',
+    handler: (args, ctx) => {
+      runRoutePlan(args, ctx);
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['route', 'show'],
+    usage: 'route show [--policy <id>] [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const store = openStore(ctx);
+      const policyId = flag(args, '--policy');
+      const policy = loadRoutingPolicy(store.projectDir, policyId ?? undefined);
+      if (!policy) {
+        const listed = listRoutingPolicies(store.projectDir);
+        throw new Error(
+          `No routing policy found.` +
+            (listed.length
+              ? ` Known: ${listed.map((l) => l.id).join(', ')}`
+              : ' Apply a routing_policy proposal or write routing.json'),
+        );
+      }
+      console.log(JSON.stringify(policy, null, 2));
+    },
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['route', 'validate'],
+    usage: 'route validate [--policy <id|path>] [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const store = openStore(ctx);
+      const policy = resolveRoutingPolicyArg(args, store.projectDir);
+      const issues = validateRoutingPolicy(policy);
+      console.log(JSON.stringify({ valid: !issues.some((i) => i.level === 'error'), issues }, null, 2));
+      if (issues.some((i) => i.level === 'error')) process.exitCode = 1;
+    },
+    showInTopLevelHelp: true,
+  },
+  {
     path: ['process', 'dry-run'],
     usage:
-      'process dry-run --vendor <v> --intent <i> [--full] [--allow-skip] [--project-dir <path>]',
+      'process dry-run --vendor <v> --intent <i> [--full] [--route] [--event-file <json>] [--allow-skip] [--project-dir <path>]',
     handler: async (args, ctx) => {
       const vendor = flag(args, '--vendor');
       const intent = flag(args, '--intent') ?? 'purchase';
       const full = hasFlag(args, '--full');
+      const useRoute = hasFlag(args, '--route');
       const allowSkip = hasFlag(args, '--allow-skip');
+      const eventFile = flag(args, '--event-file');
+      const store = openStore(ctx);
+      const processorsDir = join(store.projectDir, 'processors');
+
+      const event = loadDryRunEvent(eventFile, intent);
+
+      if (useRoute) {
+        const maps = store.listMaps();
+        const policy = resolveRoutingPolicyArg(args, store.projectDir);
+        const trackResult = await trackRouted(event, maps, {
+          mode: 'dry_run',
+          projectDir: store.projectDir,
+          routing: policy,
+          processorsDir: existsSync(processorsDir) ? processorsDir : undefined,
+          observation: false,
+        });
+        console.log(JSON.stringify(trackResult, null, 2));
+        if (!trackResult.results.length || trackResult.results.every((r) => r.skipped)) {
+          if (!allowSkip) process.exitCode = 1;
+        }
+        return;
+      }
+
       if (!vendor) {
         throw new Error(
-          'Usage: layerkit process dry-run --vendor <v> --intent <i> [--full] [--allow-skip]',
+          'Usage: layerkit process dry-run --vendor <v> --intent <i> [--full] [--route] [--event-file <json>] [--allow-skip]',
         );
       }
-      const store = openStore(ctx);
       const map = store.loadMap(vendor);
       if (!map) {
         const known = store.listMaps().map((m) => m.vendor);
@@ -610,14 +681,6 @@ const cliCommands: CliCommand[] = [
             (known.length ? ` Known: ${known.join(', ')}` : ' No maps in project store.'),
         );
       }
-      const event = {
-        intent,
-        eventId: 'evt_1',
-        user: { email: 'Ada@Example.com' },
-        value: { amount: 10, currency: 'usd' },
-        consent: { purposes: ['marketing'] },
-      };
-      const processorsDir = join(store.projectDir, 'processors');
 
       if (full) {
         const trackResult = await track(event, [map], {
@@ -856,6 +919,72 @@ function printInstallResult(result: Awaited<ReturnType<typeof installLayerkit>>)
 
 function hasFlag(args: string[], name: string): boolean {
   return args.includes(name);
+}
+
+function loadDryRunEvent(
+  eventFile: string | undefined,
+  intent: string,
+): Record<string, unknown> & { intent: string } {
+  if (eventFile) {
+    const raw = JSON.parse(readFileSync(resolve(eventFile), 'utf8')) as Record<string, unknown>;
+    return {
+      ...raw,
+      intent: typeof raw.intent === 'string' ? raw.intent : intent,
+    };
+  }
+  return {
+    intent,
+    eventId: 'evt_1',
+    user: { email: 'Ada@Example.com' },
+    value: { amount: 10, currency: 'usd' },
+    product: { id: 'sku_demo' },
+    context: { segment: 'default' },
+    consent: { purposes: ['marketing'] },
+  };
+}
+
+function resolveRoutingPolicyArg(args: string[], projectDir: string): RoutingPolicy {
+  const policyFlag = flag(args, '--policy');
+  if (policyFlag && (policyFlag.endsWith('.json') || policyFlag.includes('/') || policyFlag.includes('\\'))) {
+    const path = resolve(policyFlag);
+    const policy = JSON.parse(readFileSync(path, 'utf8')) as RoutingPolicy;
+    const issues = validateRoutingPolicy(policy);
+    if (issues.some((i) => i.level === 'error')) {
+      throw new Error(
+        `Invalid routing policy file:\n${issues
+          .filter((i) => i.level === 'error')
+          .map((i) => `- ${i.code}: ${i.message}`)
+          .join('\n')}`,
+      );
+    }
+    return policy;
+  }
+  const loaded = loadRoutingPolicy(projectDir, policyFlag ?? undefined);
+  if (!loaded) {
+    throw new Error(
+      'No routing policy — apply routing_policy proposal or pass --policy path/id',
+    );
+  }
+  return loaded;
+}
+
+function runRoutePlan(args: string[], ctx: CliContext): void {
+  const store = openStore(ctx);
+  const intent = flag(args, '--intent') ?? 'purchase';
+  const eventFile = flag(args, '--event-file');
+  const asJson = hasFlag(args, '--json') || true; // always structured
+  void asJson;
+  const event = loadDryRunEvent(eventFile, intent);
+  const policy = resolveRoutingPolicyArg(args, store.projectDir);
+  const known = store.listMaps().map((m) => m.vendor);
+  const plan = evaluateRouting(event as import('../../libs/domain/event.js').DomainEvent, policy, {
+    knownVendors: known.length ? known : undefined,
+    filterUnknownVendors: known.length > 0,
+  });
+  console.log(JSON.stringify(plan, null, 2));
+  if (policy.requireRouteMatch && plan.entries.length === 0) {
+    process.exitCode = 1;
+  }
 }
 
 function installGuidanceLines(): string[] {

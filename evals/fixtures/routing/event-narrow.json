@@ -1,0 +1,7 @@
+{
+  "intent": "base_intent",
+  "eventId": "e_narrow_1",
+  "product": { "id": "sku_normal" },
+  "context": { "segment": "narrow" },
+  "user": { "externalId": "u1" }
+}
