@@ -26,14 +26,16 @@ describe('CLI empty-state output', () => {
     const listResult = runCli(['map', 'list', '--project-dir', projectDir], repoRoot);
     assert.equal(listResult.status, 0);
     assert.match(listResult.stdout, /No vendor maps found yet/);
+    assert.match(listResult.stdout, /zero maps is normal/);
     assert.match(listResult.stdout, /layerkit research openapi <file>/);
-    assert.match(listResult.stdout, /layerkit proposal apply <proposal\.json>/);
+    assert.match(listResult.stdout, /proposal write map-from-openapi/);
+    assert.match(listResult.stdout, /layerkit proposal apply/);
 
     const doctorResult = runCli(['doctor', '--project-dir', projectDir], repoRoot);
     assert.equal(doctorResult.status, 0);
     assert.match(doctorResult.stdout, /Vendor maps: 0/);
     assert.match(doctorResult.stdout, /No vendor maps found yet/);
-    assert.match(doctorResult.stdout, /Next commands:/);
+    assert.match(doctorResult.stdout, /Next commands/);
   });
 
   it('prompts install first when no project exists', () => {
@@ -44,7 +46,7 @@ describe('CLI empty-state output', () => {
     assert.equal(listResult.status, 0);
     assert.match(listResult.stdout, /No Layerkit project found yet\./);
     assert.match(listResult.stdout, /Next step: run layerkit install/);
-    assert.doesNotMatch(listResult.stdout, /research openapi|proposal validate|proposal apply/);
+    assert.doesNotMatch(listResult.stdout, /research openapi|proposal write|proposal apply/);
 
     const doctorResult = runCli(['doctor', '--project-dir', projectDir], repoRoot);
     assert.equal(doctorResult.status, 1);
@@ -52,5 +54,12 @@ describe('CLI empty-state output', () => {
     assert.match(doctorResult.stdout, /No Layerkit project found yet\./);
     assert.match(doctorResult.stdout, /Next step: run layerkit install/);
     assert.doesNotMatch(doctorResult.stdout, /No vendor maps found yet/);
+
+    // --strict must not swallow the failed-project exit code
+    const strictResult = runCli(['doctor', '--strict', '--project-dir', projectDir], repoRoot);
+    assert.equal(strictResult.status, 1);
+    assert.match(strictResult.stdout, /No Layerkit project at/);
+    assert.match(strictResult.stdout, /Note: --strict applies with --quality/);
+    assert.doesNotMatch(strictResult.stdout, /No vendor maps found yet/);
   });
 });
