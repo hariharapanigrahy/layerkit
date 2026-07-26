@@ -49,10 +49,11 @@ Pipeline step ids (see `layerkit agent status`): `discover` · `research` · `de
 
 Skill: [`layerkit-bootstrap`](../skills/layerkit-bootstrap/SKILL.md)
 
+`layerkit` is published on npm, so the golden path uses the released package — no clone or build required:
+
 ```bash
-git clone https://github.com/hariharapanigrahy/layerkit.git
-cd layerkit
-npm install && npm run build && npm link
+npm install -g layerkit
+# or run without installing: npx layerkit <command>
 
 cd /path/to/your/app
 layerkit install --platform <platform> --hooks enabled --auto-map-updates enabled --poc
@@ -60,6 +61,14 @@ layerkit doctor
 layerkit repo status
 layerkit memory index
 ```
+
+> **Contributors / from-source only.** If you are hacking on layerkit itself, build from a clone instead of the published package:
+>
+> ```bash
+> git clone https://github.com/hariharapanigrahy/layerkit.git
+> cd layerkit
+> npm install && npm run build && npm link
+> ```
 
 - Do **not** invent vendor field maps during install.
 - Confirm project store path and that `{projectDir}/memory/` exists.
