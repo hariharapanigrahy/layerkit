@@ -16,6 +16,11 @@ export interface MapResult {
   skipped: boolean;
   reason?: string;
   wire: Record<string, unknown> | null;
+  /**
+   * Domain field paths present on the map but missing/undefined on the event.
+   * Production under-send signal — dry-run/track should surface these.
+   */
+  missingDomainPaths?: string[];
 }
 
 /** Options for processor execution during map apply. */
@@ -110,9 +115,16 @@ export function applyVendorMap(
   const wire: Record<string, unknown> = { ...(intentWire.staticFields ?? {}) };
   if (intentWire.eventName) wire.event_name = intentWire.eventName;
 
+  const missingDomainPaths: string[] = [];
+
   for (const row of map.fields) {
     const raw = getPath(event, row.domain);
-    if (raw === undefined) continue;
+    if (raw === undefined) {
+      if (!row.optional) {
+        missingDomainPaths.push(row.domain);
+      }
+      continue;
+    }
 
     let out: unknown = raw;
     if (row.transform.type === 'constant') {
@@ -136,6 +148,7 @@ export function applyVendorMap(
             skipped: true,
             reason: 'processor_unresolved',
             wire: null,
+            missingDomainPaths: missingDomainPaths.length ? missingDomainPaths : undefined,
           };
         }
         throw err;
@@ -143,5 +156,10 @@ export function applyVendorMap(
     }
     setPath(wire, row.vendor, out);
   }
-  return { vendor: map.vendor, skipped: false, wire };
+  return {
+    vendor: map.vendor,
+    skipped: false,
+    wire,
+    missingDomainPaths: missingDomainPaths.length ? missingDomainPaths : undefined,
+  };
 }

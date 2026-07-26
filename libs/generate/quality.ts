@@ -147,6 +147,29 @@ export function parseJacocoCsvLineRate(filePath: string): number | undefined {
 }
 
 /**
+ * True when any search root looks like a generated/checked-out Java module
+ * (pom.xml or src/main/java). Used so promote does not require JaCoCo for Node-only projects.
+ */
+export function hasJavaProjectSignal(searchRoots: string[]): boolean {
+  for (const root of searchRoots) {
+    if (!root || !isDir(root)) continue;
+    if (existsSync(join(root, 'pom.xml'))) return true;
+    if (isDir(join(root, 'src', 'main', 'java'))) return true;
+    try {
+      for (const ent of readdirSync(root, { withFileTypes: true })) {
+        if (!ent.isDirectory()) continue;
+        const child = join(root, ent.name);
+        if (existsSync(join(child, 'pom.xml'))) return true;
+        if (isDir(join(child, 'src', 'main', 'java'))) return true;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return false;
+}
+
+/**
  * Run quality check for Java client generation / promote gate.
  */
 export function checkJavaQuality(opts: QualityCheckOptions): QualityCheckResult {

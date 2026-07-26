@@ -36,26 +36,42 @@
     ".": {
       "types": "./dist/libs/runtime/index.d.ts",
       "import": "./dist/libs/runtime/index.js",
-      "require": "./dist/libs/runtime/index.js",
       "default": "./dist/libs/runtime/index.js"
     },
     "./map-engine": {
       "types": "./dist/libs/vendor-memory/map-engine.d.ts",
       "import": "./dist/libs/vendor-memory/map-engine.js",
-      "require": "./dist/libs/vendor-memory/map-engine.js",
       "default": "./dist/libs/vendor-memory/map-engine.js"
     },
     "./store": {
       "types": "./dist/libs/vendor-memory/store.d.ts",
       "import": "./dist/libs/vendor-memory/store.js",
-      "require": "./dist/libs/vendor-memory/store.js",
       "default": "./dist/libs/vendor-memory/store.js"
     },
     "./delivery": {
       "types": "./dist/libs/delivery/index.d.ts",
       "import": "./dist/libs/delivery/index.js",
-      "require": "./dist/libs/delivery/index.js",
       "default": "./dist/libs/delivery/index.js"
+    },
+    "./privacy": {
+      "types": "./dist/libs/privacy/index.d.ts",
+      "import": "./dist/libs/privacy/index.js",
+      "default": "./dist/libs/privacy/index.js"
+    },
+    "./observation": {
+      "types": "./dist/libs/observation/index.d.ts",
+      "import": "./dist/libs/observation/index.js",
+      "default": "./dist/libs/observation/index.js"
+    },
+    "./strategy": {
+      "types": "./dist/libs/strategy/index.d.ts",
+      "import": "./dist/libs/strategy/index.js",
+      "default": "./dist/libs/strategy/index.js"
+    },
+    "./flow": {
+      "types": "./dist/libs/flow/index.d.ts",
+      "import": "./dist/libs/flow/index.js",
+      "default": "./dist/libs/flow/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -63,14 +79,17 @@
     "*": {
       "map-engine": ["dist/libs/vendor-memory/map-engine.d.ts"],
       "store": ["dist/libs/vendor-memory/store.d.ts"],
-      "delivery": ["dist/libs/delivery/index.d.ts"]
+      "delivery": ["dist/libs/delivery/index.d.ts"],
+      "privacy": ["dist/libs/privacy/index.d.ts"],
+      "observation": ["dist/libs/observation/index.d.ts"],
+      "strategy": ["dist/libs/strategy/index.d.ts"],
+      "flow": ["dist/libs/flow/index.d.ts"]
     }
   },
   "files": [
     "dist/apps",
     "dist/libs",
     "skills",
-    "catalog",
     "docs",
     "README.md",
     "LICENSE",

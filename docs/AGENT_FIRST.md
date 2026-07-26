@@ -9,7 +9,7 @@ libs/
   hooks               session guidance injection
   vendor-memory       local map/proposal store
   proposal            validate/apply gates
-  domain              commerce intents + empty vendor slots
+  domain              sample commerce domain template (not a vendor catalog)
   generate            Java scaffold only
   config              ~/.layerkit/config.json
   agent-runner        extension point for offline eval agent runs

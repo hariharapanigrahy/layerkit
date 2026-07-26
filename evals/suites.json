@@ -46,7 +46,13 @@
     "strategy-fail-closed",
     "style-profile-cli",
     "style-steer-generate",
-    "ts-client-scaffold"
+    "ts-client-scaffold",
+    "track-empty-diagnostics",
+    "track-privacy-autoload",
+    "track-flowref-resolve",
+    "track-observation-emit",
+    "map-missing-fields",
+    "promote-non-java-quality"
   ],
   "all": [
     "agent-citation-required-on-map",
@@ -96,6 +102,12 @@
     "style-profile-cli",
     "style-steer-generate",
     "ts-client-scaffold",
+    "track-empty-diagnostics",
+    "track-privacy-autoload",
+    "track-flowref-resolve",
+    "track-observation-emit",
+    "map-missing-fields",
+    "promote-non-java-quality",
     "vendor-research-plan"
   ],
   "nightly": []

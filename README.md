@@ -25,14 +25,18 @@ npx layerkit --help
 npm install layerkit
 ```
 
-Library imports (optional):
+Library imports (ESM, Node ≥20):
 
 ```ts
 import { track } from 'layerkit';
 import { applyVendorMap } from 'layerkit/map-engine';
 import { createVendorMemoryStore } from 'layerkit/store';
 import { createDeliverySimulator } from 'layerkit/delivery';
+import { loadPrivacyPolicy, evaluatePrivacy } from 'layerkit/privacy';
+import { createObservationBus } from 'layerkit/observation';
 ```
+
+`track(event, maps, { projectDir, mode })` loads privacy policies and flow refs from the project store, emits audit events when `projectDir` is set, and returns `diagnostics` / `filteredOut` when no vendor is eligible (never silent empty success).
 
 ---
 
@@ -101,7 +105,7 @@ Agent golden path: [docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GOLDEN_PATH.md).
 | Runtime | Your app or Layerkit delivery | Deterministic map apply + HTTP — **no LLM on the hot path** |
 | Optional generate | Scaffold only | Starter code — not required for production send |
 
-20 commerce vendor **slots** ship empty (doc URLs only). Community + agents fill them.
+**No vendor catalog.** Project stores start with zero maps. Agents research any vendor from official docs and apply customer-owned proposals under `{projectDir}` (default `.layerkit`).
 
 ---
 
@@ -128,7 +132,7 @@ apps/cli/                 CLI entry
 libs/install/platforms/   Multi-agent platform install
 libs/vendor-memory/       Local maps + proposals
 libs/proposal/            Validate gates (sources required)
-libs/domain/              Commerce intents, empty vendor slots
+libs/domain/              Sample commerce domain template (not a vendor catalog)
 evals/harness/            Deterministic eval runner (merge bar)
 evals/gates/              CI gates (suite ci → npm run eval:ci)
 evals/cases/              Legacy thin re-exports of gates

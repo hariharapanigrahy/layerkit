@@ -47,8 +47,10 @@ import { generateJavaScaffold } from '../../libs/generate/java-scaffold.js';
 import {
   checkJavaQuality,
   defaultJacocoSearchRoots,
+  hasJavaProjectSignal,
   JACOCO_MIN_LINE_COVERAGE,
 } from '../../libs/generate/quality.js';
+import { track } from '../../libs/runtime/track.js';
 import { generateTsScaffold } from '../../libs/generate/ts-scaffold.js';
 import { layerkitHookGuidance } from '../../libs/hooks/guidance.js';
 import { installLayerkit } from '../../libs/install/install.js';
@@ -283,11 +285,24 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['map', 'show'],
-    usage: 'map show <vendor> [--project-dir <path>]',
+    usage: 'map show <vendor> [--path] [--project-dir <path>]',
     handler: (args, ctx) => {
       const vendor = args[0];
-      if (!vendor) throw new Error('Usage: layerkit map show <vendor>');
-      console.log(join(ctx.projectDir, 'maps', `${vendor}.json`));
+      if (!vendor) throw new Error('Usage: layerkit map show <vendor> [--path]');
+      const pathOnly = hasFlag(args, '--path');
+      const mapPath = join(ctx.projectDir, 'maps', `${vendor}.json`);
+      if (pathOnly) {
+        console.log(mapPath);
+        return;
+      }
+      const store = openStore(ctx);
+      const map = store.loadMap(vendor);
+      if (!map) {
+        throw new Error(
+          `No map for ${vendor} at ${mapPath}. Use map list; author via proposal pipeline.`,
+        );
+      }
+      console.log(JSON.stringify(map, null, 2));
     },
     showInTopLevelHelp: true,
   },
@@ -565,25 +580,79 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['process', 'dry-run'],
-    usage: 'process dry-run --vendor <v> --intent <i> [--project-dir <path>]',
-    handler: (args, ctx) => {
+    usage:
+      'process dry-run --vendor <v> --intent <i> [--full] [--allow-skip] [--project-dir <path>]',
+    handler: async (args, ctx) => {
       const vendor = flag(args, '--vendor');
       const intent = flag(args, '--intent') ?? 'purchase';
-      if (!vendor) throw new Error('Usage: layerkit process dry-run --vendor <v> --intent <i>');
+      const full = hasFlag(args, '--full');
+      const allowSkip = hasFlag(args, '--allow-skip');
+      if (!vendor) {
+        throw new Error(
+          'Usage: layerkit process dry-run --vendor <v> --intent <i> [--full] [--allow-skip]',
+        );
+      }
       const store = openStore(ctx);
       const map = store.loadMap(vendor);
-      if (!map) throw new Error(`No map for ${vendor}`);
-      const result = applyVendorMap(
-        {
-          intent,
-          eventId: 'evt_1',
-          user: { email: 'Ada@Example.com' },
-          value: { amount: 10, currency: 'usd' },
-        },
-        map,
-        { processorsDir: join(store.projectDir, 'processors') },
-      );
+      if (!map) {
+        const known = store.listMaps().map((m) => m.vendor);
+        throw new Error(
+          `No map for ${vendor}.` +
+            (known.length ? ` Known: ${known.join(', ')}` : ' No maps in project store.'),
+        );
+      }
+      const event = {
+        intent,
+        eventId: 'evt_1',
+        user: { email: 'Ada@Example.com' },
+        value: { amount: 10, currency: 'usd' },
+        consent: { purposes: ['marketing'] },
+      };
+      const processorsDir = join(store.projectDir, 'processors');
+
+      if (full) {
+        const trackResult = await track(event, [map], {
+          mode: 'dry_run',
+          projectDir: store.projectDir,
+          processorsDir: existsSync(processorsDir) ? processorsDir : undefined,
+        });
+        console.log(JSON.stringify(trackResult, null, 2));
+        const r = trackResult.results[0];
+        if (!r || r.outcome !== 'success' || r.skipped) {
+          console.error(
+            `\nFull dry-run not successful: ${r?.reason ?? trackResult.diagnostics?.join('; ') ?? 'no result'}`,
+          );
+          if ((map.status ?? 'skeleton') === 'skeleton') {
+            console.error('Map status is skeleton — author fields/intents then re-apply.');
+          }
+          if (!allowSkip) process.exitCode = 1;
+        }
+        return;
+      }
+
+      const result = applyVendorMap(event, map, {
+        processorsDir: existsSync(processorsDir) ? processorsDir : undefined,
+      });
       console.log(JSON.stringify(result, null, 2));
+      if (result.missingDomainPaths?.length) {
+        console.error(
+          `\nMissing domain fields on event (under-send risk): ${result.missingDomainPaths.join(', ')}`,
+        );
+      }
+      if (result.skipped) {
+        console.error(`\nDry-run skipped: ${result.reason ?? 'unknown'}`);
+        const intents = Object.keys(map.intents ?? {});
+        if (intents.length && !map.intents?.[intent]) {
+          console.error(`Intent "${intent}" not mapped. Available: ${intents.join(', ')}`);
+        }
+        if ((map.status ?? 'skeleton') === 'skeleton' || result.reason === 'empty_map_awaiting_agent_research') {
+          console.error('Next: skill layerkit-research-vendor → proposal validate/apply (sources[] required).');
+        }
+        if (result.reason === 'processor_unresolved') {
+          console.error('Next: author processor proposal or place processor JSON under processors/.');
+        }
+        if (!allowSkip) process.exitCode = 1;
+      }
     },
     showInTopLevelHelp: true,
   },
@@ -888,16 +957,29 @@ function runPromote(args: string[], ctx: CliContext): void {
   const project = store.loadProject();
   if (!project) throw new Error('No project — run layerkit install --poc');
 
-  // promote is quality-gated; --strict is default unless --no-strict
-  const strict = !hasFlag(args, '--no-strict');
+  // promote is quality-gated for Java projects; --strict is default unless --no-strict
+  // Node-only projects (no pom.xml / src/main/java under search roots) skip JaCoCo automatically
+  const strictFlag = !hasFlag(args, '--no-strict');
   const requireDryRun = !hasFlag(args, '--no-dry-run-check');
   const onlyVendor = flag(args, '--vendor');
 
-  const q = checkJavaQuality({
-    searchRoots: defaultJacocoSearchRoots(store.projectDir, ctx.repoRoot),
-    strict,
-    minLineCoverage: JACOCO_MIN_LINE_COVERAGE,
-  });
+  const jacocoRoots = defaultJacocoSearchRoots(store.projectDir, ctx.repoRoot);
+  const javaPresent = hasJavaProjectSignal(jacocoRoots);
+  const skipQuality = !strictFlag || !javaPresent;
+  const q = javaPresent
+    ? checkJavaQuality({
+        searchRoots: jacocoRoots,
+        strict: strictFlag,
+        minLineCoverage: JACOCO_MIN_LINE_COVERAGE,
+      })
+    : {
+        ok: true,
+        lines: [
+          'JaCoCo: skipped (no Java project signal under out/java — Node/TS promote path)',
+        ],
+        reportMissing: true,
+        coverageBelowFloor: false,
+      };
 
   // Maps to evaluate: specific vendor, or all maps (gates filter eligibility)
   let maps = store.listMaps();
@@ -921,12 +1003,15 @@ function runPromote(args: string[], ctx: CliContext): void {
     secretFindings: doctor.secretFindings ?? [],
     projectDir: store.projectDir,
     quality: { ok: q.ok, lines: q.lines },
-    skipQuality: !strict,
+    skipQuality,
     requireDryRun,
     processorsDir: existsSync(processorsDir) ? processorsDir : undefined,
   });
 
   for (const line of gateResult.lines) console.log(line);
+  if (!javaPresent) {
+    console.log('quality: auto-skipped (no Java module detected)');
+  }
 
   if (!gateResult.ok) {
     for (const line of formatPromoteGateFailures(gateResult.failures)) {
@@ -934,7 +1019,7 @@ function runPromote(args: string[], ctx: CliContext): void {
     }
     console.log(
       'Promote blocked: fix the failed gate(s), then retry. ' +
-        'Break-glass: --no-strict (quality), --no-dry-run-check (dry-run only).',
+        'Break-glass: --no-strict (Java quality), --no-dry-run-check (dry-run only).',
     );
     process.exitCode = 1;
     return;
