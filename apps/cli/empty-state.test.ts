@@ -62,4 +62,18 @@ describe('CLI empty-state output', () => {
     assert.match(strictResult.stdout, /Note: --strict applies with --quality/);
     assert.doesNotMatch(strictResult.stdout, /No vendor maps found yet/);
   });
+
+  it('fails map show --path when the requested map file is missing', () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), 'layerkit-missing-map-path-'));
+    const projectDir = join(repoRoot, '.layerkit');
+    const store = createVendorMemoryStore(repoRoot, projectDir);
+    store.initProject({ name: 'missing-map-path', poc: true });
+
+    const result = runCli(['map', 'show', 'vendor', '--path', '--project-dir', projectDir], repoRoot);
+
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, '');
+    assert.match(result.stderr, /No map for vendor at .*\.layerkit\/maps\/vendor\.json/);
+    assert.match(result.stderr, /Use map list; author via proposal pipeline/);
+  });
 });
