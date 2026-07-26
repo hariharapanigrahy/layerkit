@@ -1,21 +1,39 @@
-name: Vendor map request / contribution
-description: Request or track research for a vendor data-layer map
-title: "[vendor] "
-labels: ["vendor-map", "help wanted"]
+name: Vendor research / map example
+description: Track evidence-first research for a customer-owned map example or skill/eval fixture — not an official Layerkit connector
+title: "[research] "
+labels: ["help wanted"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Layerkit **does not** maintain a vendor catalog or official connector list.
+        Use this template to track **primary-doc research**, skill improvements, or **eval fixtures**.
+        Maps you author stay customer-owned (under `{projectDir}`) or land under `evals/fixtures/` for tests — never as package truth for Meta/Google/etc.
+        Design: [agent-as-developer-no-catalog](https://github.com/hariharapanigrahy/layerkit/blob/main/docs/designs/agent-as-developer-no-catalog.md)
   - type: input
     id: vendor
     attributes:
-      label: Vendor id
-      description: e.g. meta, snapchat, tiktok
-      placeholder: snapchat
+      label: Vendor id (customer-owned label)
+      description: Identifier you would use in a project store (e.g. acme_events), not a catalog slot
+      placeholder: acme_events
     validations:
       required: true
   - type: textarea
     id: docs
     attributes:
       label: Official documentation URLs
-      description: Primary sources only
+      description: Primary sources only (vendor docs, OpenAPI, official curl samples)
+    validations:
+      required: true
+  - type: dropdown
+    id: goal
+    attributes:
+      label: What is this for?
+      options:
+        - Skill / process improvement (research path)
+        - Eval fixture under evals/fixtures/
+        - Example proposal for a blog/tutorial (not shipped as catalog)
+        - Personal project note (no PR expected)
     validations:
       required: true
   - type: dropdown
@@ -25,12 +43,13 @@ body:
       options:
         - Wanted (please research)
         - In progress
-        - Ready for PR
+        - Ready for PR (fixture/skill only)
     validations:
       required: true
   - type: textarea
     id: notes
     attributes:
       label: Notes (auth type, intents needed, pitfalls)
+      description: Do not paste secrets. Field tables in issues are drafts until sources[] + proposal validate pass.
     validations:
       required: false

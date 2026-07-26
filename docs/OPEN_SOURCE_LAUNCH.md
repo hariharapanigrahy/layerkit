@@ -54,7 +54,8 @@ git push -u origin main
 ### A. In-repo signals (high leverage)
 
 - Mark good first issues: label `good first issue` and `help wanted`
-- Keep 10–20 **vendor map** issues open (one per skeleton vendor) using the vendor template
+- Prefer issues on **skills, eval gates, install platforms, docs/UX** — not “fill the catalog”
+- Optional research-tracking issues via the vendor research template (examples/fixtures only)
 - Pin a “Contributing” Discussion or README section
 
 ### B. Public call-to-action (copy/paste)
@@ -63,9 +64,9 @@ git push -u origin main
 
 > We open-sourced **Layerkit** — an agent-first toolkit for multi-vendor data layers (install into Codex/Claude/Cursor, research vendor docs into reviewable map proposals, Java client for enterprises).
 >
-> Maps start empty on purpose: agents (or you) fill them from **official docs** with citations.
+> **No vendor catalog:** maps are customer-owned; agents research any vendor from official docs with citations.
 >
-> **Contribute:** pick a vendor issue, run `layerkit-research-vendor`, open a PR with sources.
+> **Contribute:** skills, process evals, platform installers, docs — see CONTRIBUTING.md.
 >
 > Repo: https://github.com/hariharapanigrahy/layerkit  
 > Guide: CONTRIBUTING.md
@@ -74,15 +75,15 @@ git push -u origin main
 
 | Channel | Use |
 |---------|-----|
-| GitHub Issues | Bugs, vendor maps |
+| GitHub Issues | Bugs, features, research notes (not official connectors) |
 | GitHub Discussions | Q&A, design |
 | Discord/Slack (optional) | Real-time; link from README |
 | npm | `npm publish` after 0.1.0 tag for discoverability |
 
 ### D. First contribution path (lowest friction)
 
-1. Label 5 issues `good first issue` (e.g. “fill skeleton map for HubSpot with docs”)  
-2. Link agent install prompt in each issue  
+1. Label 5 issues `good first issue` (e.g. “add eval gate for X”, “improve install prompt”, “Claude skill gap”)  
+2. Link agent install prompt when the issue needs agent testing  
 3. Review PRs within a few days — responsiveness grows community  
 
 ## 4. npm publish (optional, after public repo)

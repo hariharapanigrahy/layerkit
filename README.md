@@ -143,12 +143,15 @@ docs/                     Install prompt, launch guide
 
 ## Contributing
 
-We want this to be a **community map library + agent toolkit**:
+Layerkit is an **agent toolkit + eval harness**, not a community vendor-map catalog. Maps stay **customer-owned** under each project's store.
+
+**Highest-value PRs:** skills, process evals/gates, platform installers, docs/UX.  
+See [CONTRIBUTING.md](./CONTRIBUTING.md) and the [no-catalog design](./docs/designs/agent-as-developer-no-catalog.md).
 
 1. Read [CONTRIBUTING.md](./CONTRIBUTING.md)
-2. Open a [vendor map issue](https://github.com/hariharapanigrahy/layerkit/issues/new?template=vendor_map.yml) or grab `help wanted`
-3. Research docs with skill `layerkit-research-vendor`
-4. PR with citations
+2. Grab `help wanted` / `good first issue`, or open a [feature](https://github.com/hariharapanigrahy/layerkit/issues/new?template=feature_request.yml) / [bug](https://github.com/hariharapanigrahy/layerkit/issues/new?template=bug_report.yml)
+3. Optional: track **research notes** with the [vendor research template](https://github.com/hariharapanigrahy/layerkit/issues/new?template=vendor_map.yml) (examples/fixtures only — not official connectors)
+4. PR with tests/evals and citations where knowledge is claimed
 
 Maintainer launch checklist: [docs/OPEN_SOURCE_LAUNCH.md](./docs/OPEN_SOURCE_LAUNCH.md)
 
