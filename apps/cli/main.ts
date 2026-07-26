@@ -277,7 +277,12 @@ const cliCommands: CliCommand[] = [
     usage: 'map list [--project-dir <path>]',
     handler: (_args, ctx) => {
       const store = openStore(ctx);
-      for (const m of store.listMaps()) {
+      const maps = store.listMaps();
+      if (maps.length === 0) {
+        for (const line of emptyMapGuidanceLines()) console.log(line);
+        return;
+      }
+      for (const m of maps) {
         console.log(`${m.vendor}\t${m.status ?? '?'}\t${m.displayName}`);
       }
     },
@@ -849,11 +854,26 @@ function hasFlag(args: string[], name: string): boolean {
   return args.includes(name);
 }
 
+function emptyMapGuidanceLines(): string[] {
+  return [
+    'No vendor maps found yet.',
+    'Next commands:',
+    '  - layerkit research openapi <file>',
+    '  - layerkit proposal validate <proposal.json>',
+    '  - layerkit proposal apply <proposal.json>',
+  ];
+}
+
 function runDoctor(args: string[], ctx: CliContext): void {
   const store = openStore(ctx);
   const result = store.doctor();
   for (const line of result.lines) console.log(line);
   let ok = result.ok;
+
+  if (store.listMaps().length === 0) {
+    console.log('');
+    for (const line of emptyMapGuidanceLines()) console.log(line);
+  }
 
   // One-line agent pipeline hint when a project exists
   if (store.loadProject()) {
