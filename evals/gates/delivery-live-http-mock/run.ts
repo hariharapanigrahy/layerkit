@@ -133,6 +133,25 @@ try {
     assertEqual('auth only one fetch', calls.length, 1);
   }
 
+  // --- Unexpected redirects fail closed instead of being reported as success ---
+  {
+    const { fetchImpl, calls } = mockFetchSequence([302, 200]);
+    const result = await sendWithRetry(
+      { url: 'http://127.0.0.1:9/v1/events', method: 'POST', body: {} },
+      {
+        policy: DEFAULT_DELIVERY_POLICY,
+        fetchImpl,
+        sleep: async () => {},
+      },
+    );
+    assertTrue('redirect not ok', result.ok === false);
+    assertEqual('redirect httpStatus', result.httpStatus, 302);
+    assertEqual('redirect errorClass unknown', result.errorClass, 'unknown');
+    assertEqual('redirect single attempt', result.attempts, 1);
+    assertEqual('redirect only one fetch', calls.length, 1);
+    assertEqual('redirect reason', result.reasonCode, 'http_302');
+  }
+
   // --- Simulator live path uses client; shadow never networks ---
   {
     const { fetchImpl, calls } = mockFetchSequence([503, 200]);

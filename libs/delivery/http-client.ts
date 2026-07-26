@@ -128,12 +128,13 @@ export async function sendWithRetry(
         method,
         headers,
         body: method === 'GET' || method === 'HEAD' ? undefined : built.bodyInit,
+        redirect: 'manual',
         signal: controller.signal,
       });
       lastStatus = res.status;
       lastBody = await res.text().catch(() => undefined);
 
-      if (res.ok || (res.status >= 200 && res.status < 400)) {
+      if (res.ok) {
         return {
           ok: true,
           httpStatus: res.status,
