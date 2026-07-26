@@ -1,0 +1,8 @@
+{
+  "id": "hallucination-block-apply",
+  "suite": "ci",
+  "title": "detect + block invent (REPLACE endpoint) on apply; real docs path applies",
+  "owners": ["hallucination"],
+  "featurePr": "hallucination-handling",
+  "tags": ["deterministic", "no-network", "hallucination", "apply"]
+}

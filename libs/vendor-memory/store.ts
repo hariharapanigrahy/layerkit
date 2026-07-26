@@ -27,6 +27,10 @@ import {
   type Proposal,
   type VendorMap,
 } from '../domain/types.js';
+import {
+  detectHallucination,
+  hasHallucinationErrors,
+} from '../hallucination/index.js';
 import { validateProposal, validateVendorMap } from '../proposal/validate.js';
 import { mapSchemaVersion, migrateMapV1toV2 } from './migrate.js';
 
@@ -393,6 +397,18 @@ export class VendorMemoryStore {
     const review = this.reviewProposal(proposal);
     if (!review.valid) {
       throw new Error(`Invalid proposal:\n${review.errors.map((e) => `- ${e}`).join('\n')}`);
+    }
+
+    // Fail-closed invent gate before any store mutation.
+    // Break-glass (not for production): LAYERKIT_ALLOW_HALLUCINATION=1
+    if (process.env.LAYERKIT_ALLOW_HALLUCINATION !== '1') {
+      const hallu = detectHallucination(proposal);
+      if (hasHallucinationErrors(hallu)) {
+        const codes = [
+          ...new Set(hallu.issues.filter((i) => i.level === 'error').map((i) => i.code)),
+        ].join(', ');
+        throw new Error(`hallucination_blocked: ${codes}`);
+      }
     }
 
     const result = this.applyByKind(proposal);
