@@ -380,7 +380,7 @@ async function runOneWithVendorTimeout(
   }
 
   // Create a per-vendor controller so we can cancel it early (e.g. parentSignal fires).
-  const { signal: vendorSignal, abort: abortVendor } = createTimeoutController(opts.vendorTimeoutMs);
+  const { signal: vendorSignal, abort: abortVendor, dispose: disposeVendor } = createTimeoutController(opts.vendorTimeoutMs);
 
   // If the overall track() times out first, propagate into this vendor slot.
   let parentAbortListener: (() => void) | undefined;
@@ -402,6 +402,7 @@ async function runOneWithVendorTimeout(
     emitTimeoutAudit(bus, map, event, opts.vendorTimeoutMs);
     return result;
   }
+  disposeVendor(); // clear internal timer — vendor finished before its budget
   return raced.value;
 }
 

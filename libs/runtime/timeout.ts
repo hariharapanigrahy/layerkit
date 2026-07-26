@@ -146,14 +146,19 @@ export function hasTimeoutBudget(ms: number | undefined): ms is number {
 export function createTimeoutController(ms: number): {
   signal: AbortSignal;
   abort: () => void;
+  dispose: () => void;   // <-- add this
 } {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
+
+  const dispose = () => {
+    clearTimeout(timer);
+  };
 
   const abort = () => {
     clearTimeout(timer);
     if (!controller.signal.aborted) controller.abort();
   };
 
-  return { signal: controller.signal, abort };
+  return { signal: controller.signal, abort, dispose };
 }

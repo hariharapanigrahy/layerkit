@@ -112,7 +112,8 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "prepublishOnly": "npm run build",
-    "test": "npm run build && node scripts/check-install-options.js && node scripts/check-proposal-validate.js && node scripts/check-empty-map-skip.js && node --test dist/apps/cli/empty-state.test.js dist/evals/vendor-research-plan/generate-cases.test.js",
+    "test:unit": "vitest run",
+    "test": "npm run build && node scripts/check-install-options.js && node scripts/check-proposal-validate.js && node scripts/check-empty-map-skip.js && node --test dist/apps/cli/empty-state.test.js dist/evals/vendor-research-plan/generate-cases.test.js && npm run test:unit",
     "check:java-scaffold": "npm run build && node scripts/check-java-scaffold.mjs",
     "smoke:codex": "npm run build && node scripts/smoke-codex.mjs",
     "smoke:claude": "npm run build && node scripts/smoke-claude.mjs",
@@ -136,6 +137,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^2.0.0"
   }
 }
