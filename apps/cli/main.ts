@@ -277,7 +277,16 @@ const cliCommands: CliCommand[] = [
     usage: 'map list [--project-dir <path>]',
     handler: (_args, ctx) => {
       const store = openStore(ctx);
-      for (const m of store.listMaps()) {
+      if (!store.loadProject()) {
+        for (const line of installGuidanceLines()) console.log(line);
+        return;
+      }
+      const maps = store.listMaps();
+      if (maps.length === 0) {
+        for (const line of emptyMapGuidanceLines()) console.log(line);
+        return;
+      }
+      for (const m of maps) {
         console.log(`${m.vendor}\t${m.status ?? '?'}\t${m.displayName}`);
       }
     },
@@ -849,11 +858,37 @@ function hasFlag(args: string[], name: string): boolean {
   return args.includes(name);
 }
 
+function installGuidanceLines(): string[] {
+  return [
+    'No Layerkit project found yet.',
+    'Next step: run layerkit install',
+  ];
+}
+
+function emptyMapGuidanceLines(): string[] {
+  return [
+    'No vendor maps found yet — zero maps is normal because Layerkit does not ship a vendor catalog.',
+    'Next commands:',
+    '  - layerkit research openapi <file> (or skill layerkit-research-vendor)',
+    '  - layerkit proposal validate <proposal.json>',
+    '  - layerkit proposal apply <proposal.json>',
+    '  - Follow strict maker-checker: submit -> validate -> approve',
+  ];
+}
+
 function runDoctor(args: string[], ctx: CliContext): void {
   const store = openStore(ctx);
   const result = store.doctor();
   for (const line of result.lines) console.log(line);
   let ok = result.ok;
+
+  if (store.loadProject() && store.listMaps().length === 0) {
+    console.log('');
+    for (const line of emptyMapGuidanceLines()) console.log(line);
+  } else if (!store.loadProject()) {
+    console.log('');
+    for (const line of installGuidanceLines()) console.log(line);
+  }
 
   // One-line agent pipeline hint when a project exists
   if (store.loadProject()) {
@@ -874,6 +909,10 @@ function runDoctor(args: string[], ctx: CliContext): void {
     if (!q.ok) ok = false;
   } else if (hasFlag(args, '--strict')) {
     console.log('Note: --strict applies with --quality (JaCoCo report required).');
+        if (!store.loadProject()) {
+          for (const line of installGuidanceLines()) console.log(line);
+          return;
+        }
   }
 
   if (!ok) process.exitCode = 1;
