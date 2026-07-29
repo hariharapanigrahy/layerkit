@@ -91,6 +91,142 @@ layerkit agent mark-done --step <id>
 
 Use status/next as the **only** progress source of truth. If context is low, hand off with [`layerkit-session-handoff`](../skills/layerkit-session-handoff/SKILL.md) and resume from `agent next`.
 
+For the production send path and the distinction between runtime and delivery, see the [Runtime Send Path](#runtime-send-path) section in this document.
+
+---
+
+## Runtime Send Path
+
+Layerkit intentionally separates deterministic runtime from network delivery.
+
+### Runtime
+
+The runtime is implemented in [libs/runtime/track.ts](../libs/runtime/track.ts).
+
+It is responsible for:
+
+- selecting eligible vendor maps
+- resolving routing policies when requested
+- applying maps or executing flows
+- evaluating privacy
+- producing diagnostics when no vendor is eligible
+- emitting observation/audit data
+
+Runtime does **not** perform production HTTP delivery.
+
+### Delivery
+
+The delivery layer is implemented in [libs/delivery/simulator.ts](../libs/delivery/simulator.ts) and [libs/delivery/index.ts](../libs/delivery/index.ts).
+
+It is responsible for:
+
+- idempotency
+- retry
+- HTTP requests
+- DLQ handling
+- network-failure handling
+
+## Production Send Path
+
+The production path is:
+
+```text
+Application event
+  │
+  ▼
+track(event, maps, opts)
+  │
+  ▼
+trackResult
+  │
+  ▼
+Application chooses delivery
+  │
+  ▼
+createDeliverySimulator(...)
+  │
+  ▼
+deliver(req, 'live')
+  │
+  ▼
+sendWithRetry()
+  │
+  ▼
+Vendor API
+```
+
+`track()` is a runtime step from the perspective of delivery: it prepares the event, but it does not send the network request.
+
+**Applications must provide the glue.** Layerkit does not call `deliver()` for you. After `track()` returns a `TrackResult`, your app inspects `result.results` (`VendorTrackResult[]`) and constructs a `DeliveryRequest` for each vendor:
+
+```text
+track(event, maps, opts)
+  → TrackResult { results: VendorTrackResult[] }
+
+Application inspects result.results
+  → build a DeliveryRequest per vendor
+    (url / method / headers come from your vendor map config,
+     wire comes from VendorTrackResult.wire)
+
+createDeliverySimulator({ projectDir, allowNetwork: true })
+  .deliver(deliveryRequest)
+  → sendWithRetry() → Vendor API
+```
+
+## Runtime Responsibilities
+
+`track()` handles the following work before delivery:
+
+- vendor selection
+- flow execution
+- map application
+- privacy checks
+- diagnostics
+- observation events
+
+That means a new contributor should not expect `track()` to issue HTTP requests.
+
+## Delivery Responsibilities
+
+`DeliverySimulator` handles the network side:
+
+- `dry_run` means no network calls
+- `shadow` means no network calls
+- `live` means HTTP is allowed only when explicitly enabled
+
+The simulator uses `sendWithRetry()` for live delivery and records failures in the DLQ when delivery cannot succeed.
+
+### Delivery modes
+
+| Mode | Network | Notes |
+|------|---------|-------|
+| `dry_run` | No | Simulated success |
+| `shadow` | No | Simulated success |
+| `live` | Yes, only when explicitly allowed | Uses HTTP, retry, idempotency, and DLQ handling |
+
+## Important Unsupported Path
+
+> **Unsupported and will not be fixed in the runtime path:** Flow live HTTP is not supported inside `track()` or any flow step. `track()` is intentionally kept network-free so it stays deterministic and testable.
+
+Do not expect `track()` or a flow step to open network connections. If your application needs production HTTP delivery, your code must explicitly connect `TrackResult` to the delivery layer using `createDeliverySimulator().deliver()` as shown in the [Production Send Path](#production-send-path) section above.
+
+## Why This Split Exists
+
+This separation keeps the architecture easier to test and reason about:
+
+- runtime can stay deterministic even when a vendor is slow or unavailable
+- delivery can retry and isolate network failures
+- privacy and routing remain independent from network code
+- applications can decide when and how to send
+
+## Where to Read Next
+
+- [README.md](../README.md) for the product summary and contributor entry points
+- [apps/cli/main.ts](../apps/cli/main.ts) for CLI orchestration
+- [libs/runtime/track.ts](../libs/runtime/track.ts) for runtime execution
+- [libs/delivery/simulator.ts](../libs/delivery/simulator.ts) for delivery behavior
+- [docs/AGENT_GOLDEN_PATH.md](./AGENT_GOLDEN_PATH.md) for the agent workflow
+
 ---
 
 ### 3. Research CLI (evidence first)
