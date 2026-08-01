@@ -80,6 +80,13 @@ export interface HealRunResult {
   summary: string;
 }
 
+interface HealPrFileEntry {
+  path: string;
+  kind: string;
+  absProposed: string;
+  unresolvedTodos?: string[];
+}
+
 /**
  * Run full heal pipeline for one vendor contract update.
  */
@@ -220,7 +227,7 @@ export function runHeal(opts: HealRunOptions): HealRunResult {
   const prDir = join(projectDir, 'out', 'pr', `${vendor}-${drift.contractDigest.slice(0, 8)}`);
   mkdirSync(prDir, { recursive: true });
 
-  const fileEntries: Array<{ path: string; kind: string; absProposed: string }> = [];
+  const fileEntries: HealPrFileEntry[] = [];
   if (plan) {
     for (const action of plan.actions) {
       if (!action.content) continue;
@@ -229,7 +236,12 @@ export function runHeal(opts: HealRunOptions): HealRunResult {
       const dest = join(prDir, 'files', rel);
       mkdirSync(dirname(dest), { recursive: true });
       writeFileSync(dest, action.content, 'utf8');
-      fileEntries.push({ path: rel, kind: action.kind, absProposed: dest });
+      fileEntries.push({
+        path: rel,
+        kind: action.kind,
+        absProposed: dest,
+        unresolvedTodos: extractLayerkitTodos(action.content),
+      });
     }
   }
 
@@ -248,7 +260,11 @@ export function runHeal(opts: HealRunOptions): HealRunResult {
     severity: drift.severity,
     driftSummary: drift.summary,
     driftItems: drift.items,
-    files: fileEntries.map((f) => ({ path: f.path, kind: f.kind })),
+    files: fileEntries.map((f) => ({
+      path: f.path,
+      kind: f.kind,
+      ...(f.unresolvedTodos?.length ? { unresolvedTodos: f.unresolvedTodos } : {}),
+    })),
     openapi: pin.pinnedOpenApiPath,
     proposalPath,
     createdAt: new Date().toISOString(),
@@ -339,7 +355,7 @@ function formatHealPrMarkdown(opts: {
   mode: string;
   drift: ContractDriftReport;
   branchName: string;
-  fileEntries: Array<{ path: string; kind: string }>;
+  fileEntries: Array<{ path: string; kind: string; unresolvedTodos?: string[] }>;
   moduleRoot?: string;
   planOk: boolean;
 }): string {
@@ -369,6 +385,16 @@ function formatHealPrMarkdown(opts: {
     lines.push(`- \`${f.path}\` (${f.kind})`);
   }
   lines.push('');
+  const unresolved = fileEntries.flatMap((f) =>
+    (f.unresolvedTodos ?? []).map((todo) => ({ path: f.path, todo })),
+  );
+  if (unresolved.length) {
+    lines.push('## Unresolved mapping TODOs', '');
+    for (const item of unresolved) {
+      lines.push(`- \`${item.path}\`: ${item.todo}`);
+    }
+    lines.push('');
+  }
   lines.push('## Create branch + PR', '');
   lines.push('```bash');
   lines.push(`git checkout -b ${branchName}`);
@@ -391,6 +417,14 @@ function formatHealPrMarkdown(opts: {
   lines.push('```');
   lines.push('');
   return lines.join('\n');
+}
+
+function extractLayerkitTodos(content: string): string[] {
+  return content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.includes('TODO(layerkit):'))
+    .map((line) => line.replace(/^\/\/\s*/, '').replace(/^\*\s*/, '').trim());
 }
 
 /** Resolve module path for display. */

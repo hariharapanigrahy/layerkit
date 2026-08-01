@@ -263,7 +263,7 @@ function planActionsForVendor(
         driftBlock,
         `Pattern: ${topology.addVendorPattern}`,
         content
-          ? 'Proposed targeted file body preserves existing mappings; TODOs are only for unresolved source expressions.'
+          ? 'Proposed targeted file body preserves existing mappings; TODOs are only for unresolved source or target support.'
           : 'Implement field projection like sibling adapters; no full-file scaffold will overwrite an existing adapter.',
       ]
         .filter(Boolean)

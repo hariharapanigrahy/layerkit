@@ -1,7 +1,7 @@
 /**
  * Gate: heal run pins contract, applies map, builds PR package with code bodies.
  */
-import { existsSync, cpSync, mkdtempSync } from 'node:fs';
+import { existsSync, cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { assertEqual, assertTrue } from '../../harness/assert.js';
@@ -122,5 +122,79 @@ assertTrue(
   /reply_to|buildPayload/i.test(createAction!.content!),
   createAction!.content!.slice(0, 400),
 );
+
+const mapperTmp = mkdtempSync(join(tmpdir(), 'layerkit-heal-mapper-'));
+const mapperProjectDir = join(mapperTmp, '.layerkit');
+const mapperModuleRoot = join(mapperTmp, 'integrations');
+cpSync(fixture, mapperModuleRoot, { recursive: true });
+
+const mapperStore = createVendorMemoryStore(mapperTmp, mapperProjectDir);
+mapperStore.initProject({ name: 'heal-mapper-eval', poc: true });
+mapperStore.saveMap({
+  schemaVersion: 1,
+  vendor: 'postmark',
+  displayName: 'Postmark',
+  version: '1',
+  auth: { type: 'bearer' },
+  endpoint: { method: 'POST', path: '/emails', baseUrl: 'https://api.postmarkapp.test' },
+  intents: { 'notify.sendEmail': { eventName: 'notify.sendEmail' } },
+  fields: [
+    { domain: 'name', vendor: 'name', transform: { type: 'identity' } },
+    { domain: 'email', vendor: 'email', transform: { type: 'identity' } },
+    { domain: 'phone', vendor: 'phone', transform: { type: 'identity' } },
+  ],
+  documentation: [],
+  status: 'map_complete',
+});
+
+const mapperOpenApi = join(mapperTmp, 'postmark-v2.openapi.json');
+writeFileSync(
+  mapperOpenApi,
+  JSON.stringify({
+    openapi: '3.0.3',
+    info: { title: 'Postmark v2', version: '2.0.0' },
+    servers: [{ url: 'https://api.postmarkapp.test' }],
+    paths: {
+      '/emails': {
+        post: {
+          operationId: 'sendEmail',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['name', 'email_id', 'phone_id'],
+                  properties: {
+                    name: { type: 'string' },
+                    email_id: { type: 'string' },
+                    phone_id: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+          responses: { '200': { description: 'ok' } },
+        },
+      },
+    },
+  }),
+  'utf8',
+);
+
+const mapperResult = runHeal({
+  repoRoot: mapperTmp,
+  projectDir: mapperProjectDir,
+  vendor: 'postmark',
+  openapiPath: mapperOpenApi,
+  moduleRoot: mapperModuleRoot,
+  applyMap: true,
+  agentId: 'heal-mapper-gate',
+});
+const prBody = readFileSync(mapperResult.prBodyPath, 'utf8');
+const manifestBody = readFileSync(mapperResult.manifestPath, 'utf8');
+assertTrue('PR.md lists unresolved mapping TODOs', prBody.includes('## Unresolved mapping TODOs'), prBody);
+assertTrue('PR.md names missing datalayer source', prBody.includes('missing source expression'), prBody);
+assertTrue('manifest carries unresolved mapping TODOs', manifestBody.includes('unresolvedTodos'), manifestBody);
 
 console.log('heal-run-pr: ok');
