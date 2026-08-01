@@ -140,7 +140,7 @@ const cliCommands: CliCommand[] = [
     path: ['config'],
     usage: 'config',
     handler: runConfig,
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
   {
     path: ['agent', 'status'],
@@ -177,7 +177,7 @@ const cliCommands: CliCommand[] = [
     path: ['repo', 'status'],
     usage: 'repo status [--project-dir <path>]',
     handler: runRepoStatus,
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
   {
     path: ['map', 'list'],
@@ -197,7 +197,7 @@ const cliCommands: CliCommand[] = [
         console.log(`${m.vendor}\t${m.status ?? '?'}\t${m.displayName}`);
       }
     },
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
   {
     path: ['map', 'show'],
@@ -225,7 +225,7 @@ const cliCommands: CliCommand[] = [
       }
       console.log(JSON.stringify(map, null, 2));
     },
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
   {
     path: ['map', 'validate'],
@@ -254,7 +254,7 @@ const cliCommands: CliCommand[] = [
         for (const w of review.warnings) console.log(`  warn: ${w}`);
       }
     },
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
   {
     path: ['map', 'migrate'],
@@ -271,7 +271,7 @@ const cliCommands: CliCommand[] = [
       for (const v of skipped) console.log(`Skipped ${v} (already v2)`);
       console.log(`Done: ${migrated.length} migrated, ${skipped.length} skipped.`);
     },
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
   {
     path: ['memory', 'list'],
@@ -296,7 +296,7 @@ const cliCommands: CliCommand[] = [
         console.log(`${e.type}\t${e.vendor ?? '-'}\t${e.relativePath}\t${e.title}`);
       }
     },
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
   {
     path: ['memory', 'show'],
@@ -306,7 +306,7 @@ const cliCommands: CliCommand[] = [
       const mem = createMemoryStack(ctx.projectDir);
       console.log(mem.show(id));
     },
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
   {
     path: ['memory', 'append'],
@@ -331,7 +331,7 @@ const cliCommands: CliCommand[] = [
       const path = mem.append({ type: typeRaw as MemoryEntryType, title, body, vendor });
       console.log(`Appended memory note → ${path}`);
     },
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
   {
     path: ['memory', 'index'],
@@ -340,7 +340,7 @@ const cliCommands: CliCommand[] = [
       const mem = createMemoryStack(ctx.projectDir);
       console.log(`Rebuilt INDEX → ${mem.index()}`);
     },
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
   {
     path: ['proposal', 'write', 'map'],
@@ -349,7 +349,7 @@ const cliCommands: CliCommand[] = [
     handler: (args) => {
       runProposalWriteMap(args);
     },
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
     {
     path: ['proposal', 'submit'],
@@ -366,7 +366,7 @@ const cliCommands: CliCommand[] = [
       console.log(`Submitted proposal ${submitted.id} (status=${submitted.status})`);
       console.log(`Saved: ${join(store.projectDir, 'proposals', `${submitted.id}.json`)}`);
     },
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
   {
     path: ['proposal', 'validate'],
@@ -387,7 +387,7 @@ const cliCommands: CliCommand[] = [
       for (const e of result.errors) console.log(`- ${e}`);
       process.exitCode = 1;
     },
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
   {
     path: ['proposal', 'approve'],
@@ -411,7 +411,7 @@ const cliCommands: CliCommand[] = [
       console.log(`Approved proposal ${next.id} → status=${next.status}`);
       console.log(`Checks: ${(next.checks ?? []).length}`);
     },
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
   {
     path: ['proposal', 'reject'],
@@ -433,7 +433,7 @@ const cliCommands: CliCommand[] = [
       });
       console.log(`Rejected proposal ${next.id} (status=${next.status})`);
     },
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
   {
     path: ['proposal', 'list'],
@@ -449,7 +449,7 @@ const cliCommands: CliCommand[] = [
         console.log(`${p.id}\t${p.status}\t${p.kind}\t${p.summary}`);
       }
     },
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
   {
     path: ['proposal', 'apply'],
@@ -463,7 +463,7 @@ const cliCommands: CliCommand[] = [
       console.log(`Kind: ${applied.kind}`);
       console.log(`Target: ${applied.target}`);
     },
-    showInTopLevelHelp: true,
+    showInTopLevelHelp: false,
   },
   {
     path: ['hook', 'ingest'],
@@ -959,6 +959,7 @@ function printHelp(): void {
   console.log('Platforms: ' + installPlatformUsage);
   console.log('Cheat sheet: layerkit cheatsheet  (docs/CHEATSHEET.md)');
   console.log('Agent install: docs/agent-install-prompt.md');
+  console.log('Advanced rails for skills/agents are documented in the cheat sheet.');
 }
 
 async function main(argv: string[]): Promise<void> {
