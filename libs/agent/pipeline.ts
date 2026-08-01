@@ -39,12 +39,12 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
     id: 'research',
     skill: 'layerkit-research-vendor',
     cliHints: [
-      'layerkit heal run --vendor <v> --openapi <contract.json> --module-root <dir> [--apply-code]',
+      'layerkit heal run --vendor <v> --openapi <contract.json> --module-root <dir>',
       'layerkit map show <vendor>',
-      'Review out/CONTRACT_DRIFT.json and out/pr/<vendor>-*/PR.md',
+      'Review out/CONTRACT_DRIFT.json',
     ],
     doneWhen:
-      'Contract pinned; map applied from OpenAPI; drift reviewed; PR package under out/pr/',
+      'Contract pinned; map applied from OpenAPI; source files updated; drift reviewed',
   },
   {
     id: 'design',

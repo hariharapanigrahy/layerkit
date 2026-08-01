@@ -1,14 +1,12 @@
 /**
- * Contract heal: OpenAPI in → map update → integrate plan → PR package / code apply.
+ * Contract heal: OpenAPI in → map update → direct integration edits.
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import type { FieldMapRow, Proposal, VendorMap } from '../domain/types.js';
 import {
   applyIntegratePlan,
   buildIntegratePlan,
-  writeIntegratePlanArtifacts,
-  type IntegrationPlan,
 } from '../generate/index.js';
 import { scaffoldVendorMapFromOpenApi } from '../proposal/scaffold.js';
 import { validateProposal } from '../proposal/validate.js';
@@ -51,9 +49,9 @@ export interface HealRunOptions {
   agentId?: string;
   /** Apply map into project store (default true) */
   applyMap?: boolean;
-  /** Write create stubs into production module (default false) */
+  /** Write create stubs into production module (default true with applyCode) */
   applyCreates?: boolean;
-  /** Write patch file bodies into production module (default false; needs --force for overwrite) */
+  /** Write patch file bodies into production module (default true) */
   applyCode?: boolean;
   force?: boolean;
   forceThin?: boolean;
@@ -67,24 +65,12 @@ export interface HealRunResult {
   pinnedOpenApiPath: string;
   proposalPath: string;
   mapApplied: boolean;
-  integrateMdPath: string | null;
-  integrateJsonPath: string | null;
-  plan: IntegrationPlan | null;
-  prDir: string;
-  prBodyPath: string;
-  manifestPath: string;
+  integrationActionCount: number;
   writtenCode: string[];
   skippedCode: string[];
   codeErrors: string[];
   branchName: string;
   summary: string;
-}
-
-interface HealPrFileEntry {
-  path: string;
-  kind: string;
-  absProposed: string;
-  unresolvedTodos?: string[];
 }
 
 /**
@@ -167,7 +153,7 @@ export function runHeal(opts: HealRunOptions): HealRunResult {
   const applyMap = opts.applyMap !== false;
   let mapApplied = false;
   if (applyMap) {
-    // Persist map for integrate plan + dry-run (proposal file remains for audit)
+    // Persist map for direct integration + dry-run (proposal file remains for audit)
     store.saveMap(payload);
     const applied: Proposal = {
       ...proposal,
@@ -181,7 +167,7 @@ export function runHeal(opts: HealRunOptions): HealRunResult {
   const maps = store.listMaps();
   const healMap = maps.find((m) => m.vendor === vendor);
   if (!healMap && !applyMap) {
-    // Use proposal payload in-memory for plan without saving
+    // Use proposal payload in-memory for direct integration without saving
   }
   const planMaps = healMap ? maps : [...maps.filter((m) => m.vendor !== vendor), payload];
 
@@ -205,7 +191,7 @@ export function runHeal(opts: HealRunOptions): HealRunResult {
     },
   };
 
-  const { resolution, plan } = buildIntegratePlan({
+  const { plan } = buildIntegratePlan({
     repoRoot,
     scanRoot: opts.scanRoot ?? opts.moduleRoot ?? repoRoot,
     projectGenerate: generateCfg,
@@ -215,103 +201,20 @@ export function runHeal(opts: HealRunOptions): HealRunResult {
     driftByVendor,
   });
 
-  let integrateMdPath: string | null = null;
-  let integrateJsonPath: string | null = null;
-  if (resolution.ok && plan) {
-    const arts = writeIntegratePlanArtifacts(projectDir, plan);
-    integrateMdPath = arts.mdPath;
-    integrateJsonPath = arts.jsonPath;
-  }
-
   const branchName = `layerkit/heal-${vendor}-${drift.contractDigest.slice(0, 8)}`;
-  const prDir = join(projectDir, 'out', 'pr', `${vendor}-${drift.contractDigest.slice(0, 8)}`);
-  mkdirSync(prDir, { recursive: true });
-
-  const fileEntries: HealPrFileEntry[] = [];
-  if (plan) {
-    for (const action of plan.actions) {
-      if (!action.content) continue;
-      if (action.kind !== 'create' && action.kind !== 'patch' && action.kind !== 'test') continue;
-      const rel = action.path.replace(/^\.\//, '');
-      const dest = join(prDir, 'files', rel);
-      mkdirSync(dirname(dest), { recursive: true });
-      writeFileSync(dest, action.content, 'utf8');
-      fileEntries.push({
-        path: rel,
-        kind: action.kind,
-        absProposed: dest,
-        unresolvedTodos: extractLayerkitTodos(action.content),
-      });
-    }
-  }
-
-  // Include updated map JSON in PR package
-  const mapRel = join('.layerkit', 'maps', `${vendor}.json`);
-  const mapDest = join(prDir, 'files', mapRel);
-  mkdirSync(dirname(mapDest), { recursive: true });
-  writeFileSync(mapDest, JSON.stringify(payload, null, 2) + '\n', 'utf8');
-  fileEntries.push({ path: mapRel, kind: 'map', absProposed: mapDest });
-
-  const manifest = {
-    vendor,
-    mode,
-    branchName,
-    contractDigest: drift.contractDigest,
-    severity: drift.severity,
-    driftSummary: drift.summary,
-    driftItems: drift.items,
-    files: fileEntries.map((f) => ({
-      path: f.path,
-      kind: f.kind,
-      ...(f.unresolvedTodos?.length ? { unresolvedTodos: f.unresolvedTodos } : {}),
-    })),
-    openapi: pin.pinnedOpenApiPath,
-    proposalPath,
-    createdAt: new Date().toISOString(),
-  };
-  const manifestPath = join(prDir, 'manifest.json');
-  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
-
-  const prBodyPath = join(prDir, 'PR.md');
-  writeFileSync(
-    prBodyPath,
-    formatHealPrMarkdown({
-      vendor,
-      mode,
-      drift,
-      branchName,
-      fileEntries,
-      moduleRoot: opts.moduleRoot,
-      planOk: Boolean(plan),
-    }),
-    'utf8',
-  );
-
-  const applyScript = join(prDir, 'apply-to-repo.sh');
-  writeFileSync(
-    applyScript,
-    [
-      '#!/usr/bin/env bash',
-      'set -euo pipefail',
-      'ROOT="${1:-.}"',
-      `PR_FILES="$(cd "$(dirname "$0")" && pwd)/files"`,
-      'cp -R "$PR_FILES"/. "$ROOT"/',
-      'echo "Applied heal files into $ROOT"',
-      '',
-    ].join('\n'),
-    'utf8',
-  );
 
   let writtenCode: string[] = [];
   let skippedCode: string[] = [];
   let codeErrors: string[] = [];
-  if (plan && (opts.applyCreates || opts.applyCode)) {
+  const applyCode = opts.applyCode !== false;
+  const applyCreates = opts.applyCreates ?? applyCode;
+  if (plan && (applyCreates || applyCode)) {
     const result = applyIntegratePlan({
       plan,
       repoRoot,
-      applyCreates: Boolean(opts.applyCreates || opts.applyCode),
-      applyPatches: Boolean(opts.applyCode),
-      force: Boolean(opts.force ?? opts.applyCode),
+      applyCreates: Boolean(applyCreates || applyCode),
+      applyPatches: Boolean(applyCode),
+      force: Boolean(opts.force ?? applyCode),
     });
     writtenCode = result.written;
     skippedCode = result.skipped;
@@ -321,8 +224,7 @@ export function runHeal(opts: HealRunOptions): HealRunResult {
   const summary = [
     mode,
     drift.summary,
-    plan ? `plan actions=${plan.actions.length}` : 'no integrate plan (need --module-root)',
-    `pr=${prDir}`,
+    plan ? `integration-actions=${plan.actions.length}` : 'no integration actions (need --module-root)',
     mapApplied ? 'map=applied' : 'map=proposal-only',
     writtenCode.length ? `code-written=${writtenCode.length}` : '',
   ]
@@ -336,102 +238,11 @@ export function runHeal(opts: HealRunOptions): HealRunResult {
     pinnedOpenApiPath: pin.pinnedOpenApiPath,
     proposalPath,
     mapApplied,
-    integrateMdPath,
-    integrateJsonPath,
-    plan,
-    prDir,
-    prBodyPath,
-    manifestPath,
+    integrationActionCount: plan?.actions.length ?? 0,
     writtenCode,
     skippedCode,
     codeErrors,
     branchName,
     summary,
   };
-}
-
-function formatHealPrMarkdown(opts: {
-  vendor: string;
-  mode: string;
-  drift: ContractDriftReport;
-  branchName: string;
-  fileEntries: Array<{ path: string; kind: string; unresolvedTodos?: string[] }>;
-  moduleRoot?: string;
-  planOk: boolean;
-}): string {
-  const { vendor, mode, drift, branchName, fileEntries, moduleRoot, planOk } = opts;
-  const lines = [
-    `# Heal PR — ${vendor}`,
-    '',
-    `**Mode:** ${mode}  `,
-    `**Severity:** ${drift.severity}  `,
-    `**Digest:** \`${drift.contractDigest}\``,
-    '',
-    drift.summary,
-    '',
-    '## Contract drift',
-    '',
-  ];
-  if (!drift.items.length) {
-    lines.push('_No structural drift items._', '');
-  } else {
-    for (const it of drift.items) {
-      lines.push(`- **${it.severity}** \`${it.kind}\`${it.path ? ` (\`${it.path}\`)` : ''}: ${it.detail}`);
-    }
-    lines.push('');
-  }
-  lines.push('## Files', '');
-  for (const f of fileEntries) {
-    lines.push(`- \`${f.path}\` (${f.kind})`);
-  }
-  lines.push('');
-  const unresolved = fileEntries.flatMap((f) =>
-    (f.unresolvedTodos ?? []).map((todo) => ({ path: f.path, todo })),
-  );
-  if (unresolved.length) {
-    lines.push('## Unresolved mapping TODOs', '');
-    for (const item of unresolved) {
-      lines.push(`- \`${item.path}\`: ${item.todo}`);
-    }
-    lines.push('');
-  }
-  lines.push('## Create branch + PR', '');
-  lines.push('```bash');
-  lines.push(`git checkout -b ${branchName}`);
-  lines.push(`bash ${moduleRoot ? '' : ''}out/pr/${vendor}-${drift.contractDigest.slice(0, 8)}/apply-to-repo.sh .`);
-  lines.push('# or: cp -R out/pr/.../files/. .');
-  lines.push('git add -A');
-  lines.push(`git commit -m "fix(${vendor}): heal integration from contract ${drift.contractDigest.slice(0, 8)}"`);
-  lines.push(`gh pr create --title "fix(${vendor}): API contract heal" --body-file out/pr/${vendor}-${drift.contractDigest.slice(0, 8)}/PR.md`);
-  lines.push('```');
-  lines.push('');
-  if (!planOk) {
-    lines.push('> Integrate plan missing — re-run with `--module-root` pointing at production adapters.');
-    lines.push('');
-  }
-  lines.push('## Checks', '');
-  lines.push('```bash');
-  lines.push(`layerkit process dry-run --vendor ${vendor} --intent <primary>`);
-  lines.push('layerkit doctor --quality --strict');
-  lines.push(`layerkit promote --vendor ${vendor}`);
-  lines.push('```');
-  lines.push('');
-  return lines.join('\n');
-}
-
-function extractLayerkitTodos(content: string): string[] {
-  return content
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.includes('TODO(layerkit):'))
-    .map((line) => line.replace(/^\/\/\s*/, '').replace(/^\*\s*/, '').trim());
-}
-
-/** Resolve module path for display. */
-export function healPrRelative(projectDir: string, abs: string): string {
-  try {
-    return relative(projectDir, abs);
-  } catch {
-    return abs;
-  }
 }

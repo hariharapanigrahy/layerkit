@@ -287,7 +287,7 @@ export function pinContractEvidence(opts: {
   return { pinnedOpenApiPath, digest, contractDir };
 }
 
-/** Markdown runbook for contract update (with INTEGRATE.md). */
+/** Markdown runbook for contract update. */
 export function formatContractUpdateMarkdown(opts: {
   vendor: string;
   drift: ContractDriftReport;
@@ -316,7 +316,7 @@ export function formatContractUpdateMarkdown(opts: {
   ].filter(Boolean);
 
   if (drift.items.length === 0) {
-    lines.push('_None — re-validate dry-run and generate if code still needs style alignment._');
+    lines.push('_None — re-validate dry-run and module tests._');
   } else {
     for (const it of drift.items) {
       lines.push(`- **${it.severity}** \`${it.kind}\`${it.path ? ` (${it.path})` : ''}: ${it.detail}`);
@@ -329,8 +329,8 @@ export function formatContractUpdateMarkdown(opts: {
   lines.push('```bash');
   lines.push(
     moduleRoot
-      ? `layerkit heal run --vendor ${vendor} --openapi ${pinnedOpenApiPath} --module-root ${moduleRoot} --apply-code`
-      : `layerkit heal run --vendor ${vendor} --openapi ${pinnedOpenApiPath} --module-root <production-module> --apply-code`,
+      ? `layerkit heal run --vendor ${vendor} --openapi ${pinnedOpenApiPath} --module-root ${moduleRoot}`
+      : `layerkit heal run --vendor ${vendor} --openapi ${pinnedOpenApiPath} --module-root <production-module>`,
   );
   lines.push(`layerkit process dry-run --vendor ${vendor} --intent <primary>`);
   lines.push('layerkit doctor --quality --strict');

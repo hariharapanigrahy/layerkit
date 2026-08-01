@@ -1,5 +1,5 @@
 /**
- * Gate: heal run pins contract, applies map, builds PR package with code bodies.
+ * Gate: heal run pins contract, applies map, writes code directly.
  */
 import { existsSync, cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -65,18 +65,11 @@ const result = runHeal({
 assertEqual('mode heal', result.mode, 'heal');
 assertTrue('map applied', result.mapApplied);
 assertTrue('drift has reply_to', result.drift.items.some((i) => i.path === 'reply_to'));
-assertTrue('pr dir exists', existsSync(result.prDir));
-assertTrue('PR.md exists', existsSync(result.prBodyPath));
-assertTrue('manifest exists', existsSync(result.manifestPath));
-assertTrue('plan non-null', result.plan != null);
-assertTrue(
-  'plan has create or patch for email_fixture',
-  result.plan!.actions.some(
-    (a) => a.vendor === 'email_fixture' && (a.kind === 'create' || a.kind === 'patch') && a.content,
-  ),
-  JSON.stringify(result.plan!.actions.map((a) => a.kind + ':' + a.path)),
-);
-assertTrue('code written or pr files', result.writtenCode.length > 0 || existsSync(join(result.prDir, 'files')));
+assertTrue('integration actions created', result.integrationActionCount > 0);
+assertTrue('code written directly', result.writtenCode.length > 0, JSON.stringify(result.skippedCode));
+assertTrue('no PR metadata directory', !existsSync(join(projectDir, 'out', 'pr')));
+assertTrue('no integrate plan markdown', !existsSync(join(projectDir, 'out', 'INTEGRATE.md')));
+assertTrue('no integrate plan json', !existsSync(join(projectDir, 'out', 'integrate-plan.json')));
 
 const map = store.loadMap('email_fixture');
 assertTrue('map reloaded', map != null);
@@ -114,13 +107,11 @@ assertTrue(
   JSON.stringify(map!.fields),
 );
 
-// Proposed adapter content mentions reply_to / buildPayload
-const createAction = result.plan!.actions.find((a) => a.content && a.vendor === 'email_fixture');
-assertTrue('has content action', createAction != null);
+const writtenContent = result.writtenCode.map((p) => readFileSync(p, 'utf8')).join('\n');
 assertTrue(
-  'content references contract field',
-  /reply_to|buildPayload/i.test(createAction!.content!),
-  createAction!.content!.slice(0, 400),
+  'written code references contract field',
+  /reply_to|buildPayload/i.test(writtenContent),
+  writtenContent.slice(0, 400),
 );
 
 const mapperTmp = mkdtempSync(join(tmpdir(), 'layerkit-heal-mapper-'));
@@ -182,7 +173,7 @@ writeFileSync(
   'utf8',
 );
 
-const mapperResult = runHeal({
+runHeal({
   repoRoot: mapperTmp,
   projectDir: mapperProjectDir,
   vendor: 'postmark',
@@ -191,10 +182,12 @@ const mapperResult = runHeal({
   applyMap: true,
   agentId: 'heal-mapper-gate',
 });
-const prBody = readFileSync(mapperResult.prBodyPath, 'utf8');
-const manifestBody = readFileSync(mapperResult.manifestPath, 'utf8');
-assertTrue('PR.md lists unresolved mapping TODOs', prBody.includes('## Unresolved mapping TODOs'), prBody);
-assertTrue('PR.md names missing datalayer source', prBody.includes('missing source expression'), prBody);
-assertTrue('manifest carries unresolved mapping TODOs', manifestBody.includes('unresolvedTodos'), manifestBody);
+const mapperAdapter = readFileSync(
+  join(mapperModuleRoot, 'src/main/java/com/acme/integrations/vendor/PostmarkAdapter.java'),
+  'utf8',
+);
+assertTrue('mapper TODO written to real adapter', mapperAdapter.includes('TODO(layerkit)'), mapperAdapter);
+assertTrue('mapper heal has no PR metadata directory', !existsSync(join(mapperProjectDir, 'out', 'pr')));
+assertTrue('mapper heal has no integrate plan markdown', !existsSync(join(mapperProjectDir, 'out', 'INTEGRATE.md')));
 
 console.log('heal-run-pr: ok');

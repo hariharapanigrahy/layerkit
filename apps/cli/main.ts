@@ -264,7 +264,7 @@ const cliCommands: CliCommand[] = [
   {
     path: ['heal', 'run'],
     usage:
-      'heal run --vendor <id> --openapi <file> [--doc <url>]... [--module-root <dir>] [--apply-map] [--apply-code] [--apply-creates] [--force] [--force-thin] [--json] [--project-dir <path>]',
+      'heal run --vendor <id> --openapi <file> [--doc <url>]... [--module-root <dir>] [--force] [--force-thin] [--json] [--project-dir <path>]',
     handler: (args, ctx) => runHealCli(args, ctx),
     showInTopLevelHelp: true,
   },
@@ -918,7 +918,7 @@ function printInstallResult(result: Awaited<ReturnType<typeof installLayerkit>>)
   console.log('');
   console.log('Next steps:');
   console.log('- Restart your coding agent if skills/hooks do not appear.');
-  console.log('- Contract heal: layerkit heal run --vendor <v> --openapi <file> --module-root <dir> --apply-code');
+  console.log('- Contract heal: layerkit heal run --vendor <v> --openapi <file> --module-root <dir>');
   console.log('- Do not invent email/phone rules without documentation sources.');
   for (const n of result.notes) console.log(`- ${n}`);
 }
@@ -1003,7 +1003,7 @@ function installGuidanceLines(): string[] {
 function emptyMapGuidanceLines(): string[] {
   return [
     'No vendor maps yet — start from a customer contract:',
-    '  - layerkit heal run --vendor <v> --openapi <file> --module-root <dir> [--apply-code]',
+    '  - layerkit heal run --vendor <v> --openapi <file> --module-root <dir>',
     '  - layerkit agent next',
   ];
 }
@@ -1450,22 +1450,21 @@ function runResearchDeepen(args: string[]): void {
 }
 
 /**
- * Full heal: pin contract → map from OpenAPI → integrate plan → PR package.
- * Optional --apply-code writes adapter/test bodies into the repo for a PR.
+ * Full heal: pin contract → map from OpenAPI → direct code edits.
  */
 function runHealCli(args: string[], ctx: CliContext): void {
   const vendor = flag(args, '--vendor');
   const openapi = flag(args, '--openapi');
   if (!vendor || !openapi) {
     throw new Error(
-      'Usage: layerkit heal run --vendor <id> --openapi <file> [--module-root <dir>] [--apply-code] [--force]',
+      'Usage: layerkit heal run --vendor <id> --openapi <file> [--module-root <dir>] [--force]',
     );
   }
   const docs = collectFlags(args, '--doc');
   const moduleRoot = flag(args, '--module-root') ?? flag(args, '--moduleRoot');
   const applyMap = !hasFlag(args, '--no-apply-map');
-  const applyCode = hasFlag(args, '--apply-code');
-  const applyCreates = hasFlag(args, '--apply-creates') || applyCode;
+  const applyCode = !hasFlag(args, '--no-apply-code');
+  const applyCreates = applyCode;
   const force = hasFlag(args, '--force') || applyCode;
   const forceThin = hasFlag(args, '--force-thin');
 
@@ -1488,27 +1487,7 @@ function runHealCli(args: string[], ctx: CliContext): void {
   });
 
   if (hasFlag(args, '--json')) {
-    console.log(
-      JSON.stringify(
-        {
-          ...result,
-          plan: result.plan
-            ? {
-                summary: result.plan.summary,
-                vendors: result.plan.vendors,
-                actions: result.plan.actions.map((a) => ({
-                  kind: a.kind,
-                  path: a.path,
-                  vendor: a.vendor,
-                  hasContent: Boolean(a.content),
-                })),
-              }
-            : null,
-        },
-        null,
-        2,
-      ),
-    );
+    console.log(JSON.stringify(result, null, 2));
     return;
   }
 
@@ -1522,9 +1501,7 @@ function runHealCli(args: string[], ctx: CliContext): void {
   console.log(`  Pinned: ${result.pinnedOpenApiPath}`);
   console.log(`  Proposal: ${result.proposalPath}`);
   console.log(`  Map applied: ${result.mapApplied}`);
-  if (result.integrateMdPath) console.log(`  Integrate: ${result.integrateMdPath}`);
-  console.log(`  PR package: ${result.prDir}`);
-  console.log(`  PR body: ${result.prBodyPath}`);
+  console.log(`  Integration actions: ${result.integrationActionCount}`);
   console.log(`  Branch: ${result.branchName}`);
   if (result.writtenCode.length) {
     console.log(`  Code written (${result.writtenCode.length}):`);
@@ -1537,9 +1514,8 @@ function runHealCli(args: string[], ctx: CliContext): void {
   console.log('');
   console.log('Next:');
   console.log(`  git checkout -b ${result.branchName}`);
-  console.log(`  bash ${result.prDir}/apply-to-repo.sh .   # if not using --apply-code`);
   console.log(`  git add -A && git commit -m "fix(${vendor}): heal integration from contract"`);
-  console.log(`  gh pr create --body-file ${result.prBodyPath}`);
+  console.log('  gh pr create --fill');
   console.log(`  layerkit process dry-run --vendor ${vendor} --intent <primary>`);
 }
 

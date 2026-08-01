@@ -47,14 +47,12 @@ Human supplies new OpenAPI/docs:
 
 ```bash
 layerkit heal run --vendor <v> --openapi <spec.json> \
-  --module-root <production-module> --apply-code
-# → pin contract, apply map, INTEGRATE.md, out/pr/<v>-*/ files + PR.md
-# → --apply-code writes adapter/test bodies into the module
+  --module-root <production-module>
+# → pin contract, apply map, update adapter/test bodies directly
 
 git checkout -b layerkit/heal-<v>-*
-bash .layerkit/out/pr/<v>-*/apply-to-repo.sh .   # if not --apply-code
 git add -A && git commit -m "fix(<v>): heal integration"
-gh pr create --body-file .layerkit/out/pr/<v>-*/PR.md
+gh pr create --fill
 
 layerkit process dry-run --vendor <v> --intent <i>
 ```

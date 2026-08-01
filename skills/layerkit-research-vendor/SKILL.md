@@ -15,12 +15,12 @@ You create or **update** integration knowledge from **primary evidence**. Core s
 
 ```bash
 layerkit heal run --vendor <vendor> --openapi ./openapi.json \
-  --module-root <production-module> --apply-code
-# pin + drift + map apply + integrate plan + out/pr/* + optional code write
+  --module-root <production-module>
+# pin + drift + map apply + direct source edits
 ```
 
-Review `out/CONTRACT_DRIFT.json`, `out/INTEGRATE.md`, `out/pr/<vendor>-*/PR.md`.  
-Open PR from the package (or files already written with `--apply-code`).
+Review `out/CONTRACT_DRIFT.json`.
+Open PR from the real source/map changes.
 
 ### B. Supporting evidence tools
 

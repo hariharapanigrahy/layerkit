@@ -225,14 +225,14 @@ export function buildMultiAgentPlan(opts: BuildMultiAgentPlanOptions): MultiAgen
       cli: [
         vendor === '<vendor>' ? 'layerkit map list' : `layerkit map show ${vendor}`,
         mode === 'heal'
-          ? `layerkit heal run --vendor ${vFlag} --openapi ${shellQuote(oa)}${moduleRoot ? ` --module-root ${shellQuote(moduleRoot)}` : ''} --apply-code`
+          ? `layerkit heal run --vendor ${vFlag} --openapi ${shellQuote(oa)}${moduleRoot ? ` --module-root ${shellQuote(moduleRoot)}` : ''}`
           : `layerkit heal run --vendor ${vFlag} --openapi ${shellQuote(oa)}${moduleRoot ? ` --module-root ${shellQuote(moduleRoot)}` : ''}`,
       ],
       prompt: researcherPrompt(vendor, opts.projectDir, mode, openapiPath, moduleRoot),
       doneWhen:
         mode === 'heal'
-          ? `Heal complete for ${vendor}: map applied, PR package under out/pr/, code updated when --apply-code`
-          : `Map + integrate plan for ${vendor} from OpenAPI; PR package ready`,
+          ? `Heal complete for ${vendor}: map applied, source files updated`
+          : `Map + source edits for ${vendor} from OpenAPI ready`,
       dependsOn: scanIds,
     });
     tasks.push(t);
@@ -689,9 +689,9 @@ function researcherPrompt(
     openapiPath ? `OpenAPI: ${openapiPath}` : 'OpenAPI: customer-supplied path',
     moduleRoot ? `Module root: ${moduleRoot}` : 'Module root: pass --module-root',
     '1. layerkit map show <vendor>',
-    '2. layerkit heal run --vendor <v> --openapi <file> --module-root <dir> --apply-code',
-    '3. Review out/CONTRACT_DRIFT.json, out/INTEGRATE.md, out/pr/*/PR.md',
-    '4. Open git branch from PR package; dry-run + quality before promote',
+    '2. layerkit heal run --vendor <v> --openapi <file> --module-root <dir>',
+    '3. Review out/CONTRACT_DRIFT.json',
+    '4. Open git branch from real source/map changes; dry-run + quality before promote',
     'Evidence only from the supplied contract. Breaking drift → human before promote.',
   ].join('\n');
 }
