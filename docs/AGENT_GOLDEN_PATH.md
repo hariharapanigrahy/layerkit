@@ -1,11 +1,11 @@
 # Agent golden path — Day-1 any-vendor integration
 
-Integrate **any** vendor in one day using **orchestrate + CLI only**.  
+Integrate **any** vendor in one day using **orchestrate + CLI only**.
 Maps start empty. Agents research evidence, author customer-owned proposals, pass gates, then generate and promote. Runtime `track()` stays deterministic (no LLM on the hot path).
 
-**Cheat sheet (one page):** [`CHEATSHEET.md`](./CHEATSHEET.md) · `layerkit cheatsheet`  
-**Master skill:** [`skills/layerkit-orchestrate-integration/SKILL.md`](../skills/layerkit-orchestrate-integration/SKILL.md)  
-**Multi-agent:** [`skills/layerkit-multi-agent/SKILL.md`](../skills/layerkit-multi-agent/SKILL.md) + `layerkit agent multi --vendor …`  
+**Cheat sheet (one page):** [`CHEATSHEET.md`](./CHEATSHEET.md) · `layerkit cheatsheet`
+**Master skill:** [`skills/layerkit-orchestrate-integration/SKILL.md`](../skills/layerkit-orchestrate-integration/SKILL.md)
+**Multi-agent:** [`skills/layerkit-multi-agent/SKILL.md`](../skills/layerkit-multi-agent/SKILL.md) + `layerkit agent multi --vendor …`
 **Status CLI:** `layerkit agent status` / `layerkit agent next` / `layerkit agent mark-done --step <id>`
 
 Placeholders used below:
@@ -267,7 +267,7 @@ layerkit memory append \
   --body-file ./research-note.md
 ```
 
-**Deepen before humans:** run L0–L4 (hub links, `$ref`, repo samples, customer-approved probe) before any questionnaire.  
+**Deepen before humans:** run L0–L4 (hub links, `$ref`, repo samples, customer-approved probe) before any questionnaire.
 **Never invent** auth, endpoints, hash, or field rules when evidence is silent — leave `needs-evidence` / residual gaps.
 
 ```bash
@@ -384,7 +384,7 @@ Skills: orchestrate stop rules · [`layerkit-fix-from-dry-run`](../skills/layerk
 layerkit process dry-run --vendor <vendor> --intent <intent>
 ```
 
-On failure: revise map/processor/flow from **docs evidence** via `layerkit-fix-from-dry-run`, re-validate/submit/approve/apply, dry-run again.  
+On failure: revise map/processor/flow from **docs evidence** via `layerkit-fix-from-dry-run`, re-validate/submit/approve/apply, dry-run again.
 **Loop ≤ 3** times; then stop and ask a human. Do not invent patches to force green.
 
 ---

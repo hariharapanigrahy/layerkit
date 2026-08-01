@@ -31,7 +31,7 @@ layerkit agent next
 layerkit agent mark-done --step discover|research|design|author|privacy|generate|handoff
 ```
 
-Order: **discover → research → design → author → privacy → generate → handoff**  
+Order: **discover → research → design → author → privacy → generate → handoff**
 Heal: discover auto-done (`mode: heal`).
 
 ```bash
@@ -41,7 +41,7 @@ layerkit agent multi --vendor <v> [--mode heal] [--openapi <f>] [--module-root <
 
 ---
 
-## Contract heal (update integration → PR)
+## Contract heal (update integration)
 
 Human supplies new OpenAPI/docs:
 
@@ -50,9 +50,10 @@ layerkit heal run --vendor <v> --openapi <spec.json> \
   --module-root <production-module>
 # → pin contract, apply map, update adapter/test bodies directly
 
-git checkout -b layerkit/heal-<v>-*
-git add -A && git commit -m "fix(<v>): heal integration"
-gh pr create --fill
+# Optional when an agent has evidence that a removed field was renamed:
+layerkit heal run --vendor <v> --openapi <spec.json> \
+  --module-root <production-module> \
+  --rename-decisions ./rename-decisions.json
 
 layerkit process dry-run --vendor <v> --intent <i>
 ```

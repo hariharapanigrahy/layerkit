@@ -133,6 +133,7 @@ mapperStore.saveMap({
     { domain: 'name', vendor: 'name', transform: { type: 'identity' } },
     { domain: 'email', vendor: 'email', transform: { type: 'identity' } },
     { domain: 'phone', vendor: 'phone', transform: { type: 'identity' } },
+    { domain: 'customer', vendor: 'customer', transform: { type: 'identity' } },
   ],
   documentation: [],
   status: 'map_complete',
@@ -155,11 +156,12 @@ writeFileSync(
               'application/json': {
                 schema: {
                   type: 'object',
-                  required: ['name', 'email_id', 'phone_id'],
+                  required: ['name', 'email_id', 'phone_id', 'customer_id'],
                   properties: {
                     name: { type: 'string' },
                     email_id: { type: 'string' },
                     phone_id: { type: 'string' },
+                    customer_id: { type: 'string' },
                   },
                 },
               },
@@ -180,6 +182,22 @@ runHeal({
   openapiPath: mapperOpenApi,
   moduleRoot: mapperModuleRoot,
   applyMap: true,
+  semanticRenames: [
+    {
+      fromVendor: 'email',
+      toVendor: 'email_id',
+      domain: 'email',
+      confidence: 'high',
+      evidence: ['OpenAPI drift removed email and added email_id for the same string payload value'],
+    },
+    {
+      fromVendor: 'phone',
+      toVendor: 'phone_id',
+      domain: 'phone',
+      confidence: 'high',
+      evidence: ['OpenAPI drift removed phone and added phone_id for the same string payload value'],
+    },
+  ],
   agentId: 'heal-mapper-gate',
 });
 const mapperMap = mapperStore.loadMap('postmark');
@@ -192,6 +210,11 @@ assertTrue(
 assertTrue(
   'heal maps renamed phone target to existing phone source',
   (mapperMap!.fields ?? []).some((f) => f.domain === 'phone' && f.vendor === 'phone_id'),
+  JSON.stringify(mapperMap!.fields),
+);
+assertTrue(
+  'heal does not silently map entity to id target',
+  !(mapperMap!.fields ?? []).some((f) => f.domain === 'customer' && f.vendor === 'customer_id'),
   JSON.stringify(mapperMap!.fields),
 );
 const mapperAdapter = readFileSync(

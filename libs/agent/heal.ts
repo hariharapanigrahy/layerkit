@@ -24,6 +24,7 @@ function mergeHealFields(
   scaffolded: FieldMapRow[],
   baseline?: VendorMap | null,
   drift?: ContractDriftReport,
+  semanticRenames: HealRenameDecision[] = [],
 ): FieldMapRow[] {
   if (!baseline) return scaffolded;
 
@@ -41,6 +42,12 @@ function mergeHealFields(
       .filter((i) => i.kind === 'field_added' && i.path)
       .map((i) => i.path!),
   );
+  const renameByAddedVendor = validateRenameDecisions(
+    semanticRenames,
+    baseline.fields ?? [],
+    removed,
+    added,
+  );
 
   const merged: FieldMapRow[] = [];
   const usedBaseline = new Set<string>();
@@ -53,7 +60,7 @@ function mergeHealFields(
     }
 
     const renameSource = added.has(row.vendor)
-      ? findRenameSource(row.vendor, baseline.fields ?? [], removed, usedBaseline)
+      ? findRenameSource(row.vendor, renameByAddedVendor, usedBaseline)
       : undefined;
     merged.push(
       renameSource
@@ -68,30 +75,41 @@ function mergeHealFields(
 
 function findRenameSource(
   addedVendor: string,
-  baselineFields: FieldMapRow[],
-  removedVendors: Set<string>,
+  renameByAddedVendor: Map<string, FieldMapRow>,
   usedBaseline: Set<string>,
 ): FieldMapRow | undefined {
-  const aliases = fieldNameAliases(addedVendor);
-  const candidates = baselineFields.filter(
-    (row) =>
-      removedVendors.has(row.vendor) &&
-      !usedBaseline.has(row.vendor) &&
-      fieldNameAliases(row.vendor).some((alias) => aliases.includes(alias)),
-  );
-  if (candidates.length !== 1) return undefined;
-  return { ...candidates[0]!, transform: { ...candidates[0]!.transform } };
+  const candidate = renameByAddedVendor.get(addedVendor);
+  if (!candidate || usedBaseline.has(candidate.vendor)) return undefined;
+  return { ...candidate, transform: { ...candidate.transform } };
 }
 
-function fieldNameAliases(field: string): string[] {
-  const normalized = field.replace(/[^A-Za-z0-9]+/g, '').toLowerCase();
-  const aliases = new Set<string>([normalized]);
-  for (const suffix of ['id', 'identifier', 'uuid']) {
-    if (normalized.endsWith(suffix) && normalized.length > suffix.length + 1) {
-      aliases.add(normalized.slice(0, -suffix.length));
-    }
+function validateRenameDecisions(
+  decisions: HealRenameDecision[],
+  baselineFields: FieldMapRow[],
+  removedVendors: Set<string>,
+  addedVendors: Set<string>,
+): Map<string, FieldMapRow> {
+  const byAddedVendor = new Map<string, FieldMapRow>();
+  const baselineByVendor = new Map(baselineFields.map((row) => [row.vendor, row]));
+  for (const decision of decisions) {
+    if (!isConfidentRenameDecision(decision)) continue;
+    if (!removedVendors.has(decision.fromVendor)) continue;
+    if (!addedVendors.has(decision.toVendor)) continue;
+    if (byAddedVendor.has(decision.toVendor)) continue;
+
+    const baseline = baselineByVendor.get(decision.fromVendor);
+    if (!baseline) continue;
+    if (decision.domain && decision.domain !== baseline.domain) continue;
+    byAddedVendor.set(decision.toVendor, baseline);
   }
-  return [...aliases].filter(Boolean);
+  return byAddedVendor;
+}
+
+function isConfidentRenameDecision(decision: HealRenameDecision): boolean {
+  const evidence = decision.evidence ?? [];
+  if (!decision.fromVendor || !decision.toVendor || evidence.length === 0) return false;
+  if (typeof decision.confidence === 'number') return decision.confidence >= 0.75;
+  return decision.confidence === 'high';
 }
 
 export interface HealRunOptions {
@@ -111,6 +129,19 @@ export interface HealRunOptions {
   force?: boolean;
   forceThin?: boolean;
   scanRoot?: string;
+  /**
+   * Semantic rename decisions produced by an agent/skill from contract + code evidence.
+   * Heal validates these against deterministic drift before applying them.
+   */
+  semanticRenames?: HealRenameDecision[];
+}
+
+export interface HealRenameDecision {
+  fromVendor: string;
+  toVendor: string;
+  domain?: string;
+  confidence: 'high' | 'medium' | 'low' | number;
+  evidence: string[];
 }
 
 export interface HealRunResult {
@@ -124,7 +155,6 @@ export interface HealRunResult {
   writtenCode: string[];
   skippedCode: string[];
   codeErrors: string[];
-  branchName: string;
   summary: string;
 }
 
@@ -184,7 +214,7 @@ export function runHeal(opts: HealRunOptions): HealRunResult {
   });
   // Bump map version from OpenAPI when present
   const payload = proposal.payload as VendorMap;
-  payload.fields = mergeHealFields(payload.fields ?? [], baseline, drift);
+  payload.fields = mergeHealFields(payload.fields ?? [], baseline, drift, opts.semanticRenames);
   if (drift.openapiVersion) {
     (payload as { version?: string }).version = drift.openapiVersion;
   }
@@ -256,8 +286,6 @@ export function runHeal(opts: HealRunOptions): HealRunResult {
     driftByVendor,
   });
 
-  const branchName = `layerkit/heal-${vendor}-${drift.contractDigest.slice(0, 8)}`;
-
   let writtenCode: string[] = [];
   let skippedCode: string[] = [];
   let codeErrors: string[] = [];
@@ -297,7 +325,6 @@ export function runHeal(opts: HealRunOptions): HealRunResult {
     writtenCode,
     skippedCode,
     codeErrors,
-    branchName,
     summary,
   };
 }

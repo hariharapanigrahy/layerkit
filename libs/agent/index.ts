@@ -158,4 +158,9 @@ export {
   type AgentCapability,
 } from './multi-agent.js';
 
-export { runHeal, type HealRunOptions, type HealRunResult } from './heal.js';
+export {
+  runHeal,
+  type HealRenameDecision,
+  type HealRunOptions,
+  type HealRunResult,
+} from './heal.js';

@@ -110,7 +110,7 @@ See the [Runtime Send Path section in docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GO
 
 ## Agent quick start
 
-**Cheat sheet (one page):** [docs/CHEATSHEET.md](./docs/CHEATSHEET.md) · `layerkit cheatsheet`  
+**Cheat sheet (one page):** [docs/CHEATSHEET.md](./docs/CHEATSHEET.md) · `layerkit cheatsheet`
 **Day-1 any-vendor path:** [docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GOLDEN_PATH.md) (orchestrate + CLI only). For the runtime send path, see the runtime send-path section in that doc.
 
 Paste into your coding agent:
@@ -173,6 +173,7 @@ Cheat sheet: [docs/CHEATSHEET.md](./docs/CHEATSHEET.md). Golden path: [docs/AGEN
 | Gates | CLI | `proposal validate` / dry-run / apply, doctor, install |
 | Runtime | Your app or Layerkit delivery | Deterministic map apply + HTTP — **no LLM on the hot path** |
 | Generate | Agent + CLI | Integrate plan into production datalayer (`INTEGRATE.md` / `--module-root`) |
+| Heal | Agent + CLI | Pin OpenAPI, diff drift, validate semantic rename decisions, edit production source/map files directly |
 
 **No vendor catalog.** Project stores start with zero maps. Agents research any vendor from official docs and apply customer-owned proposals under `{projectDir}` (default `.layerkit`).
 
@@ -191,6 +192,7 @@ layerkit proposal apply <file>
 layerkit process dry-run --vendor <v> --intent <i>
 layerkit generate --module-root <dir> [--vendor <id>] [--apply]
 layerkit research fill --vendor <v> --openapi <file>
+layerkit heal run --vendor <v> --openapi <file> --module-root <dir> [--rename-decisions <file>]
 layerkit agent multi --vendor <id> [--mode heal] [--openapi <file>]
 ```
 
@@ -223,7 +225,7 @@ docs/                     Install prompt, launch guide
 
 Layerkit is an **agent toolkit + eval harness**, not a community vendor-map catalog. Maps stay **customer-owned** under each project's store.
 
-**Highest-value PRs:** skills, process evals/gates, platform installers, reliability, docs/UX.  
+**Highest-value PRs:** skills, process evals/gates, platform installers, reliability, docs/UX.
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 **New here?** Start at [good first contributions map (#48)](https://github.com/hariharapanigrahy/layerkit/issues/48) or filter [`good first issue`](https://github.com/hariharapanigrahy/layerkit/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22). Reliability tracks (hallucination / timeout / transactions) are separate issues so multiple people can work in parallel.

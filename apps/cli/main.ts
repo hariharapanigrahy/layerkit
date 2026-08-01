@@ -47,6 +47,7 @@ import {
   effectiveCompletedSteps,
   getNextStepForProject,
   runHeal,
+  type HealRenameDecision,
 } from '../../libs/agent/index.js';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
@@ -264,7 +265,7 @@ const cliCommands: CliCommand[] = [
   {
     path: ['heal', 'run'],
     usage:
-      'heal run --vendor <id> --openapi <file> [--doc <url>]... [--module-root <dir>] [--force] [--force-thin] [--json] [--project-dir <path>]',
+      'heal run --vendor <id> --openapi <file> [--doc <url>]... [--rename-decisions <file>] [--module-root <dir>] [--force] [--force-thin] [--json] [--project-dir <path>]',
     handler: (args, ctx) => runHealCli(args, ctx),
     showInTopLevelHelp: true,
   },
@@ -1093,7 +1094,7 @@ function runAgentStatus(_args: string[], ctx: CliContext): void {
     }
   } else {
     console.log(`  missing  memory/${PIPELINE_STATUS_REL} (no steps marked done yet)`);
-    console.log('  Tip: research fill --vendor --openapi … (heal) or agent mark-done --step <id>');
+    console.log('  Tip: heal run --vendor --openapi --module-root … or agent mark-done --step <id>');
   }
 }
 
@@ -1467,6 +1468,7 @@ function runHealCli(args: string[], ctx: CliContext): void {
   const applyCreates = applyCode;
   const force = hasFlag(args, '--force') || applyCode;
   const forceThin = hasFlag(args, '--force-thin');
+  const semanticRenames = loadHealRenameDecisions(flag(args, '--rename-decisions'));
 
   const store = openStore(ctx);
   if (!store.loadProject()) throw new Error('No project — run layerkit install --poc');
@@ -1483,6 +1485,7 @@ function runHealCli(args: string[], ctx: CliContext): void {
     applyCreates,
     force,
     forceThin,
+    semanticRenames,
     agentId: flag(args, '--agent') ?? 'heal-cli',
   });
 
@@ -1502,7 +1505,6 @@ function runHealCli(args: string[], ctx: CliContext): void {
   console.log(`  Proposal: ${result.proposalPath}`);
   console.log(`  Map applied: ${result.mapApplied}`);
   console.log(`  Integration actions: ${result.integrationActionCount}`);
-  console.log(`  Branch: ${result.branchName}`);
   if (result.writtenCode.length) {
     console.log(`  Code written (${result.writtenCode.length}):`);
     for (const w of result.writtenCode.slice(0, 12)) console.log(`    ${w}`);
@@ -1513,10 +1515,42 @@ function runHealCli(args: string[], ctx: CliContext): void {
   }
   console.log('');
   console.log('Next:');
-  console.log(`  git checkout -b ${result.branchName}`);
-  console.log(`  git add -A && git commit -m "fix(${vendor}): heal integration from contract"`);
-  console.log('  gh pr create --fill');
   console.log(`  layerkit process dry-run --vendor ${vendor} --intent <primary>`);
+}
+
+function loadHealRenameDecisions(file: string | undefined): HealRenameDecision[] {
+  if (!file) return [];
+  const raw = JSON.parse(readFileSync(resolve(file), 'utf8')) as unknown;
+  const decisions = Array.isArray(raw)
+    ? raw
+    : raw && typeof raw === 'object' && Array.isArray((raw as { renames?: unknown }).renames)
+      ? (raw as { renames: unknown[] }).renames
+      : undefined;
+  if (!decisions) {
+    throw new Error('--rename-decisions must be a JSON array or an object with a renames array');
+  }
+  return decisions.map((decision, idx) => {
+    if (!decision || typeof decision !== 'object') {
+      throw new Error(`--rename-decisions[${idx}] must be an object`);
+    }
+    const value = decision as Partial<HealRenameDecision>;
+    if (
+      typeof value.fromVendor !== 'string' ||
+      typeof value.toVendor !== 'string' ||
+      !Array.isArray(value.evidence)
+    ) {
+      throw new Error(
+        `--rename-decisions[${idx}] requires fromVendor, toVendor, confidence, evidence[]`,
+      );
+    }
+    return {
+      fromVendor: value.fromVendor,
+      toVendor: value.toVendor,
+      domain: typeof value.domain === 'string' ? value.domain : undefined,
+      confidence: value.confidence ?? 'low',
+      evidence: value.evidence.filter((e): e is string => typeof e === 'string'),
+    };
+  });
 }
 
 /** Pin contract evidence, fill answer sheet, diff against applied map when present. */

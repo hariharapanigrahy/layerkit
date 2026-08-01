@@ -183,10 +183,17 @@ export function buildMultiAgentPlan(opts: BuildMultiAgentPlanOptions): MultiAgen
     capability: 'read-write',
     cli: [
       `layerkit style-profile scan --root ${shellQuote(root)}`,
-      `layerkit generate --lang java --root ${shellQuote(root)}${moduleRoot ? ` --module-root ${shellQuote(moduleRoot)}` : ''}`,
+      ...(mode === 'heal'
+        ? []
+        : [
+            `layerkit generate --lang java --root ${shellQuote(root)}${moduleRoot ? ` --module-root ${shellQuote(moduleRoot)}` : ''}`,
+          ]),
     ],
     prompt: stylistPrompt(root, opts.projectDir, moduleRoot, mode),
-    doneWhen: 'Style profile in memory/runbooks; INTEGRATE.md when production module detected',
+    doneWhen:
+      mode === 'heal'
+        ? 'Style profile in memory/runbooks; topology understood for direct source edits'
+        : 'Style profile in memory/runbooks; INTEGRATE.md when production module detected',
     dependsOn: [],
   });
   tasks.push(stylist);
@@ -328,56 +335,61 @@ export function buildMultiAgentPlan(opts: BuildMultiAgentPlanOptions): MultiAgen
     requiresHuman: true,
   });
 
+  const integrateVendors = vendors.length ? vendors : ['<vendor>'];
+  let integrationBarrierIds = [privacy.id];
+
   // --- Integrate (per-vendor create + one registry owner) ---
   const integrateIds: string[] = [];
-  const integrateVendors = vendors.length ? vendors : ['<vendor>'];
-  for (const vendor of integrateVendors.slice(0, maxParallel * 2)) {
-    const t = task({
-      id: `integrator:${vendor}`,
+  if (mode !== 'heal') {
+    for (const vendor of integrateVendors.slice(0, maxParallel * 2)) {
+      const t = task({
+        id: `integrator:${vendor}`,
+        role: 'integrator',
+        phase: 'integrate',
+        label: `integrate ${vendor}`,
+        skill: 'layerkit-generate-java',
+        vendor: vendor === '<vendor>' ? undefined : vendor,
+        parallelGroup: 'integrate-vendors',
+        parallel: true,
+        capability: 'read-write',
+        cli: [
+          `layerkit generate --lang java --mode integrate --vendor ${vendor === '<vendor>' ? 'VENDOR' : vendor}${moduleRoot ? ` --module-root ${shellQuote(moduleRoot)}` : ''} --root ${shellQuote(root)}`,
+          'Read {projectDir}/out/INTEGRATE.md',
+        ],
+        prompt: integratorPrompt(vendor, opts.projectDir, moduleRoot, root),
+        doneWhen: `Adapter/tests for ${vendor} in production module; no parallel facade`,
+        dependsOn: [privacy.id],
+      });
+      tasks.push(t);
+      integrateIds.push(t.id);
+    }
+    // Shared registry patch — single writer after vendor creates
+    const registry = task({
+      id: 'integrator:registry',
       role: 'integrator',
       phase: 'integrate',
-      label: `integrate ${vendor}`,
+      label: 'registry / router wire',
       skill: 'layerkit-generate-java',
-      vendor: vendor === '<vendor>' ? undefined : vendor,
-      parallelGroup: 'integrate-vendors',
-      parallel: true,
+      parallelGroup: 'integrate-shared',
+      parallel: false,
       capability: 'read-write',
-      cli: [
-        `layerkit generate --lang java --mode integrate --vendor ${vendor === '<vendor>' ? 'VENDOR' : vendor}${moduleRoot ? ` --module-root ${shellQuote(moduleRoot)}` : ''} --root ${shellQuote(root)}`,
-        'Read {projectDir}/out/INTEGRATE.md',
-      ],
-      prompt: integratorPrompt(vendor, opts.projectDir, moduleRoot, root),
-      doneWhen: `Adapter/tests for ${vendor} in production module; no parallel facade`,
-      dependsOn: [privacy.id],
+      cli: ['# patch registry/router per INTEGRATE.md after vendor adapters exist'],
+      prompt: registryIntegratorPrompt(opts.projectDir, vendors, moduleRoot),
+      doneWhen: 'All new vendors registered; router updated if needed; single registry owner',
+      dependsOn: integrateIds,
     });
-    tasks.push(t);
-    integrateIds.push(t.id);
-  }
-  // Shared registry patch — single writer after vendor creates
-  const registry = task({
-    id: 'integrator:registry',
-    role: 'integrator',
-    phase: 'integrate',
-    label: 'registry / router wire',
-    skill: 'layerkit-generate-java',
-    parallelGroup: 'integrate-shared',
-    parallel: false,
-    capability: 'read-write',
-    cli: ['# patch registry/router per INTEGRATE.md after vendor adapters exist'],
-    prompt: registryIntegratorPrompt(opts.projectDir, vendors, moduleRoot),
-    doneWhen: 'All new vendors registered; router updated if needed; single registry owner',
-    dependsOn: integrateIds,
-  });
-  tasks.push(registry);
-  integrateIds.push(registry.id);
+    tasks.push(registry);
+    integrateIds.push(registry.id);
+    integrationBarrierIds = [registry.id];
 
-  phases.push({
-    id: 'integrate',
-    title: 'Integrate (production code)',
-    detail: 'Parallel adapters per vendor, then serial registry/router',
-    taskIds: integrateIds,
-    parallel: false, // phase has internal parallel group + barrier
-  });
+    phases.push({
+      id: 'integrate',
+      title: 'Integrate (production code)',
+      detail: 'Parallel adapters per vendor, then serial registry/router',
+      taskIds: integrateIds,
+      parallel: false, // phase has internal parallel group + barrier
+    });
+  }
 
   // --- Verify ---
   const verifyIds: string[] = [];
@@ -397,7 +409,7 @@ export function buildMultiAgentPlan(opts: BuildMultiAgentPlanOptions): MultiAgen
       ],
       prompt: verifierPrompt(vendor, opts.projectDir),
       doneWhen: `Dry-run green for primary intents of ${vendor}`,
-      dependsOn: [registry.id],
+      dependsOn: integrationBarrierIds,
     });
     tasks.push(t);
     verifyIds.push(t.id);
@@ -414,7 +426,7 @@ export function buildMultiAgentPlan(opts: BuildMultiAgentPlanOptions): MultiAgen
     cli: ['layerkit doctor --quality --strict'],
     prompt: qualityVerifierPrompt(opts.projectDir, moduleRoot),
     doneWhen: 'doctor --quality --strict green (JaCoCo on moduleRoot when Java)',
-    dependsOn: [registry.id],
+    dependsOn: integrationBarrierIds,
   });
   tasks.push(quality);
   verifyIds.push(quality.id);
@@ -509,7 +521,9 @@ export function formatMultiAgentPlanMarkdown(plan: MultiAgentPlan): string {
     '2. Spawn **one subagent per task**; same `parallelGroup` may run concurrently.',
     '3. Do **not** start a phase until `dependsOn` tasks are done.',
     '4. **Research** from customer OpenAPI/docs — pin + drift, never invent.',
-    '5. **Integrate** from `INTEGRATE.md` into production code.',
+    plan.mode === 'heal'
+      ? '5. **Heal** edits production source/map files directly; no `INTEGRATE.md` phase.'
+      : '5. **Integrate** from `INTEGRATE.md` into production code.',
     '6. **Checker** is read-only; humans approve/promote.',
     '',
     '```bash',
@@ -667,9 +681,13 @@ function stylistPrompt(
     moduleRoot ? `Module root: ${moduleRoot}` : 'Detect moduleRoot from topology.',
     `Project dir: ${projectDir}`,
     '1. layerkit style-profile scan --root <root>',
-    '2. layerkit generate --lang java --root <root> [--module-root ...]',
-    '3. Follow INTEGRATE.md — production adapters are the destination.',
-    '4. Summarize package, DI, HTTP/SDK client pattern, entrypoints.',
+    ...(mode === 'heal'
+      ? ['2. Summarize package, DI, HTTP/SDK client pattern, entrypoints for direct heal edits.']
+      : [
+          '2. layerkit generate --lang java --root <root> [--module-root ...]',
+          '3. Follow INTEGRATE.md — production adapters are the destination.',
+          '4. Summarize package, DI, HTTP/SDK client pattern, entrypoints.',
+        ]),
     'Do not implement adapters yet.',
   ].join('\n');
 }
@@ -691,7 +709,8 @@ function researcherPrompt(
     '1. layerkit map show <vendor>',
     '2. layerkit heal run --vendor <v> --openapi <file> --module-root <dir>',
     '3. Review out/CONTRACT_DRIFT.json',
-    '4. Open git branch from real source/map changes; dry-run + quality before promote',
+    '4. If removed/added fields are semantic renames, pass --rename-decisions with evidence',
+    '5. Verify real source/map changes with dry-run + quality before promote',
     'Evidence only from the supplied contract. Breaking drift → human before promote.',
   ].join('\n');
 }

@@ -92,11 +92,17 @@ const heal = buildMultiAgentPlan({
 });
 assertEqual('heal mode', heal.mode, 'heal');
 assertTrue('heal omits discoverer', !heal.tasks.some((t) => t.id === 'discoverer'));
+assertTrue('heal omits integrate phase', !heal.phases.some((p) => p.id === 'integrate'));
+assertTrue('heal omits integrator tasks', !heal.tasks.some((t) => t.role === 'integrator'));
 assertTrue(
   'heal researcher mentions heal run',
   heal.tasks.some(
     (t) => t.id === 'researcher:resend' && t.cli.some((c) => c.includes('heal run')),
   ),
+);
+assertTrue(
+  'heal verifier depends on privacy',
+  heal.tasks.some((t) => t.id === 'verifier:resend' && t.dependsOn.includes('privacy')),
 );
 assertTrue('heal summary mentions mode', heal.summary.includes('mode=heal'));
 
