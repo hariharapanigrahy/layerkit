@@ -37,6 +37,7 @@ for (const forbidden of [
   'designs',
   'docs/designs',
   '.layerkit',
+  '.pulse',
   '.cursor',
   '.github',
   'AI_WORKING_RULES.md',
