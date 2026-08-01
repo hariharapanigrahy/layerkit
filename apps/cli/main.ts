@@ -3,7 +3,7 @@
  * Layerkit CLI — multi-vendor data-layer command surface for agent platforms.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join, parse, resolve } from 'node:path';
 import {
   formatNextStepLine,
   formatPipelineStatus,
@@ -33,6 +33,7 @@ import type {
   Identity,
   IntentWire,
   Proposal,
+  VendorMap,
 } from '../../libs/domain/types.js';
 import {
   parseEndpointFlag,
@@ -79,7 +80,20 @@ interface CliContext {
 }
 
 function detectRepoRoot(): string {
-  return process.cwd();
+  let dir = process.cwd();
+  while (true) {
+    if (
+      existsSync(join(dir, '.git')) ||
+      existsSync(join(dir, 'layerkit.path.json')) ||
+      existsSync(join(dir, 'layerkit.json')) ||
+      existsSync(join(dir, 'package.json'))
+    ) {
+      return dir;
+    }
+    const parent = dirname(dir);
+    if (parent === dir || dir === parse(dir).root) return process.cwd();
+    dir = parent;
+  }
 }
 
 /** Strip global flags (--project-dir) from argv; returns remaining args + flag values. */
@@ -114,7 +128,7 @@ function openStore(ctx: CliContext): VendorMemoryStore {
 const cliCommands: CliCommand[] = [
   {
     path: ['install'],
-    usage: `install --platform ${installPlatformUsage} [--hooks enabled|disabled] [--auto-map-updates enabled|disabled] [--poc] [--name <name>] [--project-dir <path>]`,
+    usage: `install --platform ${installPlatformUsage} [--hooks enabled|disabled] [--map-reminders enabled|disabled] [--poc] [--name <name>] [--user-config] [--project-dir <path>]`,
     handler: runInstall,
     showInTopLevelHelp: true,
   },
@@ -162,7 +176,7 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['agent', 'mark-done'],
-    usage: 'agent mark-done --step <id> [--project-dir <path>]',
+    usage: 'agent mark-done --step <id> --evidence <path>... [--project-dir <path>]',
     handler: runAgentMarkDone,
     showInTopLevelHelp: true,
   },
@@ -193,8 +207,23 @@ const cliCommands: CliCommand[] = [
         for (const line of emptyMapGuidanceLines()) console.log(line);
         return;
       }
+      if (_args.includes('--json')) {
+        console.log(JSON.stringify(maps.map(mapListRow), null, 2));
+        return;
+      }
       for (const m of maps) {
-        console.log(`${m.vendor}\t${m.status ?? '?'}\t${m.displayName}`);
+        const row = mapListRow(m);
+        console.log(
+          [
+            row.vendor,
+            `v${row.schemaVersion}`,
+            `fields=${row.fieldCount}`,
+            `intents=${row.intentCount}`,
+            `empty=${row.empty}`,
+            row.status,
+            row.displayName,
+          ].join('\t'),
+        );
       }
     },
     showInTopLevelHelp: false,
@@ -275,7 +304,7 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['memory', 'list'],
-    usage: 'memory list [--vendor <v>] [--type questionnaire|research|...] [--project-dir <path>]',
+    usage: 'memory list [--vendor <v>] [--type questionnaire|research|...] [--json] [--project-dir <path>]',
     handler: (args, ctx) => {
       const mem = createMemoryStack(ctx.projectDir);
       const vendor = flag(args, '--vendor');
@@ -288,12 +317,47 @@ const cliCommands: CliCommand[] = [
         type = typeRaw as MemoryEntryType;
       }
       const entries = mem.list({ vendor, type });
+      if (args.includes('--json')) {
+        console.log(JSON.stringify(entries, null, 2));
+        return;
+      }
       if (!entries.length) {
         console.log('(no memory entries)');
         return;
       }
       for (const e of entries) {
         console.log(`${e.type}\t${e.vendor ?? '-'}\t${e.relativePath}\t${e.title}`);
+      }
+    },
+    showInTopLevelHelp: false,
+  },
+  {
+    path: ['memory', 'search'],
+    usage: 'memory search <query> [--vendor <v>] [--type questionnaire|research|...] [--json] [--project-dir <path>]',
+    handler: (args, ctx) => {
+      const query = requireArg(args[0], 'memory search <query>');
+      const mem = createMemoryStack(ctx.projectDir);
+      const vendor = flag(args, '--vendor');
+      const typeRaw = flag(args, '--type');
+      let type: MemoryEntryType | undefined;
+      if (typeRaw) {
+        if (!MEMORY_TYPES.includes(typeRaw as MemoryEntryType)) {
+          throw new Error(`Invalid --type. Use: ${MEMORY_TYPES.join('|')}`);
+        }
+        type = typeRaw as MemoryEntryType;
+      }
+      const results = mem.search(query, { vendor, type });
+      if (args.includes('--json')) {
+        console.log(JSON.stringify(results, null, 2));
+        return;
+      }
+      if (!results.length) {
+        console.log('(no matches)');
+        return;
+      }
+      for (const r of results) {
+        console.log(`${r.type}\t${r.vendor ?? '-'}\t${r.relativePath}\t${r.title}`);
+        for (const line of r.matches) console.log(`  ${line}`);
       }
     },
     showInTopLevelHelp: false,
@@ -375,16 +439,17 @@ const cliCommands: CliCommand[] = [
       const ref = requireArg(args[0], 'proposal validate <file|id>');
       const store = openStore(ctx);
       const proposal = loadProposalRef(store, ref);
+      if (['ready_to_apply', 'applied', 'promoted', 'rejected', 'superseded'].includes(proposal.status)) {
+        throw new Error(`validate_conflict: status=${proposal.status}`);
+      }
       const result = store.reviewProposal(proposal);
       if (result.valid) {
-        proposal.status = 'validated';
-        store.saveProposal(proposal);
         console.log('Proposal is valid.');
         for (const w of result.warnings) console.log(`Warning: ${w}`);
         return;
       }
       console.log('Proposal is invalid:');
-      for (const e of result.errors) console.log(`- ${e}`);
+      for (const e of result.errors) console.log(`- ${proposalErrorGroup(e)}: ${e}`);
       process.exitCode = 1;
     },
     showInTopLevelHelp: false,
@@ -489,13 +554,6 @@ const cliCommands: CliCommand[] = [
       }
     },
   },
-  {
-    path: ['hook', 'worker'],
-    usage: 'hook worker',
-    handler: () => {
-      console.log('layerkit hook worker: no queued map-update jobs (agent-driven).');
-    },
-  },
 ];
 
 async function runInstall(args: string[], ctx: CliContext): Promise<void> {
@@ -511,15 +569,17 @@ async function runInstall(args: string[], ctx: CliContext): Promise<void> {
 function parseInstallArgs(args: string[]): {
   platform: InstallPlatform;
   hooksEnabled: boolean;
-  autoMapUpdates: boolean;
+  mapReminders: boolean;
   poc: boolean;
   name?: string;
+  userConfig: boolean;
 } {
   let platform: InstallPlatform | undefined;
   let hooks: boolean | undefined;
-  let autoMap: boolean | undefined;
+  let mapReminders: boolean | undefined;
   let poc = true;
   let name: string | undefined;
+  let userConfig = false;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]!;
@@ -543,12 +603,12 @@ function parseInstallArgs(args: string[]): {
       hooks = parseEnabled(arg.slice('--hooks='.length));
       continue;
     }
-    if (arg === '--auto-map-updates') {
-      autoMap = parseEnabled(args[++i]);
+    if (arg === '--map-reminders') {
+      mapReminders = parseEnabled(args[++i]);
       continue;
     }
-    if (arg.startsWith('--auto-map-updates=')) {
-      autoMap = parseEnabled(arg.slice('--auto-map-updates='.length));
+    if (arg.startsWith('--map-reminders=')) {
+      mapReminders = parseEnabled(arg.slice('--map-reminders='.length));
       continue;
     }
     if (arg === '--poc') {
@@ -563,6 +623,14 @@ function parseInstallArgs(args: string[]): {
       name = args[++i];
       continue;
     }
+    if (arg === '--user-config') {
+      userConfig = true;
+      continue;
+    }
+    if (arg === '--no-user-config') {
+      userConfig = false;
+      continue;
+    }
     throw new Error(`Unknown install flag: ${arg}`);
   }
 
@@ -570,8 +638,8 @@ function parseInstallArgs(args: string[]): {
     throw new Error(`--platform is required (${installPlatformUsage})`);
   }
   const hooksEnabled = hooks ?? true;
-  const autoMapUpdates = hooksEnabled ? (autoMap ?? true) : false;
-  return { platform, hooksEnabled, autoMapUpdates, poc, name };
+  const reminders = hooksEnabled ? (mapReminders ?? true) : false;
+  return { platform, hooksEnabled, mapReminders: reminders, poc, name, userConfig };
 }
 
 function parseEnabled(v: string | undefined): boolean {
@@ -593,7 +661,7 @@ function printInstallResult(result: Awaited<ReturnType<typeof installLayerkit>>)
   if (result.rules) {
     console.log(`Project rules: ${result.rules.configFiles.join(', ')}`);
   }
-  console.log(`Automatic map-update reminders: ${result.autoMapUpdates ? 'enabled' : 'disabled'}.`);
+  console.log(`Map-update reminders: ${result.mapReminders ? 'enabled' : 'disabled'}.`);
   console.log(`Config: ${result.configFile}`);
   console.log(`Project store: ${result.projectDir}`);
   console.log('');
@@ -694,7 +762,7 @@ function runAgentStatus(_args: string[], ctx: CliContext): void {
     }
   } else {
     console.log(`  missing  memory/${PIPELINE_STATUS_REL} (no steps marked done yet)`);
-    console.log('  Tip: use the next skill, then layerkit agent mark-done --step <id>');
+    console.log('  Tip: use the next skill, then layerkit agent mark-done --step <id> --evidence <path>');
   }
 }
 
@@ -722,7 +790,7 @@ function runAgentStart(args: string[], ctx: CliContext): void {
 
 /**
  * Print next skill + exact CLI commands from INTEGRATION_PIPELINE.cliHints.
- * Agents should run these, then `layerkit agent mark-done --step <id>`.
+ * Agents should run these, then `layerkit agent mark-done --step <id> --evidence <path>`.
  */
 function runAgentNext(_args: string[], ctx: CliContext): void {
   const mode = loadPipelineMode(ctx.projectDir);
@@ -740,16 +808,17 @@ function runAgentNext(_args: string[], ctx: CliContext): void {
   console.log('CLI commands:');
   for (const h of next.cliHints) console.log(`  ${h}`);
   console.log('');
-  console.log(`Mark complete: layerkit agent mark-done --step ${next.id}`);
+  console.log(`Mark complete: layerkit agent mark-done --step ${next.id} --evidence <path>`);
   console.log('Then: layerkit agent next');
 }
 
 /** Append a completed step marker under memory/runbooks/pipeline-status.md. */
 function runAgentMarkDone(args: string[], ctx: CliContext): void {
   const step = flag(args, '--step');
+  const evidence = collectFlags(args, '--evidence');
   if (!step) {
     throw new Error(
-      `Usage: layerkit agent mark-done --step <id>  (ids: ${INTEGRATION_PIPELINE.map((s) => s.id).join('|')})`,
+      `Usage: layerkit agent mark-done --step <id> --evidence <path>  (ids: ${INTEGRATION_PIPELINE.map((s) => s.id).join('|')})`,
     );
   }
   if (!isPipelineStepId(step)) {
@@ -757,12 +826,29 @@ function runAgentMarkDone(args: string[], ctx: CliContext): void {
       `Unknown step "${step}". Known: ${INTEGRATION_PIPELINE.map((s) => s.id).join(', ')}`,
     );
   }
-  const path = markStepDone(ctx.projectDir, step);
+  const verifiedEvidence = verifyEvidencePaths(evidence, ctx);
+  const path = markStepDone(ctx.projectDir, step, verifiedEvidence);
   const mode = loadPipelineMode(ctx.projectDir);
   const completed = effectiveCompletedSteps(ctx.projectDir);
   console.log(`Marked done: ${step}`);
   console.log(`Marker file: ${path}`);
   console.log(formatNextStepLine(completed, mode));
+}
+
+function verifyEvidencePaths(evidence: string[], ctx: CliContext): string[] {
+  const clean = evidence.map((p) => p.trim()).filter(Boolean);
+  if (clean.length === 0) {
+    throw new Error('mark_done_requires_evidence: pass --evidence <path>');
+  }
+  for (const p of clean) {
+    const repoPath = resolve(ctx.repoRoot, p);
+    const projectPath = resolve(ctx.projectDir, p);
+    const absolutePath = resolve(p);
+    if (!existsSync(repoPath) && !existsSync(projectPath) && !existsSync(absolutePath)) {
+      throw new Error(`evidence_not_found: ${p}`);
+    }
+  }
+  return clean;
 }
 
 function runConfig(): void {
@@ -790,6 +876,26 @@ function runRepoStatus(_args: string[], ctx: CliContext): void {
   const filled = store.listMaps().filter((m) => m.fields.length || Object.keys(m.intents).length);
   console.log(`Filled maps: ${filled.length}`);
   console.log(`Skeletons: ${store.listMaps().length - filled.length}`);
+}
+
+function mapListRow(m: VendorMap): Record<string, unknown> {
+  return {
+    vendor: m.vendor,
+    schemaVersion: m.schemaVersion ?? 1,
+    fieldCount: m.fields?.length ?? 0,
+    intentCount: Object.keys(m.intents ?? {}).length,
+    empty: (m.fields?.length ?? 0) === 0 && Object.keys(m.intents ?? {}).length === 0,
+    status: m.status ?? '?',
+    displayName: m.displayName,
+  };
+}
+
+function proposalErrorGroup(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes('source')) return 'sources';
+  if (lower.includes('endpoint') || lower.includes('operation')) return 'endpoint';
+  if (lower.includes('invent') || lower.includes('hallucination')) return 'invent';
+  return 'other';
 }
 
 function collectFlags(args: string[], name: string): string[] {
@@ -983,9 +1089,23 @@ async function main(argv: string[]): Promise<void> {
 }
 
 main(process.argv.slice(2)).catch((err) => {
-  console.error(err instanceof Error ? err.message : err);
+  if (err instanceof Error) {
+    const code = errorCode(err.message);
+    console.error(`${code}: ${err.message}`);
+    if (process.env.LAYERKIT_DEBUG === '1' && err.stack) console.error(err.stack);
+  } else {
+    console.error(`unknown_error: ${String(err)}`);
+  }
   process.exitCode = 1;
 });
+
+function errorCode(message: string): string {
+  const m = message.match(/^([a-z][a-z0-9_]+):/);
+  if (m?.[1]) return m[1];
+  if (/^Usage:/.test(message)) return 'usage_error';
+  if (/not found/i.test(message)) return 'not_found';
+  return 'layerkit_error';
+}
 
 // silence unused import in some builds
 void platformDisplayName;

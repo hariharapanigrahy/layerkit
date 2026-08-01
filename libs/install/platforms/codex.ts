@@ -24,7 +24,7 @@ export const codexInstaller: PlatformInstaller = {
             name: 'layerkit',
             events: ['UserPromptSubmit', 'Stop'],
             guidance: layerkitHookGuidance,
-            worker: 'layerkit hook worker',
+            command: 'layerkit hook ingest --platform codex',
           },
           null,
           2,

@@ -13,7 +13,7 @@ try {
     repoRoot: dir,
     platform: 'copilot',
     hooksEnabled: true,
-    autoMapUpdates: true,
+    mapReminders: true,
     poc: true,
   });
   console.log('smoke:copilot ok');

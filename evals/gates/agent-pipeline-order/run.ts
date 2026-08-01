@@ -3,7 +3,7 @@
  * → deletion-first → source-edit → handoff
  * (key skill names present in order). Also covers getNextStep / formatPipelineStatus / mark-done markers.
  */
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { assertEqual, assertTrue } from '../../harness/assert.js';
@@ -163,8 +163,11 @@ const root = mkdtempSync(join(tmpdir(), 'layerkit-agent-pipe-'));
 const projectDir = join(root, '.layerkit');
 try {
   assertEqual('no markers initially', loadCompletedSteps(projectDir).length, 0);
+  const evidence = 'memory/evidence.md';
+  mkdirSync(join(projectDir, 'memory'), { recursive: true });
+  writeFileSync(join(projectDir, evidence), 'evidence', 'utf8');
 
-  const path1 = markStepDone(projectDir, 'discover');
+  const path1 = markStepDone(projectDir, 'discover', [evidence]);
   assertTrue('marker file created', existsSync(path1));
   assertEqual('status path matches', path1, pipelineStatusPath(projectDir));
 
@@ -175,12 +178,12 @@ try {
   const body1 = readFileSync(path1, 'utf8');
   assertTrue('marker has [x] discover', /- \[x\] discover/.test(body1), body1);
 
-  markStepDone(projectDir, 'research');
+  markStepDone(projectDir, 'research', [evidence]);
   const loaded2 = loadCompletedSteps(projectDir);
   assertTrue('two completed', loaded2.includes('discover') && loaded2.includes('research'));
 
   // Idempotent mark
-  markStepDone(projectDir, 'discover');
+  markStepDone(projectDir, 'discover', [evidence]);
   assertEqual(
     'idempotent mark keeps two',
     loadCompletedSteps(projectDir).filter((id) => id === 'discover').length,
@@ -193,7 +196,7 @@ try {
 
   let threw = false;
   try {
-    markStepDone(projectDir, 'not-a-step');
+    markStepDone(projectDir, 'not-a-step', [evidence]);
   } catch {
     threw = true;
   }

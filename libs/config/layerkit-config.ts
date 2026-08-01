@@ -24,9 +24,7 @@ export interface LayerkitConfig {
   version: 1 | 2;
   defaultPlatform?: InstallPlatform;
   hooksEnabledDefault: boolean;
-  autoMapUpdatesDefault: boolean;
-  /** Java package prefix for agent generation tasks */
-  javaPackageDefault: string;
+  mapRemindersDefault: boolean;
   /** Default offered on install if user presses enter; still overridable per project */
   defaultProjectDir?: string;
   makerChecker: MakerCheckerConfig;
@@ -50,8 +48,7 @@ export const DEFAULT_MAKER_CHECKER: MakerCheckerConfig = {
 export const DEFAULT_CONFIG: LayerkitConfig = {
   version: 1,
   hooksEnabledDefault: true,
-  autoMapUpdatesDefault: true,
-  javaPackageDefault: 'io.layerkit.generated',
+  mapRemindersDefault: true,
   defaultProjectDir: '.layerkit',
   makerChecker: { ...DEFAULT_MAKER_CHECKER },
   dryRun: {

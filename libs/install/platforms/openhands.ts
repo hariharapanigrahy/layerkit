@@ -36,7 +36,7 @@ export const openhandsInstaller: PlatformInstaller = {
       ruleFiles: [],
       notes: [
         'OpenHands skills at .agents/skills/ (repo-local)',
-        'Trust repo hooks for background map-update worker',
+        'Trust repo hooks for Layerkit agent reminders',
       ],
     };
   },

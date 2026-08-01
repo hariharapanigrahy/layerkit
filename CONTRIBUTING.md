@@ -2,7 +2,7 @@
 
 Thanks for helping build an **agent-first multi-vendor data-layer toolkit**.
 
-Layerkit does **not** maintain a vendor integration catalog. Product value is **skills + process evals + deterministic runtime** so an agent can integrate *any* vendor into a **customer-owned** project store.
+Layerkit does **not** maintain a vendor integration catalog. Product value is **skills + process evals + deterministic rails** so an agent can integrate *any* vendor into a **customer-owned** package.
 
 ## Code of conduct
 
@@ -16,9 +16,8 @@ Be respectful. See [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
 | 1 | **Process evals / gates** | `evals/gates/<name>/` + `evals/suites.json` | Evidence-first, no-invent, citation, CLI behavior — merge bar is `npm run eval:ci` |
 | 1 | **Agent platform install** | `libs/install/platforms/` + `scripts/smoke-*.mjs` | Codex, Claude, Cursor, Copilot, OpenCode, OpenHands, … |
 | 2 | **Docs / first-hour UX** | `README.md`, `docs/`, install prompts | Clear agent + human paths help adoption |
-| 2 | **Generic processors** | `libs/strategy/` only if vendor-agnostic | Cite primary docs; no invented hash/normalize rules |
 | 3 | **Research / map *examples*** (fixtures only) | `evals/fixtures/`, proposal samples in PRs | Customer-owned patterns for tests — **not** package-shipped catalog truth |
-| 3 | **Generate / integrate** | `skills/layerkit-generate-java`, `libs/generate/` | Production module plans (`INTEGRATE.md`) |
+| 3 | **Source-edit fixtures** | `skills/layerkit-source-edit-client`, `evals/fixtures/` | Production source edits in the client package; no generated patch plans |
 
 **Do not open PRs that hardcode Meta/Google/TikTok/etc. field tables into `libs/` as product truth.** Those go stale and fight the design.
 
@@ -26,7 +25,7 @@ Be respectful. See [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
 
 1. **Primary source = vendor documentation.** Proposals without `sources[]` fail validation by design.
 2. **No official vendor catalog.** Maps live under each project's `{projectDir}` (default `.layerkit`). Eval fixtures and synthetic `example_vendor` are tests only.
-3. **Production path stays deterministic** (no LLM inside `track()`).
+3. **Deterministic rails stay small.** They install, validate explicit artifacts, keep memory, and run gates; agents do semantic source edits.
 4. Keep PRs focused: one skill, one platform, one eval gate, or one docs fix when possible.
 
 ## Local setup
@@ -58,7 +57,7 @@ Use Layerkit itself while developing skills/process:
 npm run build && npm link
 layerkit install --platform <your-agent> --poc
 # skill: layerkit-research-vendor → proposal.json (customer-owned, not a catalog entry)
-layerkit proposal validate ./proposal.json
+layerkit proposal validate ./proposal.json   # read-only structural check
 ```
 
 If the PR is an **example fixture** (not core catalog), put it under `evals/fixtures/` and attach sources in the PR description.
@@ -86,15 +85,15 @@ Maintainers alone do not scale. **Claim an open issue** (comment “I’d like t
 
 Labels: `difficulty: easy|medium|hard`, `help wanted`. Each issue lists **where to look** and **acceptance criteria**.
 
-### Reliability workflows (parallel tracks)
+### Good first tracks
 
 These are intentionally separate so different people can own them:
 
-1. [#49 Hallucination detector](https://github.com/hariharapanigrahy/layerkit/issues/49) — fail-closed invent signals before apply  
-2. [#50 track() timeouts](https://github.com/hariharapanigrahy/layerkit/issues/50) — overall + per-vendor budgets (`libs/runtime/timeout.ts` head start)  
-3. [#51 Store transaction + rollback](https://github.com/hariharapanigrahy/layerkit/issues/51) — atomic multi-proposal apply  
-4. [#52 track + delivery compose](https://github.com/hariharapanigrahy/layerkit/issues/52) — sendEvent / fail-fast  
-5. [#60 Circuit breaker](https://github.com/hariharapanigrahy/layerkit/issues/60) — per-vendor open/half-open  
+1. Improve one `skills/layerkit-*` prompt with a matching judge fixture.
+2. Add one `evals/gates/<name>/case.json` scenario for evidence, privacy, deletion-first, or package hygiene.
+3. Add or fix one platform installer smoke for an agent/IDE.
+4. Improve CLI wording for a deterministic rail without adding semantic behavior.
+5. Add docs that explain the agent-owned integration workflow using client package examples.
 
 ## Reporting bugs & ideas
 

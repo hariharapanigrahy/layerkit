@@ -1,24 +1,30 @@
-# Security policy
+# Security Policy
 
-## Supported versions
+Layerkit is an agent-first workbench for updating customer-owned integration code. It should never persist raw production secrets, vendor tokens, or customer data.
 
-| Version | Supported |
-|---------|-----------|
-| 0.1.x   | Yes       |
+## Supported Versions
 
-## Reporting a vulnerability
+Security fixes target the latest npm release line. Upgrade to the newest `layerkit` version before reporting behavior that may already be patched.
 
-Email **hhp263@gmail.com** with:
+## Report a Vulnerability
 
-- Description of the issue
-- Steps to reproduce
-- Impact assessment if known
+Do not open public GitHub issues for vulnerabilities that expose secrets or private customer code. Email the maintainer listed on the npm package, or open a private security advisory in GitHub if you have repository access.
 
-Please **do not** open a public GitHub issue for sensitive reports.
+## Threat Model
 
-We aim to acknowledge within 7 days.
+Layerkit handles:
 
-## Scope notes
+- local project metadata under `.layerkit`
+- agent memory notes
+- vendor map/proposal JSON
+- generated agent instructions installed into IDE or coding-agent folders
 
-Layerkit runs agent skills and local CLI tooling. Do not commit API tokens, vendor
-access tokens, or customer PII into maps, proposals, or eval fixtures.
+Layerkit must not:
+
+- store raw API keys, passwords, private keys, or bearer tokens
+- treat vendor fixture data as official package truth
+- write production integration source from deterministic CLI inference
+- apply paths outside the intended project/module root
+- silently overwrite customized installed skills or user config
+
+Security gates include secret redaction in memory, doctor secret scans, package hygiene checks, and hallucination/placeholders blocking during proposal apply.

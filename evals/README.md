@@ -99,4 +99,4 @@ console.log('my-gate: all checks passed');
 | `deletion-first-skill` | source-edit skills require deletion-first behavior |
 | `skill-hybrid-heal-judge` | heal skills reject deterministic source editing and require real package edits |
 | `skill-judge-coverage` | shipped skills have judge coverage |
-| `install-platforms` | 8 platforms registered with installers |
+| `install-platforms` | 10 platforms registered with installers |

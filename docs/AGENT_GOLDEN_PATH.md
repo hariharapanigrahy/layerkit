@@ -30,7 +30,7 @@ Use:
 ```bash
 layerkit agent status
 layerkit agent next
-layerkit agent mark-done --step <id>
+layerkit agent mark-done --step <id> --evidence <path>
 ```
 
 The step ids are:
@@ -99,7 +99,7 @@ layerkit repo status
 layerkit map list
 layerkit map show <vendor>
 layerkit map validate <file>
-layerkit proposal validate <file>
+layerkit proposal validate <file>   # read-only structural check
 layerkit proposal submit <file>
 layerkit proposal approve <id>
 layerkit proposal apply <file-or-id>

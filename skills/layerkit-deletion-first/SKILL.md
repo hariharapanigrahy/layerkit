@@ -5,9 +5,11 @@ description: Deletion-first change discipline for Layerkit work. Use before addi
 
 # layerkit-deletion-first
 
-Use this skill before implementation work, especially before `layerkit-generate-java` edits production datalayer code.
+Use this skill before implementation work, especially before `layerkit-source-edit-client` edits production datalayer code.
 
 Before adding code, identify existing code, docs, tests, fixtures, and package surfaces that can be removed or rewritten.
+
+Before a large deletion/rewrite or strategic redirect, prove the new direction with one small passing gate: an eval, end-to-end QA check, contract-heal case, or before/after acceptance test.
 
 ## Protocol
 
@@ -17,6 +19,7 @@ Before adding code, identify existing code, docs, tests, fixtures, and package s
 4. For every new file, function, export, command, fixture, or skill, state what it replaces.
 5. If it replaces nothing, justify why the expansion is necessary.
 6. Target net-negative or near-neutral LOC unless functionality truly expands.
+7. For strategic redirects, record the proof step before continuing.
 
 ## Deletion Pass
 
@@ -44,3 +47,4 @@ Report:
 - new files/functions/exports and what each replaces
 - legacy surfaces intentionally kept and why
 - tests/gates run
+- proof step for any strategic redirect

@@ -8,7 +8,7 @@
  * 4. Default: {repoRoot}/.layerkit
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { isAbsolute, join, resolve } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 export const DEFAULT_PROJECT_DIR_NAME = '.layerkit';
 export const PATH_POINTER_FILES = ['layerkit.path.json', 'layerkit.json'] as const;
@@ -72,12 +72,13 @@ export function writePathPointer(
     return null;
   }
 
-  // Prefer repo-relative path in the pointer for commit-friendliness
-  let pointerValue = projectDir.trim();
-  if (isAbsolute(pointerValue) && pointerValue.startsWith(resolve(repoRoot) + '/')) {
-    pointerValue = pointerValue.slice(resolve(repoRoot).length + 1);
-  } else if (isAbsolute(pointerValue) && pointerValue === resolve(repoRoot)) {
+  // Prefer repo-relative path in the pointer for commit-friendliness.
+  let pointerValue = resolved;
+  const rel = relative(resolve(repoRoot), resolved);
+  if (rel === '') {
     pointerValue = '.';
+  } else if (!rel.startsWith('..') && !isAbsolute(rel)) {
+    pointerValue = rel.split(sep).join('/');
   }
 
   const pointer: LayerkitPathPointer = {

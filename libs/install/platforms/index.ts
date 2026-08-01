@@ -4,9 +4,11 @@ import { claudeInstaller } from './claude.js';
 import { codexInstaller } from './codex.js';
 import { copilotInstaller } from './copilot.js';
 import { cursorInstaller } from './cursor.js';
+import { devinInstaller } from './devin.js';
 import { droidInstaller } from './droid.js';
 import { opencodeInstaller } from './opencode.js';
 import { openhandsInstaller } from './openhands.js';
+import { windsurfInstaller } from './windsurf.js';
 import type { PlatformInstaller } from './types.js';
 
 const installers: Record<InstallPlatform, PlatformInstaller> = {
@@ -16,6 +18,8 @@ const installers: Record<InstallPlatform, PlatformInstaller> = {
   copilot: copilotInstaller,
   opencode: opencodeInstaller,
   openhands: openhandsInstaller,
+  devin: devinInstaller,
+  windsurf: windsurfInstaller,
   'factory-droid': droidInstaller,
   antigravity: antigravityInstaller,
 };

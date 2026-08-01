@@ -19,7 +19,7 @@ When the user gives OpenAPI or docs, you are the AI reader. Fetch/read the offic
 .layerkit/out/contracts/<vendor>/openapi-from-doc.json
 ```
 
-The CLI is tooling only: it validates explicit artifacts and package health, but it does not understand arbitrary docs, semantic field meaning, or source edits. If docs are ambiguous, preserve uncertainty in notes and leave localized TODOs rather than inventing fields.
+The CLI is tooling only: it validates explicit artifacts and package health, but it does not understand arbitrary docs, semantic field meaning, or source edits. If docs are ambiguous after evidence review, preserve uncertainty in notes and leave localized TODOs rather than inventing fields.
 
 If one vendor field was removed and another was added, inspect docs and existing source before deciding it is a rename. Record your decision in the review note:
 
@@ -51,7 +51,21 @@ Domain meaning comes from customer code plus vendor evidence, not from operation
 layerkit memory append --type research --title "<vendor> research|heal" --vendor <vendor> --body-file ./research-note.md
 ```
 
-Include drift severity when heal. Residual questionnaire only after deepen L0–L4.
+Include drift severity when heal.
+
+### E. Residual human stop conditions
+
+Ask a human only after you have checked the available official docs/OpenAPI/curl examples, current map, current source, and relevant tests. The question must be narrow and name the exact missing decision.
+
+Stop and ask a residual human question when:
+
+- official evidence conflicts and no source/test pattern decides which behavior is current
+- the vendor contract requires a customer-owned business decision, such as consent, hashing, identifier preference, or event routing
+- the client datalayer lacks a field/object needed by the vendor and adding it changes product semantics
+- credentials, tenant routing, production endpoints, or rollout safety cannot be inferred from checked-in configuration
+- applying the change would remove behavior that existing tests or code appear to rely on
+
+Do not open a broad questionnaire while OpenAPI/docs/curl/source evidence can still answer the next question.
 
 ## Forbidden
 

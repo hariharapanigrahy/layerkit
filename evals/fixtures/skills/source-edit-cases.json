@@ -1,0 +1,29 @@
+{
+  "id": "source-edit-cases",
+  "cases": [
+    {
+      "id": "rename-preserve-client-field",
+      "vendorChange": "Vendor renamed payload.email to payload.email_id.",
+      "clientEvidence": "Client event still exposes getEmail().",
+      "expected": "Update existing mapper to setEmailId(event.getEmail()); do not create getEmailId or TODO."
+    },
+    {
+      "id": "removed-vendor-field",
+      "vendorChange": "Vendor removed payload.phone.",
+      "clientEvidence": "Existing mapper sends event.getPhone().",
+      "expected": "Remove the stale phone mapping and update tests; do not wrap old behavior."
+    },
+    {
+      "id": "nested-object-added",
+      "vendorChange": "Vendor now requires transaction.id and line_items[].quantity.",
+      "clientEvidence": "Client has orderId and item.qty.",
+      "expected": "Map existing client fields into the new nested vendor shape."
+    },
+    {
+      "id": "unsupported-datalayer-gap",
+      "vendorChange": "Vendor requires loyalty_tier.",
+      "clientEvidence": "No client interface, model, or datastore field represents loyalty tier.",
+      "expected": "Leave a localized TODO and handoff note instead of inventing a field."
+    }
+  ]
+}

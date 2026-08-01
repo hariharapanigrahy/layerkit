@@ -4,9 +4,9 @@
 
 Layerkit: evidence-first (OpenAPI, docs, curl, code); residual human only; no LLM on track().
 
-Master skill: `layerkit-orchestrate-integration`. Multi-agent: `layerkit-multi-agent` + `layerkit agent multi --vendor …`.
+Master skill: `layerkit-orchestrate-integration`. Multi-agent coordination lives in the `layerkit-multi-agent` skill; there is no deterministic `agent multi` CLI.
 
-Contract update: `layerkit research fill --vendor … --openapi …` then pipeline through generate (`INTEGRATE.md` / `--module-root`).
+Contract update: use `layerkit agent start --mode heal --vendor …`, research evidence, then edit client source/tests directly with `layerkit-source-edit-client`.
 
 Checker-assist is read-only — never approve/apply. Promote only after quality gates.
 

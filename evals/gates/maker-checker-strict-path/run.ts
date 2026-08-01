@@ -88,8 +88,6 @@ await withTempProject(async ({ store }) => {
 
   const review = store.reviewProposal(submitted);
   assertTrue('structurally valid', review.valid, review.errors.join('; '));
-  submitted.status = 'validated';
-  store.saveProposal(submitted);
 
   // Self-approve denied
   assertThrows('self-approve denied', () =>
@@ -126,9 +124,6 @@ await withTempProject(async ({ store }) => {
     status: 'draft',
   };
   store.submitProposal(draft2);
-  const p2 = store.loadProposal('prop-strict-reject')!;
-  p2.status = 'validated';
-  store.saveProposal(p2);
   const rejected = store.rejectProposal('prop-strict-reject', {
     by: { type: 'user', id: 'alice@co.com' },
     role: 'checker',

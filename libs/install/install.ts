@@ -16,7 +16,7 @@ export interface InstallOptions {
   repoRoot: string;
   platform: InstallPlatform;
   hooksEnabled: boolean;
-  autoMapUpdates: boolean;
+  mapReminders: boolean;
   poc: boolean;
   name?: string;
   /**
@@ -26,6 +26,8 @@ export interface InstallOptions {
   projectDir?: string;
   /** Optional config path for hermetic tests/evals. Defaults to ~/.layerkit/config.json. */
   configPath?: string;
+  /** Write user-level defaults when explicitly requested. Client installs default to project state only. */
+  userConfig?: boolean;
 }
 
 export interface InstallResult {
@@ -36,7 +38,7 @@ export interface InstallResult {
   hooksRequested: boolean;
   hooks: { events: string[] } | undefined;
   rules: { configFiles: string[] } | undefined;
-  autoMapUpdates: boolean;
+  mapReminders: boolean;
   configFile: string;
   projectDir: string;
   notes: string[];
@@ -50,11 +52,13 @@ export function defaultPackageRoot(): string {
 export async function installLayerkit(opts: InstallOptions): Promise<InstallResult> {
   const packageRoot = defaultPackageRoot();
   const configPath = opts.configPath ?? layerkitConfigPath();
-  const config = ensureLayerkitConfig(configPath);
-  config.defaultPlatform = opts.platform;
-  config.hooksEnabledDefault = opts.hooksEnabled;
-  config.autoMapUpdatesDefault = opts.autoMapUpdates;
-  writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+  if (opts.userConfig === true) {
+    const config = ensureLayerkitConfig(configPath);
+    config.defaultPlatform = opts.platform;
+    config.hooksEnabledDefault = opts.hooksEnabled;
+    config.mapRemindersDefault = opts.mapReminders;
+    writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+  }
 
   const installer = platformInstaller(opts.platform);
   const platformResult = installer.install({
@@ -83,8 +87,11 @@ export async function installLayerkit(opts: InstallOptions): Promise<InstallResu
 
   const skills = listPackagedSkills(packageRoot);
   const notes = [...platformResult.notes];
-  if (opts.autoMapUpdates && !opts.hooksEnabled) {
-    notes.push('auto-map updates require hooks; disabled because --hooks disabled');
+  if (opts.mapReminders && !opts.hooksEnabled) {
+    notes.push('map-update reminders require hooks; disabled because --hooks disabled');
+  }
+  if (opts.userConfig !== true) {
+    notes.push('Skipped user config write (default; pass --user-config to update user defaults)');
   }
 
   return {
@@ -101,7 +108,7 @@ export async function installLayerkit(opts: InstallOptions): Promise<InstallResu
       platformResult.ruleFiles.length > 0
         ? { configFiles: platformResult.ruleFiles }
         : undefined,
-    autoMapUpdates: opts.hooksEnabled && opts.autoMapUpdates,
+    mapReminders: opts.hooksEnabled && opts.mapReminders,
     configFile: configPath,
     projectDir: store.projectDir,
     notes,

@@ -9,6 +9,8 @@ export const installPlatforms = [
   'copilot',
   'opencode',
   'openhands',
+  'devin',
+  'windsurf',
   'factory-droid',
   'antigravity',
 ] as const;
@@ -35,6 +37,10 @@ export function platformDisplayName(platform: InstallPlatform): string {
       return 'OpenCode';
     case 'openhands':
       return 'OpenHands';
+    case 'devin':
+      return 'Devin';
+    case 'windsurf':
+      return 'Windsurf';
     case 'factory-droid':
       return 'Factory Droid';
     case 'antigravity':

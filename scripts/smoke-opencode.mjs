@@ -12,7 +12,7 @@ try {
     repoRoot: dir,
     platform: 'opencode',
     hooksEnabled: true,
-    autoMapUpdates: true,
+    mapReminders: true,
     poc: true,
   });
   console.log('smoke:opencode ok');

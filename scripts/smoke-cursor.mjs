@@ -14,7 +14,7 @@ try {
     repoRoot: dir,
     platform: 'cursor',
     hooksEnabled: true,
-    autoMapUpdates: true,
+    mapReminders: true,
     poc: true,
   });
   if (!result.rules?.configFiles.length) throw new Error('expected cursor rules');

@@ -14,12 +14,14 @@
     "maker-checker-strict-path",
     "map-v1-v2-migrate",
     "memory-index-append",
+    "package-hygiene",
     "project-dir-resolve",
     "proposal-sources-required",
     "proposal-write-cli",
     "schema-dual-read",
     "skill-judge-coverage",
-    "skill-hybrid-heal-judge"
+    "skill-hybrid-heal-judge",
+    "source-edit-skill-cases"
   ],
   "all": [
     "agent-citation-required-on-map",
@@ -36,13 +38,18 @@
     "maker-checker-strict-path",
     "map-v1-v2-migrate",
     "memory-index-append",
+    "package-hygiene",
     "project-dir-resolve",
     "proposal-sources-required",
     "proposal-write-cli",
     "schema-dual-read",
     "skill-judge-coverage",
     "skill-hybrid-heal-judge",
+    "source-edit-skill-cases",
     "vendor-research-plan"
   ],
-  "nightly": []
+  "nightly": [
+    "package-hygiene",
+    "skill-hybrid-heal-judge"
+  ]
 }

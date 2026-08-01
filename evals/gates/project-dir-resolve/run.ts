@@ -92,7 +92,7 @@ try {
       repoRoot: installRoot,
       platform: 'openhands',
       hooksEnabled: false,
-      autoMapUpdates: false,
+      mapReminders: false,
       poc: false,
       name: 'pd-install-eval',
       projectDir: customPd,

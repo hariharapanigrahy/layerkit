@@ -1,0 +1,9 @@
+{
+  "id": "package-hygiene",
+  "title": "npm package ships only the agent-workbench surface",
+  "suite": "ci",
+  "assertions": [
+    "package files exclude evals, demos, designs, and .layerkit/out artifacts",
+    "package keeps dist, skills, selected docs, README, LICENSE, CONTRIBUTING"
+  ]
+}

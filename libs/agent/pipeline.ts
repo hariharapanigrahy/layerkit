@@ -88,7 +88,7 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
   },
   {
     id: 'source-edit',
-    skill: 'layerkit-generate-java',
+    skill: 'layerkit-source-edit-client',
     cliHints: [
       'Agent edits existing production source/tests directly from evidence',
       'Run the package tests/build for the edited module',
@@ -157,11 +157,13 @@ export function setPipelineMode(
       noteLine,
       '',
       'Agent orchestration markers.',
-      'Mark steps complete with `layerkit agent mark-done --step <id>`.',
+      'Mark steps complete with `layerkit agent mark-done --step <id> --evidence <path>`.',
       '',
       '## Completed',
       '',
-      mode === 'heal' ? `- [x] discover — ${iso} (heal: domain already known)` : '',
+      mode === 'heal'
+        ? `- [x] discover — ${iso} (heal: domain already known; evidence: memory/${PIPELINE_STATUS_REL})`
+        : '',
       '',
     ]
       .filter((l) => l !== undefined)
@@ -189,7 +191,7 @@ export function setPipelineMode(
   writeFileSync(path, prev, 'utf8');
 
   if (mode === 'heal') {
-    markStepDone(projectDir, 'discover');
+    markStepDone(projectDir, 'discover', [`memory/${PIPELINE_STATUS_REL}`]);
   }
   return path;
 }
@@ -297,12 +299,17 @@ export function isPipelineStepId(id: string): boolean {
 
 /**
  * Append a completed marker for `stepId` under memory/runbooks/pipeline-status.md.
+ * Evidence paths are required so the checklist cannot be completed by self-attestation.
  * Returns absolute path of the marker file.
  */
-export function markStepDone(projectDir: string, stepId: string): string {
+export function markStepDone(projectDir: string, stepId: string, evidencePaths: string[] = []): string {
   if (!isPipelineStepId(stepId)) {
     const known = INTEGRATION_PIPELINE.map((s) => s.id).join(', ');
     throw new Error(`Unknown pipeline step "${stepId}". Known: ${known}`);
+  }
+  const evidence = evidencePaths.map((p) => p.trim()).filter(Boolean);
+  if (evidence.length === 0) {
+    throw new Error('mark_done_requires_evidence: pass --evidence <path> for completed work');
   }
 
   const path = pipelineStatusPath(projectDir);
@@ -314,7 +321,7 @@ export function markStepDone(projectDir: string, stepId: string): string {
   }
 
   const iso = new Date().toISOString();
-  const markerLine = `- [x] ${stepId} — ${iso}`;
+  const markerLine = `- [x] ${stepId} — ${iso} (evidence: ${evidence.join(', ')})`;
 
   if (!existsSync(path)) {
     const header = [
@@ -323,7 +330,7 @@ export function markStepDone(projectDir: string, stepId: string): string {
       'mode: full',
       '',
       'Agent orchestration markers (deterministic checklist — not an LLM).',
-      'Mark steps complete with `layerkit agent mark-done --step <id>`.',
+      'Mark steps complete with `layerkit agent mark-done --step <id> --evidence <path>`.',
       '',
       '## Completed',
       '',

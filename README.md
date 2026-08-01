@@ -19,14 +19,14 @@ npx layerkit --help
 
 ```bash
 cd /path/to/client/package
-layerkit install --platform codex --hooks enabled --auto-map-updates enabled
+layerkit install --platform codex --hooks enabled --map-reminders enabled
 layerkit doctor
 ```
 
 Supported platforms:
 
 ```text
-codex | claude | cursor | copilot | opencode | openhands | factory-droid | antigravity
+codex | claude | cursor | copilot | opencode | openhands | devin | windsurf | factory-droid | antigravity
 ```
 
 ## What Layerkit Provides
@@ -61,25 +61,26 @@ Deletion-first is mandatory:
 ## Useful Commands
 
 ```bash
-layerkit install --platform codex|claude|cursor|copilot|opencode|openhands|factory-droid|antigravity \
-  [--hooks enabled|disabled] [--auto-map-updates enabled|disabled] [--poc]
+layerkit install --platform codex|claude|cursor|copilot|opencode|openhands|devin|windsurf|factory-droid|antigravity \
+  [--hooks enabled|disabled] [--map-reminders enabled|disabled] [--poc] [--user-config]
 layerkit doctor
 layerkit repo status
 
 layerkit agent status
 layerkit agent next
-layerkit agent mark-done --step discover|research|design|author|privacy|deletion-first|source-edit|handoff
+layerkit agent mark-done --step discover|research|design|author|privacy|deletion-first|source-edit|handoff --evidence <path>
 
 layerkit map list
 layerkit map show <vendor>
 layerkit map validate <file>
 
-layerkit proposal validate <file>
+layerkit proposal validate <file>   # read-only structural check
 layerkit proposal submit <file>
 layerkit proposal approve <id>
 layerkit proposal apply <file-or-id>
 
 layerkit memory list
+layerkit memory search "<query>"
 layerkit memory show <id>
 layerkit memory append --type research --title "<title>" --body-file <file>
 ```
@@ -122,4 +123,4 @@ npm run eval:ci
 npm run pack:check
 ```
 
-See [docs/CHEATSHEET.md](./docs/CHEATSHEET.md) and [docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GOLDEN_PATH.md) for the operator flow.
+See [docs/CHEATSHEET.md](./docs/CHEATSHEET.md) and [docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GOLDEN_PATH.md) for the operator flow. See [MATURITY.md](./MATURITY.md), [SECURITY.md](./SECURITY.md), and [docs/API_STABILITY.md](./docs/API_STABILITY.md) for release expectations.

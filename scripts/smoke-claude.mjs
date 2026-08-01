@@ -12,7 +12,7 @@ try {
     repoRoot: dir,
     platform: 'claude',
     hooksEnabled: true,
-    autoMapUpdates: true,
+    mapReminders: true,
     poc: true,
   });
   console.log('smoke:claude ok');
