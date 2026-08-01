@@ -12,10 +12,12 @@ import {
   markStepDone,
   pipelineStatusPath,
   PIPELINE_STATUS_REL,
+  setPipelineMode,
   writeHandoffRunbook,
   loadPipelineMode,
   effectiveCompletedSteps,
   getNextStepForProject,
+  type PipelineMode,
 } from '../../libs/agent/index.js';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
@@ -144,6 +146,12 @@ const cliCommands: CliCommand[] = [
     path: ['agent', 'status'],
     usage: 'agent status [--project-dir <path>]',
     handler: runAgentStatus,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['agent', 'start'],
+    usage: 'agent start --mode full|heal [--vendor <v>] [--note <text>] [--project-dir <path>]',
+    handler: runAgentStart,
     showInTopLevelHelp: true,
   },
   {
@@ -687,6 +695,28 @@ function runAgentStatus(_args: string[], ctx: CliContext): void {
   } else {
     console.log(`  missing  memory/${PIPELINE_STATUS_REL} (no steps marked done yet)`);
     console.log('  Tip: use the next skill, then layerkit agent mark-done --step <id>');
+  }
+}
+
+/** Initialize the deterministic pipeline state only; source edits remain agent-owned. */
+function runAgentStart(args: string[], ctx: CliContext): void {
+  const modeRaw = flag(args, '--mode');
+  if (modeRaw !== 'full' && modeRaw !== 'heal') {
+    throw new Error('Usage: layerkit agent start --mode full|heal [--vendor <v>] [--note <text>]');
+  }
+
+  const mode: PipelineMode = modeRaw;
+  const path = setPipelineMode(ctx.projectDir, mode, {
+    vendor: flag(args, '--vendor'),
+    note: flag(args, '--note'),
+  });
+  const completed = effectiveCompletedSteps(ctx.projectDir);
+
+  console.log(`Started agent pipeline: ${mode}`);
+  console.log(`Marker file: ${path}`);
+  console.log(formatNextStepLine(completed, mode));
+  if (mode === 'heal') {
+    console.log('Semantic contract drift and source edits remain agent-owned.');
   }
 }
 

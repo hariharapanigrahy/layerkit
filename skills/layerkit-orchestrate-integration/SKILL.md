@@ -18,6 +18,7 @@ Heal = human supplies updated OpenAPI/docs → AI agent reads and cites evidence
 ```bash
 layerkit cheatsheet
 
+layerkit agent start --mode full|heal [--vendor <v>] [--note <text>]
 layerkit agent status
 layerkit agent next
 layerkit agent mark-done --step <id>
@@ -27,6 +28,7 @@ layerkit doctor
 
 | Command | Purpose |
 |---------|---------|
+| `agent start --mode heal` | Initialize contract-update state; skips discover only |
 | `agent status` / `next` / `mark-done` | Same step ids always |
 | `proposal validate` / `map validate` / `doctor` | Validate explicit artifacts and package health; no semantic inference |
 

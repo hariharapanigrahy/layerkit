@@ -16,6 +16,7 @@ Store resolution: `--project-dir` -> `LAYERKIT_PROJECT_DIR` -> `layerkit.path.js
 ## Agent Pipeline
 
 ```bash
+layerkit agent start --mode full|heal [--vendor <v>] [--note <text>]
 layerkit agent status
 layerkit agent next
 layerkit agent mark-done --step discover|research|design|author|privacy|deletion-first|source-edit|handoff
@@ -27,7 +28,7 @@ Order:
 discover -> research -> design -> author -> privacy -> deletion-first -> source-edit -> handoff
 ```
 
-Heal uses the same pipeline. The agent reads the updated vendor docs/OpenAPI, identifies drift from evidence, and edits production package files directly.
+Heal uses the same pipeline. Start it with `layerkit agent start --mode heal --vendor <v>` so discover is treated as already known. The agent reads the updated vendor docs/OpenAPI, identifies drift from evidence, and edits production package files directly.
 
 ## Deterministic CLI Rails
 
