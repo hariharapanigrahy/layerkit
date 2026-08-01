@@ -12,7 +12,7 @@ try {
     repoRoot: dir,
     platform: 'openhands',
     hooksEnabled: true,
-    autoMapUpdates: true,
+    mapReminders: true,
     poc: true,
   });
   if (!result.skills.some((s) => s.includes('.agents'))) throw new Error('openhands skills should be repo-local');

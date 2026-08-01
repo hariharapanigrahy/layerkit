@@ -3,7 +3,7 @@
  * HANDOFF_TEMPLATE contains required headings; writeHandoffRunbook creates
  * memory/runbooks/handoff-*.md under a temp projectDir.
  */
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { assertEqual, assertTrue } from '../../harness/assert.js';
@@ -50,8 +50,11 @@ assertTrue('built includes pipeline status section', /##\s+Pipeline status/i.tes
 const tmp = mkdtempSync(join(tmpdir(), 'layerkit-handoff-'));
 try {
   const projectDir = join(tmp, '.layerkit');
-  markStepDone(projectDir, 'discover');
-  markStepDone(projectDir, 'research');
+  const evidence = 'memory/evidence.md';
+  mkdirSync(join(projectDir, 'memory'), { recursive: true });
+  writeFileSync(join(projectDir, evidence), 'evidence', 'utf8');
+  markStepDone(projectDir, 'discover', [evidence]);
+  markStepDone(projectDir, 'research', [evidence]);
 
   const outPath = writeHandoffRunbook({
     projectDir,

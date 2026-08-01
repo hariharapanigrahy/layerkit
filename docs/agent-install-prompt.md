@@ -15,7 +15,8 @@ Before installing, ask:
 
 Question 0 — Agent platform?
 1. Codex  2. Claude Code  3. Cursor  4. GitHub Copilot CLI
-5. OpenCode  6. OpenHands  7. Factory Droid  8. Antigravity
+5. OpenCode  6. OpenHands  7. Devin  8. Windsurf
+9. Factory Droid  10. Antigravity
 
 Question 1 — Guidance mode?
 1. Hooks + map-update reminders (Recommended)
@@ -27,9 +28,9 @@ Question 2 — Seed empty project store (POC layout)?
 2. No
 
 Map Q1:
-- 1 → --hooks enabled --auto-map-updates enabled
-- 2 → --hooks enabled --auto-map-updates disabled
-- 3 → --hooks disabled --auto-map-updates disabled
+- 1 → --hooks enabled --map-reminders enabled
+- 2 → --hooks enabled --map-reminders disabled
+- 3 → --hooks disabled --map-reminders disabled
 
 ```bash
 git clone https://github.com/hariharapanigrahy/layerkit.git

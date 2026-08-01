@@ -29,7 +29,7 @@ layerkit handoff write \
   --done "research: map validated" \
   --done "author: source helper updated" \
   --next "layerkit-privacy-review: confirm consent rules" \
-  --next "layerkit agent mark-done --step privacy" \
+  --next "layerkit agent mark-done --step privacy --evidence <path>" \
   --next "run package verification and checker review" \
   --blocked "need live credentials from owner" \
   --out memory

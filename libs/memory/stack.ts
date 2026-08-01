@@ -44,6 +44,10 @@ export interface MemoryEntry {
   mtimeMs: number;
 }
 
+export interface MemorySearchResult extends MemoryEntry {
+  matches: string[];
+}
+
 const TYPE_DIRS: MemoryEntryType[] = [
   'questionnaire',
   'research',
@@ -161,6 +165,22 @@ export class MemoryStack {
 
     entries.sort((a, b) => b.mtimeMs - a.mtimeMs);
     return entries;
+  }
+
+  search(query: string, opts?: { vendor?: string; type?: MemoryEntryType }): MemorySearchResult[] {
+    const needle = query.trim().toLowerCase();
+    if (!needle) throw new Error('memory search requires a query');
+    return this.list(opts)
+      .map((entry) => {
+        const text = readFileSync(entry.path, 'utf8');
+        const matches = text
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line.toLowerCase().includes(needle))
+          .slice(0, 3);
+        return matches.length ? { ...entry, matches } : null;
+      })
+      .filter((entry): entry is MemorySearchResult => entry !== null);
   }
 
   show(pathOrId: string): string {

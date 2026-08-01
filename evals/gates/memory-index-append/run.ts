@@ -51,6 +51,14 @@ try {
     JSON.stringify(listed),
   );
 
+  const found = mem.search('POST /events', { vendor: 'meta', type: 'research' });
+  assertTrue('search returns cited endpoint note', found.length === 1, JSON.stringify(found));
+  assertTrue(
+    'search snippet includes match',
+    found[0]!.matches.some((m) => m.includes('POST /events')),
+    JSON.stringify(found),
+  );
+
   const rebuilt = mem.index();
   assertTrue('index() rewrites INDEX', existsSync(rebuilt));
   const index2 = readFileSync(rebuilt, 'utf8');

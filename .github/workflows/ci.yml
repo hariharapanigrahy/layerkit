@@ -13,7 +13,21 @@ jobs:
           node-version: "22"
       - run: npm ci
       - run: npm test
+      - run: npm run pack:check
       - run: npm run smoke:codex
       - run: npm run smoke:openhands
+      - run: npm run smoke:devin
+      - run: npm run smoke:windsurf
       - run: npm run eval:ci
-
+  windows-smoke:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm run build
+      - run: node dist/apps/cli/main.js install --platform codex --hooks disabled --map-reminders disabled --poc --no-user-config
+      - run: node dist/apps/cli/main.js doctor
+      - run: node dist/apps/cli/main.js map list

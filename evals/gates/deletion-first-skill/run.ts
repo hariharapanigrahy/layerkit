@@ -1,5 +1,5 @@
 /**
- * Gate: deletion-first skill is a required pre-generate discipline.
+ * Gate: deletion-first skill is a required pre-source-edit discipline.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -24,7 +24,7 @@ interface DeletionFirstFixture {
 const repoRoot = process.cwd();
 const skillPath = join(repoRoot, 'skills', 'layerkit-deletion-first', 'SKILL.md');
 const orchestratePath = join(repoRoot, 'skills', 'layerkit-orchestrate-integration', 'SKILL.md');
-const generatePath = join(repoRoot, 'skills', 'layerkit-generate-java', 'SKILL.md');
+const sourceEditPath = join(repoRoot, 'skills', 'layerkit-source-edit-client', 'SKILL.md');
 
 assertTrue('skill file exists', existsSync(skillPath), skillPath);
 const skill = readFileSync(skillPath, 'utf8');
@@ -47,14 +47,14 @@ assertTrue(
 const pipeline = [...REQUIRED_SKILL_PIPELINE];
 assertTrue('pipeline includes deletion-first', pipeline.includes('layerkit-deletion-first'));
 assertTrue(
-  'deletion-first before generate-java',
-  pipeline.indexOf('layerkit-deletion-first') < pipeline.indexOf('layerkit-generate-java'),
+  'deletion-first before source-edit-client',
+  pipeline.indexOf('layerkit-deletion-first') < pipeline.indexOf('layerkit-source-edit-client'),
 );
 
 const orchestrate = readFileSync(orchestratePath, 'utf8');
-const generate = readFileSync(generatePath, 'utf8');
+const sourceEdit = readFileSync(sourceEditPath, 'utf8');
 assertTrue('orchestrate references deletion-first', orchestrate.includes('layerkit-deletion-first'));
-assertTrue('generate references deletion-first', generate.includes('layerkit-deletion-first'));
+assertTrue('source-edit references deletion-first', sourceEdit.includes('layerkit-deletion-first'));
 
 const fixture = loadFixture<DeletionFirstFixture>('deletion-first/stale-surfaces.json');
 assertEqual('fixture id', fixture.id, 'deletion-first-stale-surfaces');

@@ -3,7 +3,7 @@
  * Shared by orchestrate checklist fixture, evals, and (optional) skill docs.
  *
  * Order is evidence-first process quality, not vendor catalog coverage:
- * bootstrap → discover → research → processors → flow → privacy → deletion-first → generate → check
+ * bootstrap → discover → research → processors → flow → privacy → deletion-first → source-edit → check
  */
 export const REQUIRED_SKILL_PIPELINE = [
   'layerkit-bootstrap',
@@ -13,7 +13,7 @@ export const REQUIRED_SKILL_PIPELINE = [
   'layerkit-design-flow',
   'layerkit-privacy-review',
   'layerkit-deletion-first',
-  'layerkit-generate-java',
+  'layerkit-source-edit-client',
   'layerkit-checker-assist',
 ] as const;
 

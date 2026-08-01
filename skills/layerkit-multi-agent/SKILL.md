@@ -31,7 +31,7 @@ Use the lead agent to assign vendors/files explicitly. Keep one writer per produ
 | researcher | research-vendor | contract pin + drift |
 | designer / author | design / processor | surgical on drift |
 | privacy | privacy-review | human if new PII |
-| integrator | generate-java | direct production source edits |
+| integrator | source-edit-client | direct production source edits |
 | verifier | doctor + project tests | quality |
 | checker | checker-assist | read-only |
 

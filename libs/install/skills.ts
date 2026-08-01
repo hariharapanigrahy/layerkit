@@ -12,7 +12,7 @@ export const SKILL_NAMES = [
   'layerkit-privacy-review',
   'layerkit-deletion-first',
   'layerkit-align-client-style',
-  'layerkit-generate-java',
+  'layerkit-source-edit-client',
   'layerkit-fix-from-dry-run',
   'layerkit-checker-assist',
   'layerkit-session-handoff',
@@ -32,6 +32,10 @@ export function copySkillsTo(packageRoot: string, destRoot: string): string[] {
   for (const name of listPackagedSkills(packageRoot)) {
     const from = join(packageRoot, 'skills', name);
     const to = join(destRoot, name);
+    if (existsSync(to)) {
+      installed.push(to);
+      continue;
+    }
     cpSync(from, to, { recursive: true });
     installed.push(to);
   }

@@ -1,5 +1,14 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, join } from 'node:path';
 import {
   DEFAULT_MAKER_CHECKER,
   layerkitConfigPath,
@@ -91,12 +100,25 @@ export interface RejectOpts {
   comment?: string;
 }
 
+interface TransactionSnapshot {
+  path: string;
+  backupPath: string;
+  existed: boolean;
+}
+
+interface ApplyTransaction {
+  id: string;
+  journalPath: string;
+  files: TransactionSnapshot[];
+}
+
 /**
  * Local project store for vendor maps and proposals.
  * Store root is the resolved projectDir (default: {repoRoot}/.layerkit).
  */
 export class VendorMemoryStore {
   readonly projectDir: string;
+  private corruptArtifacts: Array<{ path: string; error: string }> = [];
 
   /**
    * @param repoRoot - repository root
@@ -157,7 +179,8 @@ export class VendorMemoryStore {
     if (!existsSync(dir)) return [];
     return readdirSync(dir)
       .filter((f) => f.endsWith('.json'))
-      .map((f) => this.readJson<VendorMap>(join(dir, f))!);
+      .map((f) => this.readJson<VendorMap>(join(dir, f)))
+      .filter((m): m is VendorMap => Boolean(m));
   }
 
   loadMap(vendor: string): VendorMap | null {
@@ -185,8 +208,8 @@ export class VendorMemoryStore {
     if (!existsSync(dir)) return [];
     return readdirSync(dir)
       .filter((f) => f.endsWith('.json'))
-      .map((f) => this.readJson<Proposal>(join(dir, f))!)
-      .filter(Boolean);
+      .map((f) => this.readJson<Proposal>(join(dir, f)))
+      .filter((proposal): proposal is Proposal => proposal !== null);
   }
 
   /** Rewrite v1 maps to v2 on disk. */
@@ -266,16 +289,9 @@ export class VendorMemoryStore {
   }
 
   /**
-   * draft|pending → pending. Ensures maker is set (v2 requires it for non-draft).
+   * draft|pending → pending. Ensures maker is set and structural errors are fixed before review.
    */
   submitProposal(proposal: Proposal, maker?: Identity): Proposal {
-    const review = this.reviewProposal({
-      ...proposal,
-      maker: maker ?? proposal.maker,
-      status: proposal.status === 'draft' ? 'pending' : proposal.status,
-    });
-    // Allow submit of draft without full structural validity for later validate,
-    // but still require id/kind basics via validate when not draft.
     const next: Proposal = {
       ...proposal,
       maker: maker ?? proposal.maker ?? { type: 'agent', id: 'unknown' },
@@ -285,8 +301,10 @@ export class VendorMemoryStore {
     if ((next.schemaVersion ?? 1) === 2 && !next.maker) {
       throw new Error('submit_requires_maker: v2 proposals need maker on submit');
     }
-    // Soft: if already has structural errors, still allow submit (validate step is separate)
-    void review;
+    const review = this.reviewProposal(next);
+    if (!review.valid) {
+      throw new Error(`submit_invalid: ${review.errors.join('; ')}`);
+    }
     this.saveProposal(next);
     return next;
   }
@@ -301,7 +319,7 @@ export class VendorMemoryStore {
     }
 
     const cfg = this.getMakerCheckerConfig();
-    this.assertRoleGranted(opts.by, opts.role);
+    this.assertRoleGranted(opts.by, opts.role, opts.dev);
 
     const makerId = proposal.maker?.id;
     const selfApprove = this.isSelfApproveEffective(cfg, opts.dev);
@@ -372,7 +390,7 @@ export class VendorMemoryStore {
       throw new Error(`conflict_already_decided: status=${proposal.status}`);
     }
 
-    this.assertRoleGranted(opts.by, opts.role);
+    this.assertRoleGranted(opts.by, opts.role, false);
 
     const check: CheckRecord = {
       at: new Date().toISOString(),
@@ -410,10 +428,18 @@ export class VendorMemoryStore {
       }
     }
 
-    const result = this.applyByKind(proposal);
-    proposal.status = 'applied';
-    this.saveProposal(proposal);
-    return result;
+    const tx = this.beginApplyTransaction(proposal);
+    try {
+      const result = this.applyByKind(proposal);
+      const applied: Proposal = { ...proposal, status: 'applied' };
+      this.saveProposal(applied);
+      this.completeApplyTransaction(tx);
+      proposal.status = 'applied';
+      return result;
+    } catch (err) {
+      this.rollbackApplyTransaction(tx, err);
+      throw err;
+    }
   }
 
   doctor(): { ok: boolean; lines: string[]; secretFindings?: SecretFinding[] } {
@@ -431,6 +457,7 @@ export class VendorMemoryStore {
     }
     lines.push(`Project: ${project.name}`);
     lines.push(`Languages: ${project.languages.join(', ')}`);
+    let errors = 0;
     const mc = this.getMakerCheckerConfig();
     const legacyOn = mc.legacyApplyWithoutApprove === true;
     const modeLabel = legacyOn
@@ -448,12 +475,17 @@ export class VendorMemoryStore {
           '(set makerChecker.legacyApplyWithoutApprove=false for strict)',
       );
     }
+    if (process.env.LAYERKIT_ALLOW_HALLUCINATION === '1') {
+      lines.push(
+        '  ✗ hallucination break-glass is enabled via LAYERKIT_ALLOW_HALLUCINATION=1',
+      );
+      errors += 1;
+    }
     if (mc.allowSelfApprove) {
       lines.push('  ⚠ self-approve enabled (doctor warn)');
     }
     const maps = this.listMaps();
     lines.push(`Vendor maps: ${maps.length}`);
-    let errors = 0;
     const domain = this.loadDomain() ?? undefined;
     const allSecretFindings: SecretFinding[] = [];
     for (const m of maps) {
@@ -488,6 +520,10 @@ export class VendorMemoryStore {
         `Secret scan: ${secretErrors} error(s), ${secretWarns} warning(s) (prefer SecretRef over inline tokens)`,
       );
     }
+    for (const c of this.corruptArtifacts) {
+      lines.push(`  ✗ corrupt_json: ${c.path} — ${c.error}`);
+      errors += 1;
+    }
     lines.push(errors ? `Doctor found ${errors} error(s)` : 'Doctor OK');
     return { ok: errors === 0, lines, secretFindings: allSecretFindings };
   }
@@ -504,12 +540,12 @@ export class VendorMemoryStore {
     return false;
   }
 
-  private assertRoleGranted(by: Identity, role: CheckerRole): void {
+  private assertRoleGranted(by: Identity, role: CheckerRole, dev?: boolean): void {
     const project = this.loadProject();
     const reviewers = project?.security?.reviewers;
     if (!reviewers || reviewers.length === 0) {
-      // No project reviewers configured — allow claimed role (POC / early projects)
-      return;
+      if (dev === true) return;
+      throw new Error('role_allowlist_empty: configure project.security.reviewers or use --dev locally');
     }
     const entry = reviewers.find((r) => r.id === by.id);
     if (!entry) {
@@ -518,6 +554,83 @@ export class VendorMemoryStore {
     if (!entry.roles.includes(role) && !entry.roles.includes('admin')) {
       throw new Error(`role_not_granted: ${by.id} lacks role ${role}`);
     }
+  }
+
+  private beginApplyTransaction(proposal: Proposal): ApplyTransaction {
+    this.ensureDirs();
+    const id = `${proposal.id}-${Date.now()}-${process.pid}`;
+    const journalPath = join(this.projectDir, 'sessions', `apply-${id}.json`);
+    const files = this.applyTransactionTargets(proposal).map((path) => {
+      const backupPath = `${path}.${id}.bak`;
+      const existed = existsSync(path);
+      if (existed) copyFileSync(path, backupPath);
+      return { path, backupPath, existed };
+    });
+    this.writeJson(journalPath, {
+      id,
+      proposalId: proposal.id,
+      status: 'started',
+      files: files.map(({ path, backupPath, existed }) => ({ path, backupPath, existed })),
+      startedAt: new Date().toISOString(),
+    });
+    return { id, journalPath, files };
+  }
+
+  private completeApplyTransaction(tx: ApplyTransaction): void {
+    this.writeJson(tx.journalPath, {
+      id: tx.id,
+      status: 'committed',
+      committedAt: new Date().toISOString(),
+      files: tx.files.map(({ path, existed }) => ({ path, existed })),
+    });
+    this.cleanupBackups(tx);
+  }
+
+  private rollbackApplyTransaction(tx: ApplyTransaction, err: unknown): void {
+    for (const file of tx.files) {
+      if (file.existed) {
+        copyFileSync(file.backupPath, file.path);
+      } else if (existsSync(file.path)) {
+        unlinkSync(file.path);
+      }
+    }
+    this.writeJson(tx.journalPath, {
+      id: tx.id,
+      status: 'rolled_back',
+      rolledBackAt: new Date().toISOString(),
+      error: err instanceof Error ? err.message : String(err),
+      files: tx.files.map(({ path, existed }) => ({ path, existed })),
+    });
+    this.cleanupBackups(tx);
+  }
+
+  private cleanupBackups(tx: ApplyTransaction): void {
+    for (const file of tx.files) {
+      if (existsSync(file.backupPath)) unlinkSync(file.backupPath);
+    }
+  }
+
+  private applyTransactionTargets(proposal: Proposal): string[] {
+    const targets = new Set<string>([
+      join(this.projectDir, 'proposals', `${proposal.id}.json`),
+    ]);
+    const p = proposal.payload as Record<string, unknown>;
+    if (proposal.kind === 'vendor_map') {
+      const map = proposal.payload as VendorMap;
+      if (map.vendor) targets.add(join(this.projectDir, 'maps', `${map.vendor}.json`));
+    }
+    if (proposal.kind === 'field_row' || proposal.kind === 'intent_wire' || proposal.kind === 'auth') {
+      const vendor =
+        proposal.vendor ??
+        (typeof p.mapVendor === 'string' ? p.mapVendor : undefined) ??
+        (typeof p.vendorMap === 'string' ? p.vendorMap : undefined) ??
+        (typeof p.vendor === 'string' ? p.vendor : undefined);
+      if (vendor) targets.add(join(this.projectDir, 'maps', `${vendor}.json`));
+    }
+    if (proposal.kind === 'domain_spec') {
+      targets.add(join(this.projectDir, 'domain.json'));
+    }
+    return [...targets];
   }
 
   private applyByKind(proposal: Proposal): { kind: string; target: string } {
@@ -532,8 +645,6 @@ export class VendorMemoryStore {
         return this.applyAuthKind(proposal);
       case 'domain_spec':
         return this.applyDomainSpecKind(proposal);
-      case 'java_artifact':
-        return this.applyJavaArtifactKind(proposal);
       default:
         throw new Error(`Apply not implemented for kind=${String((proposal as Proposal).kind)}`);
     }
@@ -651,41 +762,24 @@ export class VendorMemoryStore {
     return { kind: 'domain_spec', target: domain.id ?? 'domain' };
   }
 
-  /**
-   * Payload: { files: Array<{ path: string; content: string }> } or single { path, content }.
-   * Paths are relative under out/java/.
-   */
-  private applyJavaArtifactKind(proposal: Proposal): { kind: string; target: string } {
-    const p = proposal.payload as {
-      files?: Array<{ path: string; content: string }>;
-      path?: string;
-      content?: string;
-    };
-    const files =
-      p.files ??
-      (p.path != null && p.content != null ? [{ path: p.path, content: p.content }] : []);
-    if (!files.length) throw new Error('java_artifact payload needs files[] or path+content');
-
-    const base = join(this.projectDir, 'out', 'java');
-    for (const f of files) {
-      if (!f.path || f.content == null) throw new Error('java_artifact file needs path and content');
-      // Prevent path escape
-      const rel = f.path.replace(/^\/+/, '').replace(/\.\./g, '');
-      const abs = join(base, rel);
-      mkdirSync(join(abs, '..'), { recursive: true });
-      writeFileSync(abs, f.content, 'utf8');
-    }
-    return { kind: 'java_artifact', target: files[0]!.path };
-  }
-
   private writeJson(path: string, data: unknown): void {
-    mkdirSync(join(path, '..'), { recursive: true });
-    writeFileSync(path, JSON.stringify(data, null, 2) + '\n', 'utf8');
+    mkdirSync(dirname(path), { recursive: true });
+    const tmp = `${path}.${process.pid}.${Date.now()}.tmp`;
+    writeFileSync(tmp, JSON.stringify(data, null, 2) + '\n', 'utf8');
+    renameSync(tmp, path);
   }
 
   private readJson<T>(path: string): T | null {
     if (!existsSync(path)) return null;
-    return JSON.parse(readFileSync(path, 'utf8')) as T;
+    try {
+      return JSON.parse(readFileSync(path, 'utf8')) as T;
+    } catch (err) {
+      this.corruptArtifacts.push({
+        path,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return null;
+    }
   }
 }
 

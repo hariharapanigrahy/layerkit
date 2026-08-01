@@ -29,8 +29,9 @@ const research = readSkill('layerkit-research-vendor');
 const orchestrate = readSkill('layerkit-orchestrate-integration');
 const multi = readSkill('layerkit-multi-agent');
 const deletionFirst = readSkill('layerkit-deletion-first');
-const generate = readSkill('layerkit-generate-java');
-const skillCorpus = [research, orchestrate, multi, deletionFirst, generate].join('\n\n--- skill ---\n\n');
+const sourceEdit = readSkill('layerkit-source-edit-client');
+const privacy = readSkill('layerkit-privacy-review');
+const skillCorpus = [research, orchestrate, multi, deletionFirst, sourceEdit, privacy].join('\n\n--- skill ---\n\n');
 const judgedCorpus = skillCorpus;
 
 for (const skillName of [
@@ -73,6 +74,18 @@ assertIncludesAll('update mode is deletion-first before additive work', judgedCo
   /Do not add a new abstraction/i,
   /Target net-negative or near-neutral LOC/i,
   /deletion-first/i,
+]);
+
+assertIncludesAll('strategic redirects require proof before rewrite', judgedCorpus, [
+  /strategic redirect/i,
+  /proof step/i,
+  /eval|end-to-end QA check|contract-heal case|before\/after acceptance test/i,
+]);
+
+assertIncludesAll('skills require secret literals to move out of source', judgedCorpus, [
+  /API keys|passwords|tokens|credentials/i,
+  /environment variables|secrets manager|SecretRef/i,
+  /source string literals|literals/i,
 ]);
 
 assertForbidden('heal skill path forbids fake PR packaging artifacts', judgedCorpus, [

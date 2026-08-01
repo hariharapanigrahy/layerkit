@@ -6,7 +6,7 @@
  * - AuthType includes mtls | signed_payload
  * - doctor prints projectDir
  */
-import { mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { assertEqual, assertTrue } from '../../harness/assert.js';
@@ -15,11 +15,12 @@ import {
   isHighEntropyString,
   isSecretRef,
   scanJsonForSecrets,
+  scanSourceForSecretLiterals,
 } from '../../../libs/doctor/index.js';
 import { createVendorMemoryStore } from '../../../libs/vendor-memory/store.js';
 
 // --- unit: entropy + SecretRef ---
-const TOKEN = 'sk_live_4eC39HqLyjWDarjtT1zdp7dc_AbCdEfGhIjKlMn';
+const TOKEN = ['sk', 'live', '4eC39HqLyjWDarjtT1zdp7dc', 'AbCdEfGhIjKlMn'].join('_');
 assertTrue('high-entropy token detected', isHighEntropyString(TOKEN));
 assertTrue(
   'short label not high-entropy',
@@ -128,6 +129,30 @@ assertTrue(
   JSON.stringify(safeFindings),
 );
 
+const sourceFindings = scanSourceForSecretLiterals(
+  [
+    'const token = process.env.VENDOR_TOKEN;',
+    `const leaky = "${TOKEN}";`,
+  ].join('\n'),
+  'client-adapter.ts',
+);
+assertTrue(
+  'source string literal token is blocked',
+  sourceFindings.some((f) => f.level === 'error' && f.path === 'client-adapter.ts:2'),
+  JSON.stringify(sourceFindings),
+);
+assertTrue(
+  'env token source is allowed',
+  scanSourceForSecretLiterals('const token = process.env.VENDOR_TOKEN;', 'client-adapter.ts').length === 0,
+);
+
+const repoSourceFindings = scanRepoForSecretLiterals(process.cwd());
+assertTrue(
+  'repo source has no hardcoded secret literals',
+  repoSourceFindings.length === 0,
+  JSON.stringify(repoSourceFindings.slice(0, 5)),
+);
+
 // --- doctor integration ---
 const root = mkdtempSync(join(tmpdir(), 'layerkit-doctor-secret-'));
 const projectDir = join(root, '.layerkit');
@@ -179,4 +204,42 @@ try {
   console.log('doctor-secret-scan: all checks passed');
 } finally {
   rmSync(root, { recursive: true, force: true });
+}
+
+function scanRepoForSecretLiterals(repoRoot: string) {
+  const findings = [];
+  for (const file of walkFiles(repoRoot)) {
+    findings.push(
+      ...scanSourceForSecretLiterals(
+        readFileSync(file, 'utf8'),
+        file.slice(repoRoot.length + 1),
+      ),
+    );
+  }
+  return findings;
+}
+
+function walkFiles(root: string): string[] {
+  const out: string[] = [];
+  const skipDirs = new Set(['.git', 'dist', 'node_modules', 'coverage']);
+  const exts = new Set(['.ts', '.js', '.mjs', '.md', '.json']);
+  visit(root);
+  return out;
+
+  function visit(dir: string): void {
+    for (const entry of readdirSync(dir)) {
+      if (skipDirs.has(entry)) continue;
+      const path = join(dir, entry);
+      const stat = statSync(path);
+      if (stat.isDirectory()) {
+        if (path.includes('/evals/fixtures/')) continue;
+        visit(path);
+        continue;
+      }
+      if (path.endsWith('package-lock.json')) continue;
+      const dot = entry.lastIndexOf('.');
+      if (dot < 0 || !exts.has(entry.slice(dot))) continue;
+      if (existsSync(path)) out.push(path);
+    }
+  }
 }

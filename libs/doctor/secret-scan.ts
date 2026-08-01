@@ -1,5 +1,5 @@
 /**
- * Doctor secret-leak heuristics for map/proposal JSON.
+ * Doctor secret-leak heuristics for map/proposal JSON and source-like text.
  * Flags high-entropy strings outside allowlist paths; SecretRef shapes are safe.
  */
 
@@ -12,6 +12,14 @@ export interface SecretFinding {
   /** Truncated preview of the suspect value (never full secret in doctor output). */
   preview: string;
 }
+
+const SECRET_LITERAL_PATTERNS = [
+  /\b(?:sk|pk)_(?:live|test)_[A-Za-z0-9_=-]{16,}\b/g,
+  /\b(?:ghp|gho|ghu|ghs|github_pat)_[A-Za-z0-9_]{20,}\b/g,
+  /\b(?:xoxb|xoxp|xoxa)-[A-Za-z0-9-]{20,}\b/g,
+  /\bAKIA[0-9A-Z]{16}\b/g,
+  /\bBearer\s+[A-Za-z0-9._~+/-]{24,}\b/g,
+];
 
 /** Path prefixes that never fail (documentation/sources URLs, excerpts). */
 const ALLOWLIST_PREFIXES = [
@@ -191,6 +199,38 @@ function previewValue(s: string): string {
 export function scanJsonForSecrets(value: unknown, rootLabel = ''): SecretFinding[] {
   const findings: SecretFinding[] = [];
   walk(value, rootLabel, findings);
+  return findings;
+}
+
+/** Scan source-like text for hardcoded API keys, tokens, and password literals. */
+export function scanSourceForSecretLiterals(text: string, sourcePath = 'source'): SecretFinding[] {
+  const findings: SecretFinding[] = [];
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    for (const pattern of SECRET_LITERAL_PATTERNS) {
+      pattern.lastIndex = 0;
+      for (const match of line.matchAll(pattern)) {
+        findings.push({
+          level: 'error',
+          path: `${sourcePath}:${i + 1}`,
+          message: 'possible hardcoded secret literal (use environment variables or SecretRef)',
+          preview: previewValue(match[0]),
+        });
+      }
+    }
+    const assignment = line.match(
+      /\b(?:api[_-]?key|access[_-]?token|client[_-]?secret|password|authorization)\b\s*[:=]\s*['"`]([^'"`]+)['"`]/i,
+    );
+    if (assignment?.[1] && isHighEntropyString(assignment[1])) {
+      findings.push({
+        level: 'error',
+        path: `${sourcePath}:${i + 1}`,
+        message: 'possible hardcoded secret literal (use environment variables or SecretRef)',
+        preview: previewValue(assignment[1]),
+      });
+    }
+  }
   return findings;
 }
 

@@ -6,7 +6,7 @@ Layerkit is agent tooling for changing a client package. It is not the runtime i
 
 ```bash
 npm i -g layerkit
-layerkit install --platform codex|claude|cursor|copilot|opencode|openhands|factory-droid|antigravity \
+layerkit install --platform codex|claude|cursor|copilot|opencode|openhands|devin|windsurf|factory-droid|antigravity \
   --hooks enabled
 layerkit doctor
 ```
@@ -19,7 +19,7 @@ Store resolution: `--project-dir` -> `LAYERKIT_PROJECT_DIR` -> `layerkit.path.js
 layerkit agent start --mode full|heal [--vendor <v>] [--note <text>]
 layerkit agent status
 layerkit agent next
-layerkit agent mark-done --step discover|research|design|author|privacy|deletion-first|source-edit|handoff
+layerkit agent mark-done --step discover|research|design|author|privacy|deletion-first|source-edit|handoff --evidence <path>
 ```
 
 Order:
@@ -37,11 +37,12 @@ layerkit repo status
 layerkit map list
 layerkit map show <vendor>
 layerkit map validate <file>
-layerkit proposal validate <file>
+layerkit proposal validate <file>   # read-only structural check
 layerkit proposal submit <file>
 layerkit proposal approve <id>
 layerkit proposal apply <file-or-id>
 layerkit memory list
+layerkit memory search "<query>"
 layerkit memory append --type research --title "<title>" --body-file <file>
 ```
 
@@ -65,7 +66,7 @@ These commands validate explicit artifacts and project health. They do not infer
 | Research vendor evidence | `layerkit-research-vendor` |
 | Author/update maps | `layerkit-author-map` |
 | Transform/helper code | `layerkit-author-processor` |
-| Source edits | `layerkit-generate-java` |
+| Source edits | `layerkit-source-edit-client` |
 | Privacy review | `layerkit-privacy-review` |
 | Checker assist | `layerkit-checker-assist` |
 | Handoff | `layerkit-session-handoff` |

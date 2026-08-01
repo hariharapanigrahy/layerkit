@@ -5,9 +5,9 @@ import { assertTrue } from '../../harness/assert.js';
 import { allPlatformInstallers } from '../../../libs/install/platforms/index.js';
 import { installPlatforms } from '../../../libs/install/paths.js';
 
-assertTrue('8 platforms registered', installPlatforms.length === 8);
+assertTrue('10 platforms registered', installPlatforms.length === 10);
 const installers = allPlatformInstallers();
-assertTrue('installer per platform', installers.length === 8);
+assertTrue('installer per platform', installers.length === 10);
 
 for (const p of installPlatforms) {
   assertTrue(

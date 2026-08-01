@@ -23,7 +23,7 @@
       "ciCases": ["agent-citation-required-on-map", "maker-checker-strict-path"]
     },
     "layerkit-deletion-first": {
-      "dimensions": ["delete-before-add", "new-code-replacement-justification"],
+      "dimensions": ["delete-before-add", "new-code-replacement-justification", "strategic-redirect-proof"],
       "ciCases": ["deletion-first-skill", "skill-hybrid-heal-judge"]
     },
     "layerkit-design-flow": {
@@ -42,21 +42,28 @@
       "dimensions": ["agent-fixes-client-tests", "no-map-dry-run-cli"],
       "ciCases": ["skill-hybrid-heal-judge"]
     },
-    "layerkit-generate-java": {
-      "dimensions": ["production-source-edits", "no-generated-patch-plan", "deletion-first-update-mode"],
-      "ciCases": ["skill-hybrid-heal-judge", "deletion-first-skill"]
+    "layerkit-source-edit-client": {
+      "dimensions": [
+        "production-source-edits",
+        "no-generated-patch-plan",
+        "deletion-first-update-mode",
+        "rename-update-delete",
+        "unsupported-gap-todo",
+        "strategic-redirect-proof"
+      ],
+      "ciCases": ["skill-hybrid-heal-judge", "deletion-first-skill", "source-edit-skill-cases"]
     },
     "layerkit-multi-agent": {
       "dimensions": ["specialist-coordination", "agent-owned-source-edits", "no-agent-multi-cli"],
       "ciCases": ["skill-hybrid-heal-judge"]
     },
     "layerkit-orchestrate-integration": {
-      "dimensions": ["pipeline-order", "docs-to-contract-skill-flow", "heal-source-edits-by-agent"],
+      "dimensions": ["pipeline-order", "docs-to-contract-skill-flow", "heal-source-edits-by-agent", "strategic-redirect-proof"],
       "ciCases": ["agent-orchestrate-checklist", "agent-pipeline-order", "skill-hybrid-heal-judge"]
     },
     "layerkit-privacy-review": {
-      "dimensions": ["client-code-privacy-review", "citation-required-for-privacy-rules"],
-      "ciCases": ["skill-hybrid-heal-judge"]
+      "dimensions": ["client-code-privacy-review", "citation-required-for-privacy-rules", "secret-literal-remediation"],
+      "ciCases": ["skill-hybrid-heal-judge", "doctor-secret-scan"]
     },
     "layerkit-research-vendor": {
       "dimensions": ["docs-link-contract-curation", "semantic-rename-evidence", "no-deterministic-research-cli"],

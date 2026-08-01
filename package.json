@@ -1,7 +1,7 @@
 {
   "name": "layerkit",
   "version": "0.1.2",
-  "description": "Agent-first multi-vendor data-layer toolkit: install skills/hooks into Codex, Claude Code, Cursor, Copilot, OpenCode, OpenHands; research vendor docs; proposal pipeline; Java-first client output; evals.",
+  "description": "Agent-first multi-vendor data-layer toolkit: install skills/hooks into Codex, Claude Code, Cursor, Copilot, OpenCode, OpenHands; research vendor docs; proposal pipeline; client-source editing; evals.",
   "license": "MIT",
   "private": false,
   "type": "module",
@@ -57,9 +57,12 @@
     "docs/AGENT_FIRST.md",
     "docs/AGENT_GOLDEN_PATH.md",
     "docs/CHEATSHEET.md",
+    "docs/API_STABILITY.md",
     "docs/agent-install-prompt.md",
     "README.md",
     "LICENSE",
+    "SECURITY.md",
+    "MATURITY.md",
     "CONTRIBUTING.md"
   ],
   "engines": {
@@ -75,14 +78,17 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "prepublishOnly": "npm run build",
     "pack:check": "npm pack --dry-run",
-    "test:unit": "vitest run --passWithNoTests",
-    "test": "npm run build && node scripts/check-install-options.js && node scripts/check-proposal-validate.js && node --test dist/apps/cli/empty-state.test.js dist/evals/vendor-research-plan/generate-cases.test.js && npm run test:unit",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test": "npm run build && node scripts/check-install-options.js && node scripts/check-proposal-validate.js && node --test dist/apps/cli/empty-state.test.js dist/evals/vendor-research-plan/generate-cases.test.js && npm run test:unit && npm run test:coverage",
     "smoke:codex": "npm run build && node scripts/smoke-codex.mjs",
     "smoke:claude": "npm run build && node scripts/smoke-claude.mjs",
     "smoke:cursor": "npm run build && node scripts/smoke-cursor.mjs",
     "smoke:copilot": "npm run build && node scripts/smoke-copilot.mjs",
     "smoke:opencode": "npm run build && node scripts/smoke-opencode.mjs",
     "smoke:openhands": "npm run build && node scripts/smoke-openhands.mjs",
+    "smoke:devin": "npm run build && node scripts/smoke-devin.mjs",
+    "smoke:windsurf": "npm run build && node scripts/smoke-windsurf.mjs",
     "eval:ci": "npm run build && node dist/evals/harness/runner.js --suite ci",
     "eval:all": "npm run build && node dist/evals/harness/runner.js --suite all",
     "eval:proposal-sources": "npm run build && node dist/evals/harness/runner.js --case proposal-sources-required",
@@ -95,6 +101,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
+    "@vitest/coverage-v8": "^2.1.9",
     "typescript": "^5.8.3",
     "vitest": "^2.0.0"
   }

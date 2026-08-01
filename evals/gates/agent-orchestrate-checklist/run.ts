@@ -55,27 +55,27 @@ assertTrue(
   idx('layerkit-discover-data-layer') < idx('layerkit-research-vendor'),
 );
 assertTrue(
-  'research before generate-java',
-  idx('layerkit-research-vendor') < idx('layerkit-generate-java'),
+  'research before source-edit-client',
+  idx('layerkit-research-vendor') < idx('layerkit-source-edit-client'),
 );
 assertTrue(
-  'privacy before generate-java',
-  idx('layerkit-privacy-review') < idx('layerkit-generate-java'),
+  'privacy before source-edit-client',
+  idx('layerkit-privacy-review') < idx('layerkit-source-edit-client'),
 );
 assertTrue(
-  'deletion-first before generate-java',
-  idx('layerkit-deletion-first') < idx('layerkit-generate-java'),
+  'deletion-first before source-edit-client',
+  idx('layerkit-deletion-first') < idx('layerkit-source-edit-client'),
 );
 assertTrue(
-  'generate-java before checker-assist',
-  idx('layerkit-generate-java') < idx('layerkit-checker-assist'),
+  'source-edit-client before checker-assist',
+  idx('layerkit-source-edit-client') < idx('layerkit-checker-assist'),
 );
 
 // Incomplete checklist fails helper
 const incomplete = assertChecklistCompleteness({
   id: 'bad',
   title: 'bad',
-  skills: ['layerkit-bootstrap', 'layerkit-generate-java'],
+  skills: ['layerkit-bootstrap', 'layerkit-source-edit-client'],
 });
 assertTrue('incomplete not ok', incomplete.ok === false);
 assertTrue(
@@ -89,7 +89,7 @@ const wrongOrder = assertChecklistCompleteness({
   id: 'bad-order',
   title: 'bad order',
   skills: [
-    'layerkit-generate-java',
+    'layerkit-source-edit-client',
     'layerkit-bootstrap',
     'layerkit-discover-data-layer',
     'layerkit-research-vendor',

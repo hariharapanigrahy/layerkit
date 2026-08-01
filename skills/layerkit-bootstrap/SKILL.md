@@ -9,11 +9,11 @@ Install tools for the **agent-as-developer** loop. Maps start empty; agents auth
 
 ## Steps
 
-1. Detect platform: `codex | claude | cursor | copilot | opencode | openhands | factory-droid | antigravity`
+1. Detect platform: `codex | claude | cursor | copilot | opencode | openhands | devin | windsurf | factory-droid | antigravity`
 2. Install + verify:
 
 ```bash
-layerkit install --platform <platform> --hooks enabled --auto-map-updates enabled --poc
+layerkit install --platform <platform> --hooks enabled --map-reminders enabled --poc
 layerkit doctor
 layerkit repo status
 layerkit memory index

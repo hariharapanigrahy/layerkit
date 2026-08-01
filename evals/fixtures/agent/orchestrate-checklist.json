@@ -9,7 +9,7 @@
     "layerkit-design-flow",
     "layerkit-privacy-review",
     "layerkit-deletion-first",
-    "layerkit-generate-java",
+    "layerkit-source-edit-client",
     "layerkit-checker-assist"
   ],
   "notes": [

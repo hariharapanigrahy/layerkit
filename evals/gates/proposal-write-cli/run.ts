@@ -2,6 +2,7 @@
  * Gate: proposal write CLI scaffolds a map to temp JSON,
  * load, assert kind/sources/vendor, structural validate.
  */
+import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -79,6 +80,21 @@ try {
   const store = createVendorMemoryStore(tmp, join(tmp, '.layerkit'));
   const mapReview = store.reviewProposal(mapLoaded);
   assertTrue('store map review valid', mapReview.valid, mapReview.errors.join('; '));
+
+  store.saveProposal({ ...mapLoaded, status: 'pending' });
+  execFileSync(process.execPath, [
+    join(process.cwd(), 'dist/apps/cli/main.js'),
+    'proposal',
+    'validate',
+    mapLoaded.id,
+    '--project-dir',
+    join(tmp, '.layerkit'),
+  ]);
+  assertEqual(
+    'proposal validate is read-only',
+    store.loadProposal(mapLoaded.id)?.status,
+    'pending',
+  );
 
   // placeholder sources path still produces a proposal with sources[]
   const bare = scaffoldVendorMapProposal({ vendor: 'bare_vendor' });

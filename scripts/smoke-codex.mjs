@@ -13,7 +13,7 @@ try {
     repoRoot: dir,
     platform: 'codex',
     hooksEnabled: true,
-    autoMapUpdates: true,
+    mapReminders: true,
     poc: true,
   });
   if (result.platform !== 'codex') throw new Error('platform');

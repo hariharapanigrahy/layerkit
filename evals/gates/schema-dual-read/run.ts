@@ -170,11 +170,11 @@ const baseV1: Proposal = {
   );
 }
 
-// 9) Agent artifact kind accepted
+// 9) Source artifact kinds are rejected; agents edit client source directly.
 {
   const artifactKind: Proposal = {
     schemaVersion: 2,
-    kind: 'java_artifact',
+    kind: 'java_artifact' as Proposal['kind'],
     id: 'java-1',
     summary: 'client code artifact note',
     payload: { path: 'README.md', content: 'client-owned integration code' },
@@ -185,8 +185,8 @@ const baseV1: Proposal = {
   };
   const issues = validateProposal(artifactKind);
   assertTrue(
-    'java_artifact kind accepted',
-    !issues.some((i) => i.code === 'kind' && i.level === 'error'),
+    'java_artifact kind rejected',
+    issues.some((i) => i.code === 'kind' && i.level === 'error'),
   );
 }
 

@@ -147,12 +147,7 @@ export interface DomainSpec {
   fields: DomainField[];
 }
 
-/** Generate always plans patches against production integration code. */
-export type GenerateMode = 'integrate';
-
-export interface GenerateConfig {
-  /** Optional; only `integrate` is valid if set */
-  mode?: GenerateMode;
+export interface SourceEditConfig {
   /**
    * Customer module root (repo-relative or absolute).
    * Example: apps/platform/integrations
@@ -187,8 +182,8 @@ export interface LayerProject {
     allowSelfApprove?: boolean;
     legacyApplyWithoutApprove?: boolean;
   };
-  /** Client generation targets (production moduleRoot) */
-  generate?: GenerateConfig;
+  /** Client source-edit boundaries for agent-owned integration work */
+  sourceEdit?: SourceEditConfig;
 }
 
 export type ProposalKind =
@@ -196,7 +191,6 @@ export type ProposalKind =
   | 'field_row'
   | 'intent_wire'
   | 'auth'
-  | 'java_artifact'
   | 'domain_spec';
 
 export type ProposalStatusV1 = 'pending' | 'validated' | 'applied' | 'rejected';
@@ -255,7 +249,6 @@ export const PROPOSAL_KINDS: readonly ProposalKind[] = [
   'field_row',
   'intent_wire',
   'auth',
-  'java_artifact',
   'domain_spec',
 ] as const;
 
