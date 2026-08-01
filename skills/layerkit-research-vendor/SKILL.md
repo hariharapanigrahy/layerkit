@@ -1,64 +1,64 @@
 ---
 name: layerkit-research-vendor
-description: Evidence-first vendor research (OpenAPI/curl/docs deepen); residual human only; customer-owned output.
+description: Evidence-first vendor research and contract updates (OpenAPI pin + drift vs map); residual human only.
 ---
 
 # layerkit-research-vendor
 
-You create integration knowledge from **primary evidence**. Core ships empty maps. Never invent.
+You create or **update** integration knowledge from **primary evidence**. Core ships empty maps. Never invent.
+
+**Contract update (heal)** is the same pipeline step (`research`), not a parallel product: human supplies OpenAPI/docs → pin → drift → map-from-openapi → continue design → generate.
 
 ## Protocol
 
-1. Inspect skeleton (docs URLs only — not trusted field truth):
+### A. Contract heal (prefer when OpenAPI exists)
 
 ```bash
-layerkit map show <vendor>
-layerkit memory list --vendor <vendor>
+layerkit heal run --vendor <vendor> --openapi ./openapi.json \
+  --module-root <production-module> --apply-code
+# pin + drift + map apply + integrate plan + out/pr/* + optional code write
 ```
 
-2. Ingest **all** seeds the customer accepts: prose docs, OpenAPI/Swagger, curl samples, collections, customer code.
-3. Prefer CLI (same as libs/research):
+Review `out/CONTRACT_DRIFT.json`, `out/INTEGRATE.md`, `out/pr/<vendor>-*/PR.md`.  
+Open PR from the package (or files already written with `--apply-code`).
+
+### B. Supporting evidence tools
+
 ```bash
 layerkit research openapi ./openapi.json --json
 layerkit research curl ./sample.curl --json
 layerkit research deepen ./hub.md --json
-layerkit research fill --openapi ./openapi.json --curl ./sample.curl --hub ./hub.md --vendor <id> --out ./sheet.json
 layerkit research gaps ./sheet.json
 ```
-   - OpenAPI → **Q1** auth (securitySchemes only), **Q2** endpoints, **Q3** intent *candidates* (operationId + opaque `x-*` values), **Q4** body schema fields, **Q5** PII-ish name hints
-   - curl → method, host, path, auth class (parse-only)
-   - deepen hub links → enqueue openapi **before** asking humans
-4. **Domain meaning is not vendor hardcoding.** Tools list evidence only. Binding wire ops → domain intents is:
-   - project convention (`layerkit domain-binding show|init` → `memory/runbooks/domain-binding.json`), and
-   - this skill + `layerkit-author-map` (cite extension / operationId / docs).
-   - Generic: any `x-*-domain-op` may be treated as a domain-op *encoding* when convention allows — never special-case one customer prefix in core.
-5. Fill remaining Q6–Q10 from evidence; record citations + `source` (`doc|openapi|curl|code|…`, not `human` when derived).
-6. If a dimension is empty → **deepen L0–L4**. Residual questionnaire only after that (`residualGaps`).
-7. Write research note (PII redacted):
+
+- OpenAPI → Q1 auth, Q2 endpoints, Q3 intent candidates, Q4 body fields, Q5 PII-ish names  
+- curl → method, host, path, auth class  
+- deepen hub → enqueue openapi before humans  
+
+### C. Domain binding
+
+Domain meaning is project convention (`layerkit domain-binding show|init`), not vendor hardcoding. Cite extension / operationId / docs.
+
+### D. Memory
 
 ```bash
-layerkit memory append --type research --title "<vendor> research" --vendor <vendor> --body-file ./research-note.md
+layerkit memory append --type research --title "<vendor> research|heal" --vendor <vendor> --body-file ./research-note.md
 ```
 
-8. Hand off to `layerkit-design-integration` then `layerkit-author-map` (do not invent map rows here without evidence).
-9. Ask human **only** for residual gaps; never open full questionnaire while OpenAPI/curl already answers Q1/Q2.
-
-## Customer-owned output
-
-- Proposals must cite sources the **customer** accepts (their contracts, approved doc URLs, their code).
-- `third-party snippets ` and package seeds are **draft hints only** — re-verify every URL/excerpt before apply.
-- Output artifacts live under the customer's `{projectDir}`.
+Include drift severity when heal. Residual questionnaire only after deepen L0–L4.
 
 ## Forbidden
 
-- Inventing hash/phone/auth/endpoint rules when evidence is silent → mark `needs-evidence`
-- Opening full human questionnaire while machine-readable evidence remains
-- Trusting third-party maps without customer re-verify
-- Hardcoding Meta/Google/TikTok field names into core or skills as universal truth
+- Inventing hash/phone/auth/endpoint rules when evidence is silent  
+- Ignoring applied map on heal (must diff / surgical update)  
+- Opening full human questionnaire while OpenAPI already answers Q1/Q2  
+- Trusting third-party maps without customer re-verify  
+- Self-approve in strict maker-checker  
 
 ## Success criteria
 
-- [ ] Each answered Q has ≥1 citation + non-`human` source when derived
-- [ ] Deepen log shows L0–L4 before any human ask
-- [ ] Residual gaps listed; no silent invention
-- [ ] Memory research note appended (redacted)
+- [ ] Contract pinned when OpenAPI was supplied  
+- [ ] Drift reviewed if map existed (severity in note)  
+- [ ] Each answered Q has ≥1 citation  
+- [ ] Map proposal from OpenAPI with sources[]  
+- [ ] `layerkit agent next` advances past research after apply  

@@ -35,3 +35,14 @@ export {
   residualGaps,
   hasInventedEndpoint,
 } from './answer-sheet.js';
+
+export {
+  diffOpenApiAgainstMap,
+  pinContractEvidence,
+  formatContractUpdateMarkdown,
+  type ContractDriftItem,
+  type ContractDriftReport,
+  type DriftSeverity,
+  type DriftItemKind,
+  type PinContractResult,
+} from './contract-diff.js';

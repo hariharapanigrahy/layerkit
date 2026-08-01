@@ -63,6 +63,10 @@ assertTrue(
   idx('layerkit-privacy-review') < idx('layerkit-generate-java'),
 );
 assertTrue(
+  'deletion-first before generate-java',
+  idx('layerkit-deletion-first') < idx('layerkit-generate-java'),
+);
+assertTrue(
   'generate-java before checker-assist',
   idx('layerkit-generate-java') < idx('layerkit-checker-assist'),
 );
@@ -92,6 +96,7 @@ const wrongOrder = assertChecklistCompleteness({
     'layerkit-author-processor',
     'layerkit-design-flow',
     'layerkit-privacy-review',
+    'layerkit-deletion-first',
     'layerkit-checker-assist',
   ],
 });

@@ -110,6 +110,7 @@ See the [Runtime Send Path section in docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GO
 
 ## Agent quick start
 
+**Cheat sheet (one page):** [docs/CHEATSHEET.md](./docs/CHEATSHEET.md) · `layerkit cheatsheet`  
 **Day-1 any-vendor path:** [docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GOLDEN_PATH.md) (orchestrate + CLI only). For the runtime send path, see the runtime send-path section in that doc.
 
 Paste into your coding agent:
@@ -160,7 +161,7 @@ New installs default to **strict** maker-checker: `proposal apply` requires stat
 
 Or pin in `~/.layerkit/config.json` under `makerChecker.legacyApplyWithoutApprove`. Doctor warns when legacy is on. Prefer the strict path for production.
 
-Agent golden path: [docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GOLDEN_PATH.md).
+Cheat sheet: [docs/CHEATSHEET.md](./docs/CHEATSHEET.md). Golden path: [docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GOLDEN_PATH.md).
 
 ---
 
@@ -171,7 +172,7 @@ Agent golden path: [docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GOLDEN_PATH.md).
 | Research | **Your AI agent** | Reads vendor docs → map/processor proposals with `sources[]` |
 | Gates | CLI | `proposal validate` / dry-run / apply, doctor, install |
 | Runtime | Your app or Layerkit delivery | Deterministic map apply + HTTP — **no LLM on the hot path** |
-| Optional generate | Scaffold only | Starter code — not required for production send |
+| Generate | Agent + CLI | Integrate plan into production datalayer (`INTEGRATE.md` / `--module-root`) |
 
 **No vendor catalog.** Project stores start with zero maps. Agents research any vendor from official docs and apply customer-owned proposals under `{projectDir}` (default `.layerkit`).
 
@@ -188,8 +189,14 @@ layerkit map list|show|validate
 layerkit proposal validate <file>
 layerkit proposal apply <file>
 layerkit process dry-run --vendor <v> --intent <i>
-layerkit generate --lang java
+layerkit generate --module-root <dir> [--vendor <id>] [--apply]
+layerkit research fill --vendor <v> --openapi <file>
+layerkit agent multi --vendor <id> [--mode heal] [--openapi <file>]
 ```
+
+`generate` writes an integrate plan to `{projectDir}/out/INTEGRATE.md` for agents to edit **production code**. Requires production entrypoints or `--module-root`.
+
+**Multi-agent:** `layerkit agent multi --vendor …` writes spawn prompts for parallel specialists (research / integrate / verify). Skill: `layerkit-multi-agent`.
 
 ---
 
@@ -203,7 +210,6 @@ libs/proposal/            Validate gates (sources required)
 libs/domain/              Sample commerce domain template (not a vendor catalog)
 evals/harness/            Deterministic eval runner (merge bar)
 evals/gates/              CI gates (suite ci → npm run eval:ci)
-evals/cases/              Legacy thin re-exports of gates
 evals/map-quality-optimizer/
 evals/vendor-research-plan/
 skills/                   Agent skills
@@ -218,7 +224,7 @@ docs/                     Install prompt, launch guide
 Layerkit is an **agent toolkit + eval harness**, not a community vendor-map catalog. Maps stay **customer-owned** under each project's store.
 
 **Highest-value PRs:** skills, process evals/gates, platform installers, reliability, docs/UX.  
-See [CONTRIBUTING.md](./CONTRIBUTING.md) and the [no-catalog design](./docs/designs/agent-as-developer-no-catalog.md).
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 **New here?** Start at [good first contributions map (#48)](https://github.com/hariharapanigrahy/layerkit/issues/48) or filter [`good first issue`](https://github.com/hariharapanigrahy/layerkit/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22). Reliability tracks (hallucination / timeout / transactions) are separate issues so multiple people can work in parallel.
 
@@ -226,8 +232,6 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) and the [no-catalog design](./docs/desi
 2. Claim a `help wanted` / `good first issue` (comment on the issue), or open a [feature](https://github.com/hariharapanigrahy/layerkit/issues/new?template=feature_request.yml) / [bug](https://github.com/hariharapanigrahy/layerkit/issues/new?template=bug_report.yml)
 3. Optional: track **research notes** with the [vendor research template](https://github.com/hariharapanigrahy/layerkit/issues/new?template=vendor_map.yml) (examples/fixtures only — not official connectors)
 4. PR with tests/evals and citations where knowledge is claimed
-
-Maintainer launch checklist: [docs/OPEN_SOURCE_LAUNCH.md](./docs/OPEN_SOURCE_LAUNCH.md)
 
 ---
 
@@ -239,7 +243,7 @@ npm run smoke:codex
 npm run smoke:cursor
 npm run eval:ci                 # merge bar — suite ci (required on every PR)
 npm run eval:all                # release bar — ci + extras (e.g. vendor-research-plan)
-npm run eval:proposal-sources   # legacy single-case aliases still work
+npm run eval:proposal-sources   # single-case alias via eval harness
 npm run eval:vendor-research-plan
 ```
 

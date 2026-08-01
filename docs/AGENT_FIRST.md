@@ -10,11 +10,10 @@ libs/
   vendor-memory       local map/proposal store
   proposal            validate/apply gates
   domain              sample commerce domain template (not a vendor catalog)
-  generate            Java scaffold only
+  generate            Production integrate plan (INTEGRATE.md)
   config              ~/.layerkit/config.json
-  agent-runner        extension point for offline eval agent runs
 evals/
-  cases/*             rubrics + run.ts gates
+  gates/*             deterministic CI gates
   map-quality-optimizer   map coverage scoring
   vendor-research-plan    held-out research prompts + judge criteria
 skills/               what coding agents execute

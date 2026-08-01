@@ -11,11 +11,9 @@ import {
   defaultRationale,
   formatNextStepLine,
   formatPipelineStatus,
-  getNextStep,
   INTEGRATION_PIPELINE,
   isPipelineStepId,
   isScannableRoot,
-  loadCompletedSteps,
   markStepDone,
   pipelineStatusPath,
   PIPELINE_STATUS_REL,
@@ -40,16 +38,27 @@ import {
   DEFAULT_DOMAIN_BINDING,
   domainBindingPath,
   resolveIntentsFromOpenApi,
+  buildMultiAgentPlan,
+  writeMultiAgentPlanArtifacts,
+  readyMultiAgentTasks,
+  groupReadyByParallel,
+  loadPipelineMode,
+  setPipelineMode,
+  effectiveCompletedSteps,
+  getNextStepForProject,
+  runHeal,
 } from '../../libs/agent/index.js';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
-import { generateJavaScaffold } from '../../libs/generate/java-scaffold.js';
 import {
+  applyIntegratePlan,
+  buildIntegratePlan,
   checkJavaQuality,
   defaultJacocoSearchRoots,
   hasJavaProjectSignal,
   JACOCO_MIN_LINE_COVERAGE,
-} from '../../libs/generate/quality.js';
+  writeIntegratePlanArtifacts,
+} from '../../libs/generate/index.js';
 import { track, trackRouted } from '../../libs/runtime/track.js';
 import {
   evaluateRouting,
@@ -58,16 +67,20 @@ import {
   validateRoutingPolicy,
   type RoutingPolicy,
 } from '../../libs/routing/index.js';
-import { generateTsScaffold } from '../../libs/generate/ts-scaffold.js';
 import { layerkitHookGuidance } from '../../libs/hooks/guidance.js';
-import { installLayerkit } from '../../libs/install/install.js';
+import { defaultPackageRoot, installLayerkit } from '../../libs/install/install.js';
 import {
   installPlatformUsage,
   isInstallPlatform,
   platformDisplayName,
   type InstallPlatform,
 } from '../../libs/install/paths.js';
-import type { Identity, IntentWire, Proposal, VendorMap } from '../../libs/domain/types.js';
+import type {
+  Identity,
+  IntentWire,
+  Proposal,
+  VendorMap,
+} from '../../libs/domain/types.js';
 import {
   parseEndpointFlag,
   parseFieldFlag,
@@ -85,10 +98,13 @@ import {
 import { applyVendorMap } from '../../libs/vendor-memory/map-engine.js';
 import {
   deepenFromHubMarkdown,
+  diffOpenApiAgainstMap,
   fillAnswerSheetFromEvidence,
+  formatContractUpdateMarkdown,
   hasInventedEndpoint,
   parseCurl,
   parseOpenAPI,
+  pinContractEvidence,
   residualGaps,
   type ResearchSeed,
 } from '../../libs/research/index.js';
@@ -171,6 +187,18 @@ const cliCommands: CliCommand[] = [
     showInTopLevelHelp: true,
   },
   {
+    path: ['cheatsheet'],
+    usage: 'cheatsheet',
+    handler: runCheatsheet,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['cheat-sheet'],
+    usage: 'cheat-sheet',
+    handler: runCheatsheet,
+    showInTopLevelHelp: false,
+  },
+  {
     path: ['promote'],
     usage:
       'promote [--vendor <id>] [--strict|--no-strict] [--no-dry-run-check] [--project-dir <path>]',
@@ -202,6 +230,13 @@ const cliCommands: CliCommand[] = [
     showInTopLevelHelp: true,
   },
   {
+    path: ['agent', 'multi'],
+    usage:
+      'agent multi [--vendor <id>]... [--mode full|heal] [--openapi <file>] [--module-root <dir>] [--root <scan>] [--goal <text>] [--max-parallel <n>] [--json] [--project-dir <path>]',
+    handler: runAgentMulti,
+    showInTopLevelHelp: true,
+  },
+  {
     path: ['research', 'openapi'],
     usage: 'research openapi <file> [--json]',
     handler: runResearchOpenapi,
@@ -222,8 +257,15 @@ const cliCommands: CliCommand[] = [
   {
     path: ['research', 'fill'],
     usage:
-      'research fill [--openapi <file>]... [--curl <file>]... [--hub <file>]... [--vendor <id>] [--out <sheet.json>] [--json]',
-    handler: runResearchFill,
+      'research fill --vendor <id> --openapi <file> [--doc <url>]... [--curl <file>]... [--hub <file>]... [--out <sheet.json>] [--module-root <dir>] [--no-pin] [--json]',
+    handler: (args, ctx) => runResearchFill(args, ctx),
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['heal', 'run'],
+    usage:
+      'heal run --vendor <id> --openapi <file> [--doc <url>]... [--module-root <dir>] [--apply-map] [--apply-code] [--apply-creates] [--force] [--force-thin] [--json] [--project-dir <path>]',
+    handler: (args, ctx) => runHealCli(args, ctx),
     showInTopLevelHelp: true,
   },
   {
@@ -735,51 +777,10 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['generate'],
-    usage: 'generate --lang java|typescript|ts [--out <dir>] [--project-dir <path>]',
+    usage:
+      'generate [--lang java|typescript|ts] [--module-root <dir>] [--root <scan>] [--vendor <id>]... [--apply] [--force] [--project-dir <path>]',
     handler: (args, ctx) => {
-      const lang = flag(args, '--lang') ?? 'java';
-      const store = openStore(ctx);
-      const project = store.loadProject();
-      const domain = store.loadDomain();
-      if (!project || !domain) throw new Error('No project — run layerkit install --poc');
-      const maps = store.listMaps();
-
-      if (lang === 'typescript' || lang === 'ts') {
-        const out = flag(args, '--out') ?? join(store.projectDir, 'out', 'ts');
-        const files = generateTsScaffold({ project, domain, maps });
-        for (const f of files) {
-          const p = join(out, f.path);
-          mkdirSync(join(p, '..'), { recursive: true });
-          writeFileSync(p, f.content, 'utf8');
-        }
-        console.log(`Scaffolded ${files.length} TS files → ${out}`);
-        console.log('Includes: DataLayerClient dry_run facade, apply-map stub, types, README');
-        console.log('Next: use maps from projectDir; runtime track stays on Layerkit Node path');
-        return;
-      }
-
-      if (lang !== 'java') {
-        throw new Error('Supported --lang: java | typescript | ts');
-      }
-
-      const out = flag(args, '--out') ?? join(store.projectDir, 'out', 'java');
-      let style: Partial<StyleProfile> | undefined;
-      const stylePath = join(store.projectDir, STYLE_PROFILE_RUNBOOK_REL);
-      if (existsSync(stylePath)) {
-        style = parseStyleProfileMarkdown(readFileSync(stylePath, 'utf8'));
-      }
-      const files = generateJavaScaffold({ project, domain, maps, style });
-      for (const f of files) {
-        const p = join(out, f.path);
-        mkdirSync(join(p, '..'), { recursive: true });
-        writeFileSync(p, f.content, 'utf8');
-      }
-      console.log(`Scaffolded ${files.length} files → ${out}`);
-      if (style) {
-        console.log(`Style profile applied from ${STYLE_PROFILE_RUNBOOK_REL}`);
-      }
-      console.log('Includes: Facade, Strategy, PrivacyGate, DeliveryClient, JaCoCo 0.95 pom, DESIGN_PATTERNS.md');
-      console.log('Next: skill layerkit-generate-java; then mvn test && layerkit doctor --quality --strict');
+      runGenerate(args, ctx);
     },
     showInTopLevelHelp: true,
   },
@@ -917,7 +918,7 @@ function printInstallResult(result: Awaited<ReturnType<typeof installLayerkit>>)
   console.log('');
   console.log('Next steps:');
   console.log('- Restart your coding agent if skills/hooks do not appear.');
-  console.log('- Use skill layerkit-research-vendor (maps start empty).');
+  console.log('- Contract heal: layerkit heal run --vendor <v> --openapi <file> --module-root <dir> --apply-code');
   console.log('- Do not invent email/phone rules without documentation sources.');
   for (const n of result.notes) console.log(`- ${n}`);
 }
@@ -1001,12 +1002,8 @@ function installGuidanceLines(): string[] {
 
 function emptyMapGuidanceLines(): string[] {
   return [
-    'No vendor maps found yet — zero maps is normal because Layerkit does not ship a vendor catalog.',
-    'Next commands (evidence-first):',
-    '  - layerkit research openapi <file> (or skill layerkit-research-vendor)',
-    '  - layerkit proposal write map-from-openapi --vendor <v> --openapi <file> --out p.json',
-    '  - layerkit proposal submit p.json --by <agentId>   # then validate / approve (strict)',
-    '  - layerkit proposal apply p.json                   # POC legacy may apply without approve',
+    'No vendor maps yet — start from a customer contract:',
+    '  - layerkit heal run --vendor <v> --openapi <file> --module-root <dir> [--apply-code]',
     '  - layerkit agent next',
   ];
 }
@@ -1027,44 +1024,76 @@ function runDoctor(args: string[], ctx: CliContext): void {
 
   // One-line agent pipeline hint when a project exists
   if (store.loadProject()) {
-    const completed = loadCompletedSteps(store.projectDir);
-    console.log(formatNextStepLine(completed));
+    const completed = effectiveCompletedSteps(store.projectDir);
+    console.log(formatNextStepLine(completed, loadPipelineMode(store.projectDir)));
   }
 
   if (hasFlag(args, '--quality')) {
     console.log('');
     console.log('== quality (JaCoCo) ==');
     const strict = hasFlag(args, '--strict');
+    const project = store.loadProject();
     const q = checkJavaQuality({
-      searchRoots: defaultJacocoSearchRoots(store.projectDir, ctx.repoRoot),
+      searchRoots: defaultJacocoSearchRoots(
+        store.projectDir,
+        ctx.repoRoot,
+        project?.generate,
+      ),
       strict,
       minLineCoverage: JACOCO_MIN_LINE_COVERAGE,
     });
     for (const line of q.lines) console.log(line);
+    if (project?.generate?.moduleRoot) {
+      console.log(`  moduleRoot: ${project.generate.moduleRoot}`);
+    }
     if (!q.ok) ok = false;
   } else if (hasFlag(args, '--strict')) {
     console.log('Note: --strict applies with --quality (JaCoCo report required).');
   }
 
+  if (store.loadProject()) {
+    console.log('');
+    console.log('Tip: layerkit cheatsheet  (one-page commands)');
+  }
+
   if (!ok) process.exitCode = 1;
+}
+
+/** Print docs/CHEATSHEET.md from the installed package (or repo checkout). */
+function runCheatsheet(_args: string[], _ctx: CliContext): void {
+  const candidates = [
+    join(defaultPackageRoot(), 'docs', 'CHEATSHEET.md'),
+    join(_ctx.repoRoot, 'docs', 'CHEATSHEET.md'),
+  ];
+  for (const p of candidates) {
+    if (!existsSync(p)) continue;
+    console.log(readFileSync(p, 'utf8').trimEnd());
+    console.log('');
+    console.log(`(source: ${p})`);
+    return;
+  }
+  throw new Error(
+    'CHEATSHEET.md not found (expected package docs/CHEATSHEET.md). See https://github.com/hariharapanigrahy/layerkit/blob/main/docs/CHEATSHEET.md',
+  );
 }
 
 /** Print full integration pipeline + memory marker presence. */
 function runAgentStatus(_args: string[], ctx: CliContext): void {
-  const completed = loadCompletedSteps(ctx.projectDir);
-  console.log(formatPipelineStatus(completed));
+  const mode = loadPipelineMode(ctx.projectDir);
+  const completed = effectiveCompletedSteps(ctx.projectDir);
+  console.log(formatPipelineStatus(completed, mode));
   console.log('');
   console.log('Memory markers:');
   const statusPath = pipelineStatusPath(ctx.projectDir);
   if (existsSync(statusPath)) {
-    console.log(`  present  memory/${PIPELINE_STATUS_REL}`);
+    console.log(`  present  memory/${PIPELINE_STATUS_REL}  mode=${mode}`);
     for (const step of INTEGRATION_PIPELINE) {
       const mark = completed.includes(step.id) ? 'done' : 'open';
       console.log(`  ${mark.padEnd(6)} ${step.id}`);
     }
   } else {
     console.log(`  missing  memory/${PIPELINE_STATUS_REL} (no steps marked done yet)`);
-    console.log('  Tip: layerkit agent mark-done --step <id>');
+    console.log('  Tip: research fill --vendor --openapi … (heal) or agent mark-done --step <id>');
   }
 }
 
@@ -1073,8 +1102,8 @@ function runAgentStatus(_args: string[], ctx: CliContext): void {
  * Agents should run these, then `layerkit agent mark-done --step <id>`.
  */
 function runAgentNext(_args: string[], ctx: CliContext): void {
-  const completed = loadCompletedSteps(ctx.projectDir);
-  const next = getNextStep(completed);
+  const mode = loadPipelineMode(ctx.projectDir);
+  const next = getNextStepForProject(ctx.projectDir);
   if (!next) {
     console.log('Pipeline complete — no next agent step.');
     console.log('Optional: layerkit promote --vendor <id>; layerkit agent status');
@@ -1082,6 +1111,7 @@ function runAgentNext(_args: string[], ctx: CliContext): void {
   }
   console.log(`Next step: ${next.id}`);
   console.log(`Skill: ${next.skill}`);
+  console.log(`Mode: ${mode}`);
   if (next.requiresHuman) console.log('Requires human: yes');
   console.log(`Done when: ${next.doneWhen}`);
   console.log('CLI commands:');
@@ -1105,10 +1135,104 @@ function runAgentMarkDone(args: string[], ctx: CliContext): void {
     );
   }
   const path = markStepDone(ctx.projectDir, step);
-  const completed = loadCompletedSteps(ctx.projectDir);
+  const mode = loadPipelineMode(ctx.projectDir);
+  const completed = effectiveCompletedSteps(ctx.projectDir);
   console.log(`Marked done: ${step}`);
   console.log(`Marker file: ${path}`);
-  console.log(formatNextStepLine(completed));
+  console.log(formatNextStepLine(completed, mode));
+}
+
+/**
+ * Build a multi-agent fan-out plan (deterministic) and write runbook + JSON.
+ * Coding agents spawn one subagent per task; same parallelGroup may run concurrently.
+ * --mode heal: contract update path (skip discover; research = pin + drift + map-from-openapi).
+ */
+function runAgentMulti(args: string[], ctx: CliContext): void {
+  const store = openStore(ctx);
+  const project = store.loadProject();
+  if (!project) throw new Error('No project — run layerkit install --poc');
+
+  let vendors = flagsAll(args, '--vendor');
+  if (vendors.length === 0) {
+    vendors = store
+      .listMaps()
+      .filter((m) => m.fields.length || Object.keys(m.intents ?? {}).length)
+      .map((m) => m.vendor);
+  }
+
+  const moduleRoot =
+    flag(args, '--module-root') ?? flag(args, '--moduleRoot') ?? project.generate?.moduleRoot;
+  const root = flag(args, '--root') ?? ctx.repoRoot;
+  const goal = flag(args, '--goal');
+  const modeFlag = flag(args, '--mode');
+  const mode =
+    modeFlag === 'heal' || modeFlag === 'full'
+      ? modeFlag
+      : flag(args, '--openapi')
+        ? 'heal'
+        : 'full';
+  const openapiPath = flag(args, '--openapi');
+  const maxRaw = flag(args, '--max-parallel') ?? flag(args, '--maxParallel');
+  const maxParallel = maxRaw ? Number(maxRaw) : undefined;
+  if (maxRaw && (!Number.isFinite(maxParallel) || (maxParallel ?? 0) < 1)) {
+    throw new Error('--max-parallel must be a positive number');
+  }
+
+  if (mode === 'heal') {
+    setPipelineMode(store.projectDir, 'heal', {
+      vendor: vendors[0],
+      note: openapiPath ? `openapi=${openapiPath}` : 'contract update',
+    });
+  }
+
+  const plan = buildMultiAgentPlan({
+    repoRoot: ctx.repoRoot,
+    projectDir: store.projectDir,
+    vendors,
+    moduleRoot,
+    root,
+    goal,
+    maxParallel,
+    mode,
+    openapiPath: openapiPath ? resolve(openapiPath) : undefined,
+  });
+
+  const { mdPath, jsonPath } = writeMultiAgentPlanArtifacts(store.projectDir, plan);
+
+  if (hasFlag(args, '--json')) {
+    console.log(JSON.stringify(plan, null, 2));
+    return;
+  }
+
+  console.log('Multi-agent plan');
+  console.log(`  ${plan.summary}`);
+  console.log(`  goal: ${plan.goal}`);
+  console.log(`  → ${mdPath}`);
+  console.log(`  → ${jsonPath}`);
+  console.log('');
+  for (const phase of plan.phases) {
+    const human = phase.requiresHuman ? ' (human)' : '';
+    const par = phase.parallel ? 'parallel' : 'serial';
+    console.log(`Phase ${phase.id}${human} [${par}]: ${phase.title}`);
+    for (const id of phase.taskIds) {
+      const t = plan.tasks.find((x) => x.id === id);
+      if (!t) continue;
+      const v = t.vendor ? ` vendor=${t.vendor}` : '';
+      console.log(`  - ${t.id}  skill=${t.skill}${v}`);
+    }
+  }
+
+  const ready = readyMultiAgentTasks(plan, []);
+  const groups = groupReadyByParallel(ready);
+  console.log('');
+  console.log('Spawn first (no deps):');
+  for (const [g, list] of Object.entries(groups)) {
+    console.log(`  parallelGroup=${g} (${list.length})`);
+    for (const t of list) console.log(`    ${t.id}: ${t.label}`);
+  }
+  console.log('');
+  console.log('Lead agent: open multi-agent-plan.md; spawn one subagent per task with its prompt.');
+  console.log('Then: layerkit agent status / mark-done as single-pipeline steps complete.');
 }
 
 /**
@@ -1133,7 +1257,11 @@ function runPromote(args: string[], ctx: CliContext): void {
   const requireDryRun = !hasFlag(args, '--no-dry-run-check');
   const onlyVendor = flag(args, '--vendor');
 
-  const jacocoRoots = defaultJacocoSearchRoots(store.projectDir, ctx.repoRoot);
+  const jacocoRoots = defaultJacocoSearchRoots(
+    store.projectDir,
+    ctx.repoRoot,
+    project.generate,
+  );
   const javaPresent = hasJavaProjectSignal(jacocoRoots);
   const skipQuality = !strictFlag || !javaPresent;
   const q = javaPresent
@@ -1145,7 +1273,7 @@ function runPromote(args: string[], ctx: CliContext): void {
     : {
         ok: true,
         lines: [
-          'JaCoCo: skipped (no Java project signal under out/java — Node/TS promote path)',
+          'JaCoCo: skipped (no Java project signal under moduleRoot — Node/TS promote path)',
         ],
         reportMissing: true,
         coverageBelowFloor: false,
@@ -1321,25 +1449,145 @@ function runResearchDeepen(args: string[]): void {
   });
 }
 
-function runResearchFill(args: string[]): void {
+/**
+ * Full heal: pin contract → map from OpenAPI → integrate plan → PR package.
+ * Optional --apply-code writes adapter/test bodies into the repo for a PR.
+ */
+function runHealCli(args: string[], ctx: CliContext): void {
+  const vendor = flag(args, '--vendor');
+  const openapi = flag(args, '--openapi');
+  if (!vendor || !openapi) {
+    throw new Error(
+      'Usage: layerkit heal run --vendor <id> --openapi <file> [--module-root <dir>] [--apply-code] [--force]',
+    );
+  }
+  const docs = collectFlags(args, '--doc');
+  const moduleRoot = flag(args, '--module-root') ?? flag(args, '--moduleRoot');
+  const applyMap = !hasFlag(args, '--no-apply-map');
+  const applyCode = hasFlag(args, '--apply-code');
+  const applyCreates = hasFlag(args, '--apply-creates') || applyCode;
+  const force = hasFlag(args, '--force') || applyCode;
+  const forceThin = hasFlag(args, '--force-thin');
+
+  const store = openStore(ctx);
+  if (!store.loadProject()) throw new Error('No project — run layerkit install --poc');
+
+  const result = runHeal({
+    repoRoot: ctx.repoRoot,
+    projectDir: store.projectDir,
+    vendor,
+    openapiPath: resolve(openapi),
+    docUrls: docs,
+    moduleRoot,
+    applyMap,
+    applyCode,
+    applyCreates,
+    force,
+    forceThin,
+    agentId: flag(args, '--agent') ?? 'heal-cli',
+  });
+
+  if (hasFlag(args, '--json')) {
+    console.log(
+      JSON.stringify(
+        {
+          ...result,
+          plan: result.plan
+            ? {
+                summary: result.plan.summary,
+                vendors: result.plan.vendors,
+                actions: result.plan.actions.map((a) => ({
+                  kind: a.kind,
+                  path: a.path,
+                  vendor: a.vendor,
+                  hasContent: Boolean(a.content),
+                })),
+              }
+            : null,
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
+
+  console.log(`Heal ${result.mode}: ${result.vendor}`);
+  console.log(`  ${result.summary}`);
+  console.log(`  Drift severity: ${result.drift.severity}`);
+  for (const it of result.drift.items.slice(0, 10)) {
+    console.log(`    [${it.severity}] ${it.kind}${it.path ? ` ${it.path}` : ''}`);
+  }
+  if (result.drift.items.length > 10) console.log(`    … +${result.drift.items.length - 10} more`);
+  console.log(`  Pinned: ${result.pinnedOpenApiPath}`);
+  console.log(`  Proposal: ${result.proposalPath}`);
+  console.log(`  Map applied: ${result.mapApplied}`);
+  if (result.integrateMdPath) console.log(`  Integrate: ${result.integrateMdPath}`);
+  console.log(`  PR package: ${result.prDir}`);
+  console.log(`  PR body: ${result.prBodyPath}`);
+  console.log(`  Branch: ${result.branchName}`);
+  if (result.writtenCode.length) {
+    console.log(`  Code written (${result.writtenCode.length}):`);
+    for (const w of result.writtenCode.slice(0, 12)) console.log(`    ${w}`);
+  }
+  if (result.codeErrors.length) {
+    for (const e of result.codeErrors) console.error(`  error ${e}`);
+    process.exitCode = 1;
+  }
+  console.log('');
+  console.log('Next:');
+  console.log(`  git checkout -b ${result.branchName}`);
+  console.log(`  bash ${result.prDir}/apply-to-repo.sh .   # if not using --apply-code`);
+  console.log(`  git add -A && git commit -m "fix(${vendor}): heal integration from contract"`);
+  console.log(`  gh pr create --body-file ${result.prBodyPath}`);
+  console.log(`  layerkit process dry-run --vendor ${vendor} --intent <primary>`);
+}
+
+/** Pin contract evidence, fill answer sheet, diff against applied map when present. */
+function runResearchFill(args: string[], ctx: CliContext): void {
   const openapis = collectFlags(args, '--openapi');
   const curls = collectFlags(args, '--curl');
   const hubs = collectFlags(args, '--hub');
+  const docs = collectFlags(args, '--doc');
   const vendor = flag(args, '--vendor');
   const out = flag(args, '--out');
+  const moduleRoot = flag(args, '--module-root') ?? flag(args, '--moduleRoot');
+  const noPin = hasFlag(args, '--no-pin');
 
   if (!openapis.length && !curls.length && !hubs.length) {
     throw new Error(
-      'Usage: layerkit research fill [--openapi <file>]... [--curl <file>]... [--hub <file>]... [--vendor <id>] [--out <sheet.json>]',
+      'Usage: layerkit research fill --vendor <id> --openapi <file> [--doc <url>]... [--curl ...] [--hub ...] [--out sheet.json]',
     );
   }
 
+  const store = openStore(ctx);
+  store.ensureDirs();
+
+  let pinnedOpenApiPath: string | undefined;
+  let openapiRawForDiff: string | undefined;
+  let primaryOpenApi = openapis[0] ? resolve(openapis[0]) : undefined;
+
+  if (vendor && primaryOpenApi && !noPin) {
+    const pin = pinContractEvidence({
+      projectDir: store.projectDir,
+      vendor,
+      openapiPath: primaryOpenApi,
+      docUrls: docs,
+    });
+    pinnedOpenApiPath = pin.pinnedOpenApiPath;
+    openapiRawForDiff = readFileSync(pin.pinnedOpenApiPath, 'utf8');
+    primaryOpenApi = pin.pinnedOpenApiPath;
+  } else if (primaryOpenApi) {
+    openapiRawForDiff = readFileSync(primaryOpenApi, 'utf8');
+  }
+
   const seeds: ResearchSeed[] = [];
-  for (const f of openapis) {
+  const openapiList = pinnedOpenApiPath ? [pinnedOpenApiPath] : openapis.map((f) => resolve(f));
+  for (const f of openapiList) {
     seeds.push({
       kind: 'openapi',
-      urlOrPath: resolve(f),
-      content: readFileSync(resolve(f), 'utf8'),
+      urlOrPath: f,
+      content: readFileSync(f, 'utf8'),
     });
   }
   for (const f of curls) {
@@ -1352,25 +1600,101 @@ function runResearchFill(args: string[]): void {
       content: readFileSync(resolve(f), 'utf8'),
     });
   }
+  for (const url of docs) {
+    seeds.push({
+      kind: 'url',
+      url,
+      note: 'customer-supplied doc for contract update',
+    });
+  }
 
   const sheet = fillAnswerSheetFromEvidence(seeds, { vendor });
   const gaps = residualGaps(sheet);
   const invented = hasInventedEndpoint(sheet);
 
-  if (out) {
-    writeFileSync(resolve(out), JSON.stringify(sheet, null, 2) + '\n', 'utf8');
+  const sheetPath = out
+    ? resolve(out)
+    : vendor
+      ? join(store.projectDir, 'out', 'contracts', vendor, 'sheet.json')
+      : undefined;
+  if (sheetPath) {
+    mkdirSync(join(sheetPath, '..'), { recursive: true });
+    writeFileSync(sheetPath, JSON.stringify(sheet, null, 2) + '\n', 'utf8');
   }
 
-  emitJsonOrText(args, { sheet, residualGaps: gaps, inventedEndpoint: invented }, () => {
-    if (out) console.log(`Wrote answer sheet → ${resolve(out)}`);
+  let drift = null as ReturnType<typeof diffOpenApiAgainstMap> | null;
+  let updateMdPath: string | undefined;
+  let driftPath: string | undefined;
+  if (vendor && openapiRawForDiff) {
+    const map = store.loadMap(vendor);
+    drift = diffOpenApiAgainstMap(vendor, openapiRawForDiff, map);
+    const mode = map ? 'heal' : 'first_time';
+    if (mode === 'heal') {
+      setPipelineMode(store.projectDir, 'heal', {
+        vendor,
+        note: `digest=${drift.contractDigest}`,
+      });
+    } else {
+      setPipelineMode(store.projectDir, 'full', { vendor });
+    }
+    driftPath = join(store.projectDir, 'out', 'CONTRACT_DRIFT.json');
+    writeFileSync(driftPath, JSON.stringify(drift, null, 2) + '\n', 'utf8');
+    updateMdPath = join(store.projectDir, 'out', 'CONTRACT_UPDATE.md');
+    writeFileSync(
+      updateMdPath,
+      formatContractUpdateMarkdown({
+        vendor,
+        drift,
+        pinnedOpenApiPath: pinnedOpenApiPath ?? primaryOpenApi ?? '',
+        sheetPath,
+        moduleRoot,
+        mode,
+      }),
+      'utf8',
+    );
+  }
+
+  const payload = {
+    sheet,
+    residualGaps: gaps,
+    inventedEndpoint: invented,
+    vendor: vendor ?? null,
+    pinnedOpenApiPath: pinnedOpenApiPath ?? null,
+    drift,
+    contractUpdateMd: updateMdPath ?? null,
+    pipelineMode: vendor ? loadPipelineMode(store.projectDir) : null,
+  };
+
+  emitJsonOrText(args, payload, () => {
+    if (sheetPath) console.log(`Wrote answer sheet → ${sheetPath}`);
+    if (pinnedOpenApiPath) console.log(`Pinned contract → ${pinnedOpenApiPath}`);
+    if (drift) {
+      console.log(drift.summary);
+      console.log(`Drift severity: ${drift.severity} (${drift.items.length} items)`);
+      for (const it of drift.items.slice(0, 12)) {
+        console.log(`  [${it.severity}] ${it.kind}${it.path ? ` ${it.path}` : ''}: ${it.detail}`);
+      }
+      if (drift.items.length > 12) console.log(`  … +${drift.items.length - 12} more`);
+      if (driftPath) console.log(`Wrote drift → ${driftPath}`);
+      if (updateMdPath) console.log(`Wrote runbook → ${updateMdPath}`);
+      console.log(`Pipeline mode: ${loadPipelineMode(store.projectDir)}`);
+    }
     const dimCount = Object.keys(sheet.dimensions).length;
     console.log(`dimensions answered: ${countAnswered(sheet)} / ${dimCount}`);
     console.log(`residual gaps: ${gaps.length}`);
     if (invented) console.log('warning: possible invented endpoint signals in sheet');
-    for (const g of gaps.slice(0, 12)) {
+    for (const g of gaps.slice(0, 8)) {
       console.log(`  gap ${g.id}: ${g.topic} (${g.reason})`);
     }
-    if (gaps.length > 12) console.log(`  … +${gaps.length - 12} more`);
+    if (vendor && primaryOpenApi) {
+      console.log('');
+      console.log('Next (same pipeline):');
+      console.log(
+        `  layerkit proposal write map-from-openapi --vendor ${vendor} --openapi ${primaryOpenApi} --out ./proposal.json --validate`,
+      );
+      console.log(`  layerkit agent multi --vendor ${vendor} --mode ${drift?.hasExistingMap ? 'heal' : 'full'} --openapi ${primaryOpenApi}`);
+      console.log('  layerkit agent next');
+    }
   });
 }
 
@@ -1906,6 +2230,131 @@ function runHandoffWrite(args: string[], ctx: CliContext): void {
   }
 }
 
+/** Write INTEGRATE.md plan against production module topology. */
+function runGenerate(args: string[], ctx: CliContext): void {
+  const lang = flag(args, '--lang') ?? 'java';
+  if (lang !== 'java' && lang !== 'typescript' && lang !== 'ts') {
+    throw new Error('Supported --lang: java | typescript | ts');
+  }
+  const store = openStore(ctx);
+  const project = store.loadProject();
+  const domain = store.loadDomain();
+  if (!project || !domain) throw new Error('No project — run layerkit install --poc');
+  const maps = store.listMaps();
+
+  const modeRaw = (flag(args, '--mode') ?? project.generate?.mode ?? 'integrate').toString().toLowerCase();
+  if (modeRaw !== 'integrate') {
+    throw new Error(
+      'generate targets production modules only. Omit --mode or use --mode integrate.\n' +
+        '  Pass --module-root <path> when entrypoints are not auto-detected.',
+    );
+  }
+
+  const moduleRootFlag = flag(args, '--module-root') ?? flag(args, '--moduleRoot');
+  const scanRoot = flag(args, '--root') ?? ctx.repoRoot;
+  const vendors = flagsAll(args, '--vendor');
+  const applyCreates = hasFlag(args, '--apply');
+  const force = hasFlag(args, '--force');
+  const forceThin = hasFlag(args, '--force-thin');
+
+  const generateCfg = {
+    ...project.generate,
+    ...(moduleRootFlag ? { moduleRoot: moduleRootFlag } : {}),
+    mode: 'integrate' as const,
+  };
+
+  let style: Partial<StyleProfile> | undefined;
+  const stylePath = join(store.projectDir, STYLE_PROFILE_RUNBOOK_REL);
+  if (existsSync(stylePath)) {
+    style = parseStyleProfileMarkdown(readFileSync(stylePath, 'utf8'));
+  }
+
+  const { resolution, plan } = buildIntegratePlan({
+    repoRoot: ctx.repoRoot,
+    scanRoot,
+    projectGenerate: generateCfg,
+    maps,
+    vendors: vendors.length ? vendors : undefined,
+    style,
+    mode: 'integrate',
+    forceThin,
+  });
+
+  console.log(`Generate: integrate (from ${resolution.resolvedFrom})`);
+  console.log(`  ${resolution.reason}`);
+
+  if (!resolution.ok || !plan) {
+    console.error('');
+    console.error('No production integration entrypoints found.');
+    console.error('  layerkit generate --module-root path/to/integrations');
+    process.exitCode = 1;
+    return;
+  }
+
+  const { jsonPath, mdPath } = writeIntegratePlanArtifacts(store.projectDir, plan);
+  console.log(`Integrate plan → ${mdPath}`);
+  console.log(`               → ${jsonPath}`);
+  console.log(`  ${plan.summary}`);
+  console.log(
+    `  Topology: ${plan.topology.entrypoints.length} entrypoint(s), package=${plan.topology.package ?? '?'}`,
+  );
+  console.log(`  Pattern: ${plan.topology.addVendorPattern}`);
+  for (const a of plan.actions.slice(0, 12)) {
+    console.log(`  - ${a.kind}: ${a.path}${a.vendor ? ` (${a.vendor})` : ''}`);
+  }
+  if (plan.actions.length > 12) console.log(`  … ${plan.actions.length - 12} more`);
+
+  if (applyCreates) {
+    const result = applyIntegratePlan({
+      plan,
+      repoRoot: ctx.repoRoot,
+      applyCreates: true,
+      force,
+    });
+    for (const w of result.written) console.log(`  wrote ${w}`);
+    for (const s of result.skipped.slice(0, 8)) console.log(`  skip ${s}`);
+    for (const e of result.errors) console.error(`  error ${e}`);
+    if (result.errors.length) process.exitCode = 1;
+    console.log(
+      `Apply creates: ${result.written.length} written, ${result.skipped.length} skipped (patches are agent/PR only)`,
+    );
+  } else {
+    console.log('Tip: --apply writes new adapter/test stubs only; patches stay for the agent/PR.');
+  }
+
+  if (!project.generate?.moduleRoot && plan.topology.moduleRoot) {
+    const rel = plan.topology.moduleRoot.startsWith(ctx.repoRoot)
+      ? plan.topology.moduleRoot.slice(ctx.repoRoot.length).replace(/^\//, '') || '.'
+      : plan.topology.moduleRoot;
+    project.generate = {
+      ...project.generate,
+      mode: 'integrate',
+      moduleRoot: moduleRootFlag ?? rel,
+    };
+    store.saveProject(project);
+    console.log(`Recorded project.generate.moduleRoot=${project.generate.moduleRoot}`);
+  }
+
+  console.log('Next: skill layerkit-generate-java — edit production files from INTEGRATE.md');
+  console.log('      then tests in moduleRoot && layerkit doctor --quality --strict');
+}
+
+/** All values for repeated `--name v` or `--name=v` flags. */
+function flagsAll(args: string[], name: string): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i]!;
+    if (a === name && args[i + 1]) {
+      out.push(args[++i]!);
+      continue;
+    }
+    if (a.startsWith(`${name}=`)) {
+      out.push(a.slice(name.length + 1));
+    }
+  }
+  return out;
+}
+
 function flag(args: string[], name: string): string | undefined {
   const i = args.indexOf(name);
   if (i >= 0) return args[i + 1];
@@ -1954,6 +2403,7 @@ function printHelp(): void {
   }
   console.log('\nGlobal flags: --project-dir <path>  (store root; default .layerkit)');
   console.log('Platforms: ' + installPlatformUsage);
+  console.log('Cheat sheet: layerkit cheatsheet  (docs/CHEATSHEET.md)');
   console.log('Agent install: docs/agent-install-prompt.md');
 }
 

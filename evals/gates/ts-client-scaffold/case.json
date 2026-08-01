@@ -1,9 +1,0 @@
-{
-  "id": "ts-client-scaffold",
-  "suite": "ci",
-  "title": "generateTsScaffold emits DataLayerClient + dry_run TS client files",
-  "owners": ["generate"],
-  "featurePr": "PR11b",
-  "fixtures": [],
-  "tags": ["deterministic", "no-network", "typescript"]
-}

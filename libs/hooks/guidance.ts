@@ -1,7 +1,7 @@
 /** Injected into agent sessions via hooks. Keep short (context budget). */
 export const layerkitHookGuidance = [
-  'Layerkit: evidence-first (docs, OpenAPI, curl, code); deepen if unanswered; residual human only; no LLM on track().',
-  'Master skill: layerkit-orchestrate-integration (discover → research → design → author → privacy → dry-run/fix → generate → checker).',
-  'Checker-assist is read-only — never approve/apply. Promote only after quality gates.',
-  'Docs: skills/*/SKILL.md, {projectDir}/memory/INDEX.md, layerkit doctor.',
+  'Layerkit: evidence-first (OpenAPI/docs/curl/code); residual human only; no LLM on track().',
+  'Lead: layerkit-orchestrate-integration. Contract heal: `layerkit heal run --vendor … --openapi … --module-root … --apply-code` → out/pr + code updates.',
+  'Checker-assist read-only. Promote after quality gates.',
+  'Docs: layerkit cheatsheet, skills/*/SKILL.md. CLI: layerkit / npx layerkit.',
 ].join(' ');

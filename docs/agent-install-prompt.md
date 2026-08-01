@@ -7,7 +7,8 @@ Install Layerkit (agent-first multi-vendor data-layer toolkit).
 
 Repo: https://github.com/hariharapanigrahy/layerkit
 
-Day-1 path (read first): docs/AGENT_GOLDEN_PATH.md
+Cheat sheet (one page): docs/CHEATSHEET.md — or run: layerkit cheatsheet
+Day-1 path: docs/AGENT_GOLDEN_PATH.md
 Master skill only after install: skills/layerkit-orchestrate-integration/SKILL.md
 
 Before installing, ask:

@@ -1,79 +1,56 @@
 ---
 name: layerkit-generate-java
-description: Implement enterprise Java client matching style profile; Facade/Strategy/Ports; tests ≥95% JaCoCo.
+description: Plan and apply vendor adapters into the production datalayer; style-match; tests ≥95% JaCoCo when Java.
 ---
 
 # layerkit-generate-java
 
-Scaffold + implement the deterministic Java client from applied maps/flows. **Style-match** the customer codebase.
+Modify the **existing** production datalayer (adapters, registry, router, tests) using the integrate plan.
 
 ```bash
-layerkit generate --lang java
+layerkit generate --module-root <path-to-module> [--vendor <id>] [--apply]
+# Writes {projectDir}/out/INTEGRATE.md + integrate-plan.json
 ```
 
-## TypeScript parity (optional)
+`project.json`:
 
-Same maps/domain input; second runtime language **dry-run scaffold** (not the enterprise Java path):
-
-```bash
-layerkit generate --lang ts
-# aliases: --lang typescript
-# default out: {projectDir}/out/ts
+```json
+{
+  "generate": {
+    "moduleRoot": "apps/platform/integrations",
+    "qualityRoots": ["apps/platform/integrations"],
+    "denyEdit": ["**/legacy/**"]
+  }
+}
 ```
 
-Emits `package.json` (`"type": "module"`), `src/index.ts` (`DataLayerClient.track` with `dry_run`),
-`src/vendor/types.ts`, `src/apply-map.ts` (stub returning `{ mode: 'dry_run', intent, vendor }`), and `README.md`.
-Prefer **Java** for promote / JaCoCo quality gates until the TS client is fully implemented.
+## Protocol
 
-## What the CLI scaffolds
-
-Under `{projectDir}/out/java`:
-
-| Path | Role |
-|------|------|
-| `pom.xml` | Java 17, JUnit 5, **JaCoCo line ≥ 0.95** |
-| `DESIGN_PATTERNS.md` | Required patterns + anti-patterns |
-| `AGENT_TASK.md` | Filled vs empty vendors |
-| `.../datalayer/DataLayerClient.java` | **Facade** — `track()` |
-| `.../datalayer/vendor/VendorAdapter.java` | **Strategy** interface |
-| `.../datalayer/strategy/StrategyRegistry.java` | Pure processor registry |
-| `.../datalayer/privacy/PrivacyGate.java` | Privacy port (fail-closed live) |
-| `.../datalayer/delivery/DeliveryClient.java` | Delivery port (no network in dry_run) |
-
-## Agent steps
-
-1. Read style profile from memory (`layerkit-align-client-style`) + `AGENT_TASK.md` + `DESIGN_PATTERNS.md`.
-2. Prefer extending customer package/DI/HTTP stack over orphan `{projectDir}/out/java` trees when integrating into monorepos.
-3. Implement **filled** vendors only (one `VendorAdapter` per vendor with evidence-backed maps).
-4. Keep processors **pure** (register in `StrategyRegistry`); no LLM / no network on map path.
-5. Wire `PrivacyGate` + `DeliveryClient` for dry_run first; live only after policy + real HTTP.
-6. Add tests under `src/test/java` aiming **≥95% line** (100% for pure processors/privacy).
-7. Run:
-
-```bash
-cd .layerkit/out/java && mvn test
-layerkit doctor --quality --strict
-layerkit process dry-run --vendor <id> --intent <i>
-# promote only after quality + checker
-layerkit promote --vendor <id>
-```
-
-## Quality hooks
-
-- `layerkit doctor --quality` — JaCoCo under `out/java`
-- `layerkit doctor --quality --strict` — fails if missing or line rate &lt; 0.95
-- `layerkit promote` — same gate by default
+1. Style profile: `layerkit style-profile scan --root <repo>`
+2. Run `layerkit-deletion-first`: remove/update stale code/docs/tests before adding files
+3. `layerkit generate --module-root <module> [--vendor <id>]`
+4. Read `{projectDir}/out/INTEGRATE.md` — create / patch / test / skip
+5. Implement in **production paths** listed in the plan
+6. Optional: `--apply` writes **new file stubs only** (no silent overwrites)
+7. Module tests; then:
+   ```bash
+   layerkit doctor --quality --strict
+   layerkit process dry-run --vendor <id> --intent <i>
+   layerkit promote --vendor <id>
+   ```
 
 ## Forbidden
 
-- LLM on hot path (`DataLayerClient.track`)
-- Implementing empty vendors with invented field maps
-- Skipping style profile when customer client code exists
+- LLM on hot path (`track` / adapter send)
+- Invented field maps
+- Parallel facade beside an existing one
 - Promoting while coverage/doctor fail
+- New adapter abstraction without explaining what existing file/function/export cannot be changed
 
-## Success criteria
+## Success
 
-- [ ] Style profile applied (package/DI/HTTP named in notes)
-- [ ] `mvn test` green; JaCoCo ≥ 0.95
-- [ ] Dry-run succeeds for primary intents
-- [ ] Citations remain on maps/processors used by generated code
+- [ ] Production files updated per INTEGRATE.md
+- [ ] Deletion-first pass complete; new files/functions/exports list what they replace
+- [ ] Style/topology honored
+- [ ] Module tests green; JaCoCo ≥ 0.95 when enforced
+- [ ] Dry-run green for primary intents

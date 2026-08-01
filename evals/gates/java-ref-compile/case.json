@@ -1,9 +1,0 @@
-{
-  "id": "java-ref-compile",
-  "suite": "ci",
-  "title": "Generated Java scaffold Facade/Strategy types + JaCoCo floor, compiles (mvn or javac)",
-  "owners": ["generate"],
-  "featurePr": "PR11a",
-  "fixtures": [],
-  "tags": ["deterministic", "no-network", "java"]
-}

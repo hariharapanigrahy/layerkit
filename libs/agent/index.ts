@@ -72,11 +72,16 @@ export {
   formatNextStepLine,
   formatPipelineStatus,
   getNextStep,
+  getNextStepForProject,
   isPipelineStepId,
   loadCompletedSteps,
+  loadPipelineMode,
+  effectiveCompletedSteps,
   markStepDone,
+  setPipelineMode,
   pipelineStatusPath,
   type PipelineStep,
+  type PipelineMode,
 } from './pipeline.js';
 
 export {
@@ -135,3 +140,22 @@ export {
   type DomainIntentSource,
   type ResolvedDomainIntent,
 } from './domain-binding.js';
+
+export {
+  buildMultiAgentPlan,
+  formatMultiAgentPlanMarkdown,
+  writeMultiAgentPlanArtifacts,
+  multiAgentPlanPaths,
+  readyMultiAgentTasks,
+  groupReadyByParallel,
+  isMultiAgentPlanPath,
+  type MultiAgentRole,
+  type MultiAgentPhaseId,
+  type MultiAgentTask,
+  type MultiAgentPhase,
+  type MultiAgentPlan,
+  type BuildMultiAgentPlanOptions,
+  type AgentCapability,
+} from './multi-agent.js';
+
+export { runHeal, healPrRelative, type HealRunOptions, type HealRunResult } from './heal.js';

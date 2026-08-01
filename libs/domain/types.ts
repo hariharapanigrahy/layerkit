@@ -211,6 +211,25 @@ export interface DomainSpec {
   fields: DomainField[];
 }
 
+/** Generate always plans patches against production integration code. */
+export type GenerateMode = 'integrate';
+
+export interface GenerateConfig {
+  /** Optional; only `integrate` is valid if set */
+  mode?: GenerateMode;
+  /**
+   * Customer module root (repo-relative or absolute).
+   * Example: apps/platform/integrations
+   */
+  moduleRoot?: string;
+  /** Extra roots for doctor --quality / promote JaCoCo search */
+  qualityRoots?: string[];
+  /** Override package when style profile is missing */
+  package?: string;
+  /** Glob-ish path prefixes agents must not edit (secrets, legacy) */
+  denyEdit?: string[];
+}
+
 export interface LayerProject {
   name: string;
   version: string;
@@ -233,6 +252,8 @@ export interface LayerProject {
     legacyApplyWithoutApprove?: boolean;
   };
   privacyPolicyId?: string;
+  /** Client generation targets (production moduleRoot) */
+  generate?: GenerateConfig;
 }
 
 export type ProposalKind =

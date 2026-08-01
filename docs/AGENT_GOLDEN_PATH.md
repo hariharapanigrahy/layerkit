@@ -3,7 +3,9 @@
 Integrate **any** vendor in one day using **orchestrate + CLI only**.  
 Maps start empty. Agents research evidence, author customer-owned proposals, pass gates, then generate and promote. Runtime `track()` stays deterministic (no LLM on the hot path).
 
+**Cheat sheet (one page):** [`CHEATSHEET.md`](./CHEATSHEET.md) · `layerkit cheatsheet`  
 **Master skill:** [`skills/layerkit-orchestrate-integration/SKILL.md`](../skills/layerkit-orchestrate-integration/SKILL.md)  
+**Multi-agent:** [`skills/layerkit-multi-agent/SKILL.md`](../skills/layerkit-multi-agent/SKILL.md) + `layerkit agent multi --vendor …`  
 **Status CLI:** `layerkit agent status` / `layerkit agent next` / `layerkit agent mark-done --step <id>`
 
 Placeholders used below:
@@ -241,20 +243,21 @@ layerkit map list
 layerkit map show <vendor>
 layerkit memory list --vendor <vendor>
 
-# Deterministic research helpers (libs/research via CLI)
+# Contract intake (first-time or heal when map exists)
+layerkit research fill \
+  --vendor <vendor> \
+  --openapi <openapi.yaml> \
+  [--doc <url>] \
+  --out <sheet.json>
+# pins out/contracts/<vendor>/ · CONTRACT_DRIFT.json · mode=heal if map applied
+
 layerkit research openapi <openapi.yaml> [--json]
 layerkit research curl <curl.txt> [--json]
-# or: layerkit research curl 'curl -X POST https://api.example.com/v1/events -H "Authorization: Bearer …"'
 layerkit research deepen <hub.md> [--json]
-
-# Fill Q1–Q10 answer sheet from seeds; write residual gaps
-layerkit research fill \
-  --openapi <openapi.yaml> \
-  --curl <curl.txt> \
-  --hub <hub.md> \
-  --vendor <vendor> \
-  --out <sheet.json>
 layerkit research gaps <sheet.json> [--json]
+
+# Fan-out after contract update
+layerkit agent multi --vendor <vendor> --mode heal --openapi <openapi.yaml>
 
 # Persist a redacted research note
 layerkit memory append \
@@ -347,12 +350,24 @@ Strict maker-checker: maker ≠ checker. Use `layerkit-checker-assist` for a ris
 Skill: [`layerkit-generate-java`](../skills/layerkit-generate-java/SKILL.md)
 
 ```bash
-layerkit generate --lang java
-# default out: <project-dir>/out/java
-cd <project-dir>/out/java && mvn test
+layerkit generate --module-root <path-to-module> [--vendor <id>] [--apply]
+# → {projectDir}/out/INTEGRATE.md (+ integrate-plan.json)
 ```
 
-Target: JaCoCo line coverage ≥ 0.95 for the generated client when quality gates are enforced.
+Implement creates/patches listed in `INTEGRATE.md` **in the customer module**.
+
+Target: JaCoCo line coverage ≥ 0.95 on the module under test when quality gates are enforced.
+
+Pin targets in `{projectDir}/project.json`:
+
+```json
+{
+  "generate": {
+    "moduleRoot": "path/to/integrations-module",
+    "qualityRoots": ["path/to/integrations-module"]
+  }
+}
+```
 
 ```bash
 layerkit agent mark-done --step generate

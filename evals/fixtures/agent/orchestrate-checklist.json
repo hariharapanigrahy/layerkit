@@ -8,11 +8,13 @@
     "layerkit-author-processor",
     "layerkit-design-flow",
     "layerkit-privacy-review",
+    "layerkit-deletion-first",
     "layerkit-generate-java",
     "layerkit-checker-assist"
   ],
   "notes": [
     "Evidence-first: research-vendor deepens before residual human ask",
+    "Deletion-first: remove stale code/docs/tests before production datalayer edits",
     "layerkit-update-maps is maintenance (parallel / later), not required in first-pass pipeline",
     "Fixture vendor only"
   ]

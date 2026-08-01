@@ -2,7 +2,7 @@
 
 Thanks for helping build an **agent-first multi-vendor data-layer toolkit**.
 
-Layerkit does **not** maintain a vendor integration catalog. Product value is **skills + process evals + deterministic runtime** so an agent can integrate *any* vendor into a **customer-owned** project store. See [docs/designs/agent-as-developer-no-catalog.md](./docs/designs/agent-as-developer-no-catalog.md).
+Layerkit does **not** maintain a vendor integration catalog. Product value is **skills + process evals + deterministic runtime** so an agent can integrate *any* vendor into a **customer-owned** project store.
 
 ## Code of conduct
 
@@ -18,7 +18,7 @@ Be respectful. See [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
 | 2 | **Docs / first-hour UX** | `README.md`, `docs/`, install prompts | Clear agent + human paths help adoption |
 | 2 | **Generic processors** | `libs/strategy/` only if vendor-agnostic | Cite primary docs; no invented hash/normalize rules |
 | 3 | **Research / map *examples*** (fixtures only) | `evals/fixtures/`, proposal samples in PRs | Customer-owned patterns for tests — **not** package-shipped catalog truth |
-| 3 | **Java / TS generate** | `skills/layerkit-generate-java`, `libs/generate/` | Enterprise Java default; TS scaffold optional |
+| 3 | **Generate / integrate** | `skills/layerkit-generate-java`, `libs/generate/` | Production module plans (`INTEGRATE.md`) |
 
 **Do not open PRs that hardcode Meta/Google/TikTok/etc. field tables into `libs/` as product truth.** Those go stale and fight the design.
 
