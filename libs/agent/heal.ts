@@ -20,23 +20,78 @@ import { createVendorMemoryStore } from '../vendor-memory/store.js';
 import { loadDomainBinding } from './domain-binding.js';
 import { setPipelineMode } from './pipeline.js';
 
-function mergeHealFields(scaffolded: FieldMapRow[], baseline?: VendorMap | null): FieldMapRow[] {
+function mergeHealFields(
+  scaffolded: FieldMapRow[],
+  baseline?: VendorMap | null,
+  drift?: ContractDriftReport,
+): FieldMapRow[] {
   if (!baseline) return scaffolded;
 
   const preservedByVendor = new Map<string, FieldMapRow>();
   for (const row of baseline.fields ?? []) {
     preservedByVendor.set(row.vendor, { ...row, transform: { ...row.transform } });
   }
+  const removed = new Set(
+    (drift?.items ?? [])
+      .filter((i) => i.kind === 'field_removed' && i.path)
+      .map((i) => i.path!),
+  );
+  const added = new Set(
+    (drift?.items ?? [])
+      .filter((i) => i.kind === 'field_added' && i.path)
+      .map((i) => i.path!),
+  );
 
   const merged: FieldMapRow[] = [];
-  const seen = new Set<string>();
+  const usedBaseline = new Set<string>();
   for (const row of scaffolded) {
     const preserved = preservedByVendor.get(row.vendor);
-    merged.push(preserved ? { ...preserved, optional: row.optional } : row);
-    seen.add(row.vendor);
+    if (preserved) {
+      merged.push({ ...preserved, optional: row.optional });
+      usedBaseline.add(preserved.vendor);
+      continue;
+    }
+
+    const renameSource = added.has(row.vendor)
+      ? findRenameSource(row.vendor, baseline.fields ?? [], removed, usedBaseline)
+      : undefined;
+    merged.push(
+      renameSource
+        ? { ...renameSource, vendor: row.vendor, optional: row.optional }
+        : row,
+    );
+    if (renameSource) usedBaseline.add(renameSource.vendor);
   }
 
   return merged;
+}
+
+function findRenameSource(
+  addedVendor: string,
+  baselineFields: FieldMapRow[],
+  removedVendors: Set<string>,
+  usedBaseline: Set<string>,
+): FieldMapRow | undefined {
+  const aliases = fieldNameAliases(addedVendor);
+  const candidates = baselineFields.filter(
+    (row) =>
+      removedVendors.has(row.vendor) &&
+      !usedBaseline.has(row.vendor) &&
+      fieldNameAliases(row.vendor).some((alias) => aliases.includes(alias)),
+  );
+  if (candidates.length !== 1) return undefined;
+  return { ...candidates[0]!, transform: { ...candidates[0]!.transform } };
+}
+
+function fieldNameAliases(field: string): string[] {
+  const normalized = field.replace(/[^A-Za-z0-9]+/g, '').toLowerCase();
+  const aliases = new Set<string>([normalized]);
+  for (const suffix of ['id', 'identifier', 'uuid']) {
+    if (normalized.endsWith(suffix) && normalized.length > suffix.length + 1) {
+      aliases.add(normalized.slice(0, -suffix.length));
+    }
+  }
+  return [...aliases].filter(Boolean);
 }
 
 export interface HealRunOptions {
@@ -129,7 +184,7 @@ export function runHeal(opts: HealRunOptions): HealRunResult {
   });
   // Bump map version from OpenAPI when present
   const payload = proposal.payload as VendorMap;
-  payload.fields = mergeHealFields(payload.fields ?? [], baseline);
+  payload.fields = mergeHealFields(payload.fields ?? [], baseline, drift);
   if (drift.openapiVersion) {
     (payload as { version?: string }).version = drift.openapiVersion;
   }

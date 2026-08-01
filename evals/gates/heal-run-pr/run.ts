@@ -182,11 +182,42 @@ runHeal({
   applyMap: true,
   agentId: 'heal-mapper-gate',
 });
+const mapperMap = mapperStore.loadMap('postmark');
+assertTrue('mapper map reloaded', mapperMap != null);
+assertTrue(
+  'heal maps renamed email target to existing email source',
+  (mapperMap!.fields ?? []).some((f) => f.domain === 'email' && f.vendor === 'email_id'),
+  JSON.stringify(mapperMap!.fields),
+);
+assertTrue(
+  'heal maps renamed phone target to existing phone source',
+  (mapperMap!.fields ?? []).some((f) => f.domain === 'phone' && f.vendor === 'phone_id'),
+  JSON.stringify(mapperMap!.fields),
+);
 const mapperAdapter = readFileSync(
   join(mapperModuleRoot, 'src/main/java/com/acme/integrations/vendor/PostmarkAdapter.java'),
   'utf8',
 );
-assertTrue('mapper TODO written to real adapter', mapperAdapter.includes('TODO(layerkit)'), mapperAdapter);
+assertTrue(
+  'supported renamed field updates real adapter',
+  mapperAdapter.includes('payload.setEmailId(event.getEmail());'),
+  mapperAdapter,
+);
+assertTrue(
+  'old renamed field setter removed from real adapter',
+  !mapperAdapter.includes('payload.setEmail(event.getEmail());'),
+  mapperAdapter,
+);
+assertTrue(
+  'unsupported renamed field TODO written to real adapter',
+  mapperAdapter.includes('TODO(layerkit): map phone -> phone_id; missing target setter'),
+  mapperAdapter,
+);
+assertTrue(
+  'supported renamed field has no TODO',
+  !mapperAdapter.includes('TODO(layerkit): map email -> email_id'),
+  mapperAdapter,
+);
 assertTrue('mapper heal has no PR metadata directory', !existsSync(join(mapperProjectDir, 'out', 'pr')));
 assertTrue('mapper heal has no integrate plan markdown', !existsSync(join(mapperProjectDir, 'out', 'INTEGRATE.md')));
 
