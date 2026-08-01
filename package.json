@@ -1,6 +1,6 @@
 {
   "name": "layerkit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Agent-first multi-vendor data-layer toolkit: install skills/hooks into Codex, Claude Code, Cursor, Copilot, OpenCode, OpenHands; research vendor docs; proposal pipeline; Java-first client output; evals.",
   "license": "MIT",
   "private": false,

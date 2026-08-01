@@ -12,10 +12,13 @@ import {
   formatNextStepLine,
   formatPipelineStatus,
   getNextStep,
+  getNextStepForProject,
   isPipelineStepId,
   loadCompletedSteps,
+  loadPipelineMode,
   markStepDone,
   pipelineStatusPath,
+  setPipelineMode,
 } from '../../../libs/agent/index.js';
 
 /** Required key names in pipeline order (id or skill must contain the key). */
@@ -197,6 +200,27 @@ try {
   assertTrue('unknown step throws', threw);
 } finally {
   rmSync(root, { recursive: true, force: true });
+}
+
+// --- heal start mode: discover is skipped by state, not by semantic inference ---
+const healRoot = mkdtempSync(join(tmpdir(), 'layerkit-agent-heal-'));
+const healProjectDir = join(healRoot, '.layerkit');
+try {
+  const path = setPipelineMode(healProjectDir, 'heal', {
+    vendor: 'ledgerbeam',
+    note: 'contract update',
+  });
+  const body = readFileSync(path, 'utf8');
+  assertEqual('heal mode is loaded', loadPipelineMode(healProjectDir), 'heal');
+  assertTrue('heal status records vendor', body.includes('vendor: ledgerbeam'), body);
+  assertTrue('heal status records note', body.includes('note: contract update'), body);
+  assertTrue('heal marks discover complete', loadCompletedSteps(healProjectDir).includes('discover'));
+  assertEqual('heal next step is research', getNextStepForProject(healProjectDir)?.id, 'research');
+
+  setPipelineMode(healProjectDir, 'full');
+  assertEqual('full mode is loaded after reset', loadPipelineMode(healProjectDir), 'full');
+} finally {
+  rmSync(healRoot, { recursive: true, force: true });
 }
 
 console.log('agent-pipeline-order: all checks passed');
