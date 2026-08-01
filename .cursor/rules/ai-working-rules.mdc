@@ -1,0 +1,15 @@
+---
+description: Shared update-first AI operating rules for this repo
+alwaysApply: true
+---
+
+Read and follow `AI_WORKING_RULES.md`.
+
+In short:
+
+- prefer update/delete over adding new files
+- define what must pass, proof artifact, and fallback before implementation
+- prove strategic redirects before broad rewrites or deletions
+- keep test backing proportional to implementation size
+- treat hardcoded secrets as release blockers in public/shared repos
+- work collaboratively and evidence-first

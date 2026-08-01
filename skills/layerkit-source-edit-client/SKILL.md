@@ -28,7 +28,8 @@ Optional `project.json` source-edit hints:
    ```bash
    layerkit doctor
    ```
-6. For any strategic redirect or broad rewrite, run a small proof step first: an eval, end-to-end QA check, contract-heal case, or before/after acceptance test.
+6. For any strategic redirect or broad rewrite, define what must pass, the proof artifact, and the fallback before edits start; run a small proof step first: an eval, end-to-end QA check, contract-heal case, release checklist item, package-level fixture, or before/after acceptance test.
+7. Strengthen executable tests relative to implementation size. Source-edit work that changes behavior must cover the client-package edit path, mapping semantics, deletion-first behavior, and the relevant CI/eval gate.
 
 ## Mapping Rules
 
@@ -61,3 +62,5 @@ Optional `project.json` source-edit hints:
 - [ ] Client package build/test/coverage command green
 - [ ] Package verification green for primary intents
 - [ ] Strategic redirects have a passing proof step before broad edits
+- [ ] Outcome checkpoints are recorded with what must pass, proof artifact, and fallback
+- [ ] Tests cover changed mapping semantics and deletion-first behavior when those areas changed

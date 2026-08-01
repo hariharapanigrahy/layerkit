@@ -58,6 +58,10 @@ Writes `{projectDir}/memory/runbooks/handoff-<vendor|project>.md` and refreshes 
 - do not invent; do not apply without checker; do not open deny-paths
 ## Quality
 - last package verification result; coverage if any
+## Outcome checkpoints
+- what had to pass; proof artifact; fallback if it failed
+## Unresolved errors
+- exact red gates, failing assertions, or residual risks
 ```
 
 Manual persist:
@@ -82,3 +86,4 @@ layerkit memory index
 - [ ] Required headings present (Goal, Done, In progress, Blocked, Evidence index, Next 3 actions, Forbidden, Quality)
 - [ ] Next actions are ordered and skill-named
 - [ ] Residual human questions are explicit
+- [ ] Outcome checkpoints and unresolved errors are explicit

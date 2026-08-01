@@ -19,7 +19,8 @@ Before a large deletion/rewrite or strategic redirect, prove the new direction w
 4. For every new file, function, export, command, fixture, or skill, state what it replaces.
 5. If it replaces nothing, justify why the expansion is necessary.
 6. Target net-negative or near-neutral LOC unless functionality truly expands.
-7. For strategic redirects, record the proof step before continuing.
+7. Before a strategic redirect or large deletion/rewrite, define what must pass, the proof artifact, and the fallback if validation fails; record the proof step before continuing.
+8. Keep tests proportional to the implementation size; release hardening must cover client-package edit paths, mapping semantics, deletion-first behavior, and CI/eval gates touched by the change.
 
 ## Deletion Pass
 
@@ -46,5 +47,6 @@ Report:
 - files deleted
 - new files/functions/exports and what each replaces
 - legacy surfaces intentionally kept and why
-- tests/gates run
+- outcome checkpoints: what passed, proof artifact, fallback used or available
+- tests/gates run, including any package-level fixture, judge, release checklist, or before/after behavior used as proof
 - proof step for any strategic redirect

@@ -17,6 +17,16 @@ Heal = human supplies updated OpenAPI/docs → AI agent reads and cites evidence
 
 Before any strategic redirect or large deletion/rewrite, add a small proof step and make it pass. Use the smallest useful proof: an eval, an end-to-end QA check, a contract-heal case, or a before/after acceptance test. Do not continue into broad deletion or rewrite work while the proof is missing or red.
 
+## Outcome Checkpoints
+
+Every implementation plan must include explicit outcome checkpoints before source edits start:
+
+- what must pass
+- the proof artifact that shows it passed
+- the fallback or alternative approach if the design does not validate
+
+Major redirects need proof before implementation, not after. Acceptable proof can be a passing judge, package-level fixture, release checklist item, or concrete before/after behavior. If the proof fails, shrink the change, update existing paths instead, or pause for residual human input.
+
 ## Primary commands
 
 ```bash
@@ -64,6 +74,7 @@ Step ids: `discover` | `research` | `design` | `author` | `privacy` | `deletion-
 | source-edit | client package verification fails |
 | strategic redirect | no passing proof step for the redirect |
 | handoff | any gate red |
+| plan | missing must-pass checkpoint, proof artifact, or fallback |
 
 ## When to ask a human
 
@@ -87,3 +98,5 @@ Step ids: `discover` | `research` | `design` | `author` | `privacy` | `deletion-
 - [ ] Applied maps/proposals have sources[] from supplied docs/OpenAPI/code
 - [ ] Production source/test edits were made by the agent in real package files
 - [ ] Package tests/build/coverage command green before handoff
+- [ ] Outcome checkpoints recorded: must pass, proof artifact, fallback
+- [ ] Test backing is proportional to implementation size, including client-package edit paths, mapping semantics, deletion-first behavior, and CI/eval gates when those areas change

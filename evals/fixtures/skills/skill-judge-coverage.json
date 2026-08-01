@@ -23,7 +23,13 @@
       "ciCases": ["agent-citation-required-on-map", "maker-checker-strict-path"]
     },
     "layerkit-deletion-first": {
-      "dimensions": ["delete-before-add", "new-code-replacement-justification", "strategic-redirect-proof"],
+      "dimensions": [
+        "delete-before-add",
+        "new-code-replacement-justification",
+        "strategic-redirect-proof",
+        "outcome-checkpoints",
+        "test-backing-proportional"
+      ],
       "ciCases": ["deletion-first-skill", "skill-hybrid-heal-judge"]
     },
     "layerkit-design-flow": {
@@ -49,7 +55,10 @@
         "deletion-first-update-mode",
         "rename-update-delete",
         "unsupported-gap-todo",
-        "strategic-redirect-proof"
+        "strategic-redirect-proof",
+        "outcome-checkpoints",
+        "client-package-edit-path-tests",
+        "mapping-semantics-tests"
       ],
       "ciCases": ["skill-hybrid-heal-judge", "deletion-first-skill", "source-edit-skill-cases"]
     },
@@ -58,11 +67,23 @@
       "ciCases": ["skill-hybrid-heal-judge"]
     },
     "layerkit-orchestrate-integration": {
-      "dimensions": ["pipeline-order", "docs-to-contract-skill-flow", "heal-source-edits-by-agent", "strategic-redirect-proof"],
+      "dimensions": [
+        "pipeline-order",
+        "docs-to-contract-skill-flow",
+        "heal-source-edits-by-agent",
+        "strategic-redirect-proof",
+        "outcome-checkpoints",
+        "fallback-before-implementation"
+      ],
       "ciCases": ["agent-orchestrate-checklist", "agent-pipeline-order", "skill-hybrid-heal-judge"]
     },
     "layerkit-privacy-review": {
-      "dimensions": ["client-code-privacy-review", "citation-required-for-privacy-rules", "secret-literal-remediation"],
+      "dimensions": [
+        "client-code-privacy-review",
+        "citation-required-for-privacy-rules",
+        "secret-literal-remediation",
+        "secret-literal-release-blocker"
+      ],
       "ciCases": ["skill-hybrid-heal-judge", "doctor-secret-scan"]
     },
     "layerkit-research-vendor": {
@@ -70,8 +91,8 @@
       "ciCases": ["skill-hybrid-heal-judge"]
     },
     "layerkit-session-handoff": {
-      "dimensions": ["runbook-written", "resume-safe-state"],
-      "ciCases": ["handoff-runbook-cli"]
+      "dimensions": ["runbook-written", "resume-safe-state", "outcome-checkpoints", "unresolved-errors"],
+      "ciCases": ["handoff-runbook-cli", "skill-hybrid-heal-judge"]
     }
   }
 }

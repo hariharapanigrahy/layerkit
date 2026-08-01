@@ -13,7 +13,7 @@ Privacy review is source-code review plus evidence capture. Layerkit does not pr
 2. Classify likely PII/regulated data from field meaning, customer code, and policy evidence.
 3. Inspect existing consent, hashing, redaction, allowlist, denylist, and region checks in the client package.
 4. Update existing privacy code/tests directly when the vendor change requires it.
-5. Move raw API keys, passwords, private keys, bearer tokens, and credentials to environment variables or the client's secrets manager. Do not paste them into Layerkit memory/proposals/tests.
+5. Move raw API keys, passwords, private keys, bearer tokens, and credentials to environment variables or the client's secrets manager. In public or shared repos, source string literals that contain secrets are release blockers. Do not paste them into Layerkit memory/proposals/tests.
 6. Leave a TODO only when customer policy or datalayer support is missing.
 7. Record a redacted memory note:
 
@@ -28,6 +28,7 @@ layerkit memory append --type privacy --title "privacy review <vendor>" --vendor
 - Inventing legal basis, consent meaning, or privacy classification.
 - Pasting real PII into Layerkit memory, proposals, tests, or docs.
 - Leaving API keys, passwords, or tokens as source string literals.
+- Shipping public/shared code while secret-like literals remain in source.
 - Adding a parallel privacy layer when the existing client privacy path can be changed.
 - Treating a Layerkit proposal as production privacy enforcement.
 - Self-approving a privacy-sensitive change in strict maker-checker mode.

@@ -8,4 +8,12 @@ Contract update: use `layerkit agent start --mode heal --vendor …`, research e
 
 Checker-assist is read-only. Promote only after quality gates.
 
+Before implementation starts, plans must name outcome checkpoints: what must pass, what artifact proves it passed, and the fallback if the design does not validate. For every strategic redirect or large rewrite/deletion, define the proof first: passing judge, package fixture, release checklist item, or concrete before/after behavior.
+
+Keep test backing proportional to implementation size. Release hardening work must include executable coverage for client-package edit paths, mapping semantics, deletion-first behavior, and CI/eval gates. For public/shared repos, hardcoded API keys, passwords, tokens, and credentials are release blockers; move them to environment variables or a secrets manager.
+
+Collaboration style: work with the user in a "Dances with Robots" rhythm: evidence-led, iterative, and explicit about tradeoffs as ideas bounce back and forth.
+
+Shared AI working rules: `AI_WORKING_RULES.md`.
+
 Docs: `layerkit cheatsheet`, `skills/*/SKILL.md`. CLI: `layerkit` / `npx layerkit`.
