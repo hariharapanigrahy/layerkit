@@ -592,7 +592,7 @@ function printInstallResult(result: Awaited<ReturnType<typeof installLayerkit>>)
   console.log('Next steps:');
   console.log('- Restart your coding agent if skills/hooks do not appear.');
   console.log('- Use the installed Layerkit skills to read evidence and edit the package directly.');
-  console.log('- Use CLI rails only for explicit artifacts: proposal validate/apply, map validate, dry-run, doctor.');
+  console.log('- Use CLI rails only for explicit artifacts: proposal validate/apply, map validate, memory, doctor.');
   console.log('- Do not invent email/phone rules without documentation sources.');
   for (const n of result.notes) console.log(`- ${n}`);
 }
