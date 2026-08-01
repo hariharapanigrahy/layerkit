@@ -42,6 +42,8 @@ const baseline: VendorMapV1 = {
       transform: { type: 'processor', processorId: 'email.normalize_basic' },
     },
     { domain: 'message.subject', vendor: 'subject', transform: { type: 'identity' } },
+    { domain: 'message.replyTo', vendor: 'reply_to', transform: { type: 'identity' }, optional: true },
+    { domain: 'message.legacyTag', vendor: 'legacy_tag', transform: { type: 'identity' } },
   ],
   documentation: [{ title: 'v1', url: 'file://' + openapiV1 }],
   status: 'map_complete',
@@ -96,6 +98,18 @@ assertTrue(
       f.domain === 'recipient.email' &&
       f.transform.type === 'processor' &&
       f.transform.processorId === 'email.normalize_basic',
+  ),
+  JSON.stringify(map!.fields),
+);
+assertTrue(
+  'heal drops fields removed from OpenAPI',
+  !(map!.fields ?? []).some((f) => f.vendor === 'legacy_tag'),
+  JSON.stringify(map!.fields),
+);
+assertTrue(
+  'heal updates requiredness from OpenAPI',
+  (map!.fields ?? []).some(
+    (f) => f.vendor === 'reply_to' && f.domain === 'message.replyTo' && f.optional !== true,
   ),
   JSON.stringify(map!.fields),
 );

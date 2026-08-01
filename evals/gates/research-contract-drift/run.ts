@@ -35,6 +35,8 @@ const map: VendorMapV1 = {
     { domain: 'from', vendor: 'from', transform: { type: 'identity' } },
     { domain: 'to', vendor: 'to', transform: { type: 'identity' } },
     { domain: 'subject', vendor: 'subject', transform: { type: 'identity' } },
+    { domain: 'replyTo', vendor: 'reply_to', transform: { type: 'identity' }, optional: true },
+    { domain: 'legacyTag', vendor: 'legacy_tag', transform: { type: 'identity' } },
   ],
   documentation: [{ title: 'fixture', url: 'https://api.email-fixture.test/docs' }],
 };
@@ -51,6 +53,16 @@ assertEqual('v2 vs map hasExistingMap', drift.hasExistingMap, true);
 assertTrue(
   'v2 introduces reply_to as required/breaking or additive',
   drift.items.some((i) => i.path === 'reply_to' || i.detail.includes('reply_to')),
+  JSON.stringify(drift.items, null, 2),
+);
+assertTrue(
+  'v2 reports reply_to requiredness change',
+  drift.items.some((i) => i.kind === 'field_required_changed' && i.path === 'reply_to'),
+  JSON.stringify(drift.items, null, 2),
+);
+assertTrue(
+  'v2 reports removed legacy field',
+  drift.items.some((i) => i.kind === 'field_removed' && i.path === 'legacy_tag'),
   JSON.stringify(drift.items, null, 2),
 );
 assertTrue(

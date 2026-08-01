@@ -69,15 +69,23 @@ function mapEndpointKeys(map: VendorMap): Set<string> {
   return keys;
 }
 
-function mapVendorFieldNames(map: VendorMap): Set<string> {
-  const names = new Set<string>();
+interface MapFieldPresence {
+  required: boolean;
+}
+
+function mapVendorFieldNames(map: VendorMap): Map<string, MapFieldPresence> {
+  const names = new Map<string, MapFieldPresence>();
+  const add = (vendor: string, optional?: boolean): void => {
+    const prev = names.get(vendor);
+    names.set(vendor, { required: Boolean(prev?.required) || optional !== true });
+  };
   for (const row of map.fields ?? []) {
-    if (row.vendor) names.add(row.vendor);
+    if (row.vendor) add(row.vendor, row.optional);
   }
   if (isVendorMapV2(map)) {
     for (const binding of Object.values(map.intents ?? {})) {
       for (const row of binding.fields ?? []) {
-        if (row.vendor) names.add(row.vendor);
+        if (row.vendor) add(row.vendor, row.optional);
       }
     }
   }
@@ -183,7 +191,8 @@ export function diffOpenApiAgainstMap(
   const oaFields = openApiFieldNames(oa);
 
   for (const [name, required] of oaFields) {
-    if (!mapFields.has(name)) {
+    const mapped = mapFields.get(name);
+    if (!mapped) {
       items.push({
         kind: 'field_added',
         severity: required ? 'breaking' : 'additive',
@@ -192,9 +201,18 @@ export function diffOpenApiAgainstMap(
           : `New optional body field in OpenAPI (not in map): ${name}`,
         path: name,
       });
+    } else if (mapped.required !== required) {
+      items.push({
+        kind: 'field_required_changed',
+        severity: required ? 'breaking' : 'additive',
+        detail: required
+          ? `Body field became required in OpenAPI: ${name}`
+          : `Body field became optional in OpenAPI: ${name}`,
+        path: name,
+      });
     }
   }
-  for (const name of mapFields) {
+  for (const name of mapFields.keys()) {
     if (!oaFields.has(name) && !name.includes('REPLACE') && !name.startsWith('__')) {
       items.push({
         kind: 'field_removed',

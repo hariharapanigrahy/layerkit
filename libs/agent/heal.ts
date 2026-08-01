@@ -34,14 +34,8 @@ function mergeHealFields(scaffolded: FieldMapRow[], baseline?: VendorMap | null)
   const seen = new Set<string>();
   for (const row of scaffolded) {
     const preserved = preservedByVendor.get(row.vendor);
-    merged.push(preserved ? { ...preserved } : row);
+    merged.push(preserved ? { ...preserved, optional: row.optional } : row);
     seen.add(row.vendor);
-  }
-
-  for (const row of baseline.fields ?? []) {
-    if (!seen.has(row.vendor)) {
-      merged.push({ ...row, transform: { ...row.transform } });
-    }
   }
 
   return merged;
