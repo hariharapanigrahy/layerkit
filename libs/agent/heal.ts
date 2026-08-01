@@ -3,7 +3,7 @@
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
-import type { Proposal, VendorMap } from '../domain/types.js';
+import type { FieldMapRow, Proposal, VendorMap } from '../domain/types.js';
 import {
   applyIntegratePlan,
   buildIntegratePlan,
@@ -21,6 +21,31 @@ import {
 import { createVendorMemoryStore } from '../vendor-memory/store.js';
 import { loadDomainBinding } from './domain-binding.js';
 import { setPipelineMode } from './pipeline.js';
+
+function mergeHealFields(scaffolded: FieldMapRow[], baseline?: VendorMap | null): FieldMapRow[] {
+  if (!baseline) return scaffolded;
+
+  const preservedByVendor = new Map<string, FieldMapRow>();
+  for (const row of baseline.fields ?? []) {
+    preservedByVendor.set(row.vendor, { ...row, transform: { ...row.transform } });
+  }
+
+  const merged: FieldMapRow[] = [];
+  const seen = new Set<string>();
+  for (const row of scaffolded) {
+    const preserved = preservedByVendor.get(row.vendor);
+    merged.push(preserved ? { ...preserved } : row);
+    seen.add(row.vendor);
+  }
+
+  for (const row of baseline.fields ?? []) {
+    if (!seen.has(row.vendor)) {
+      merged.push({ ...row, transform: { ...row.transform } });
+    }
+  }
+
+  return merged;
+}
 
 export interface HealRunOptions {
   repoRoot: string;
@@ -117,6 +142,7 @@ export function runHeal(opts: HealRunOptions): HealRunResult {
   });
   // Bump map version from OpenAPI when present
   const payload = proposal.payload as VendorMap;
+  payload.fields = mergeHealFields(payload.fields ?? [], baseline);
   if (drift.openapiVersion) {
     (payload as { version?: string }).version = drift.openapiVersion;
   }

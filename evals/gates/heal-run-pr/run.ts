@@ -35,9 +35,13 @@ const baseline: VendorMapV1 = {
   endpoint: { method: 'POST', path: '/emails', baseUrl: 'https://api.email-fixture.test' },
   intents: { 'notify.sendEmail': { eventName: 'notify.sendEmail' } },
   fields: [
-    { domain: 'from', vendor: 'from', transform: { type: 'identity' } },
-    { domain: 'to', vendor: 'to', transform: { type: 'identity' } },
-    { domain: 'subject', vendor: 'subject', transform: { type: 'identity' } },
+    { domain: 'message.from.email', vendor: 'from', transform: { type: 'identity' } },
+    {
+      domain: 'recipient.email',
+      vendor: 'to',
+      transform: { type: 'processor', processorId: 'email.normalize_basic' },
+    },
+    { domain: 'message.subject', vendor: 'subject', transform: { type: 'identity' } },
   ],
   documentation: [{ title: 'v1', url: 'file://' + openapiV1 }],
   status: 'map_complete',
@@ -77,6 +81,22 @@ assertTrue('map reloaded', map != null);
 assertTrue(
   'map has reply_to field',
   (map!.fields ?? []).some((f) => f.vendor === 'reply_to'),
+  JSON.stringify(map!.fields),
+);
+assertTrue(
+  'heal preserves existing domain path',
+  (map!.fields ?? []).some((f) => f.vendor === 'from' && f.domain === 'message.from.email'),
+  JSON.stringify(map!.fields),
+);
+assertTrue(
+  'heal preserves existing processor transform',
+  (map!.fields ?? []).some(
+    (f) =>
+      f.vendor === 'to' &&
+      f.domain === 'recipient.email' &&
+      f.transform.type === 'processor' &&
+      f.transform.processorId === 'email.normalize_basic',
+  ),
   JSON.stringify(map!.fields),
 );
 

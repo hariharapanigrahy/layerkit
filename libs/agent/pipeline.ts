@@ -1,6 +1,6 @@
 /**
  * Deterministic integration checklist runner (not an LLM).
- * Order: discover → research → design → author → privacy → generate → handoff
+ * Order: discover → research → design → author → privacy → deletion-first → generate → handoff
  * mode=heal skips discover when updating from a new contract.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -73,6 +73,17 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
     requiresHuman: true,
     doneWhen:
       'PrivacyPolicy still valid; any NEW PII fields from contract re-reviewed with sources before live',
+  },
+  {
+    id: 'deletion-first',
+    skill: 'layerkit-deletion-first',
+    cliHints: [
+      'Review stale generated docs/tests/package surfaces before adding code',
+      'Prefer modifying or deleting existing code; list what each new file/function/export replaces',
+      'Keep LOC net-negative or near-neutral unless the contract truly expands behavior',
+    ],
+    doneWhen:
+      'Stale code/docs/tests/package surfaces removed or rewritten; new additions justify what they replace',
   },
   {
     id: 'generate',
