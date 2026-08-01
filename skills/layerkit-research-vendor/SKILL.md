@@ -57,18 +57,9 @@ layerkit heal run --vendor <vendor> --openapi ./openapi.json \
 
 After heal, edit the real adapter/interface/test files yourself. If the field does not exist in the interface or datalayer, add a localized TODO only in the production change and call it out in review.
 
-### B. Supporting evidence tools
+### B. Supporting evidence work
 
-```bash
-layerkit research openapi ./openapi.json --json
-layerkit research curl ./sample.curl --json
-layerkit research deepen ./hub.md --json
-layerkit research gaps ./sheet.json
-```
-
-- Structured contract/OpenAPI → Q1 auth, Q2 endpoints, Q3 intent candidates, Q4 body fields. Privacy classification belongs to `layerkit-privacy-review`.
-- curl → method, host, path, auth class
-- deepen hub → enqueue openapi before humans
+Read official docs/OpenAPI/curl examples directly as the AI agent. Curate a structured contract/proposal with citations, then use deterministic CLI only to validate proposals, run heal on a structured contract, and dry-run maps. Privacy classification belongs to `layerkit-privacy-review`.
 
 ### C. Domain binding
 

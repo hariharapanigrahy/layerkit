@@ -133,9 +133,9 @@ export function buildIntegratePlan(opts: BuildIntegratePlanOptions): {
     actions.push({
       kind: 'skip',
       path: '(none)',
-      reason: 'No filled vendor maps — research/apply maps before integrate',
+      reason: 'No filled vendor maps — agent must research/apply maps before integrate',
       instructions:
-        'Run layerkit research fill --vendor … --openapi … → proposal apply, then re-run layerkit generate.',
+        'Use layerkit-research-vendor to author/apply a cited map proposal, then re-run layerkit generate.',
     });
   } else {
     for (const map of targets) {

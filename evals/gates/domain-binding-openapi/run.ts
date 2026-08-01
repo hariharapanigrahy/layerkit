@@ -11,11 +11,7 @@ import {
   resolveIntentsFromOpenApi,
   writeDomainBinding,
 } from '../../../libs/agent/domain-binding.js';
-import {
-  describeFieldsFromOpenApi,
-  fillAnswerSheetFromEvidence,
-  parseOpenAPI,
-} from '../../../libs/research/index.js';
+import { parseOpenAPI } from '../../../libs/research/index.js';
 import { scaffoldVendorMapFromOpenApi } from '../../../libs/proposal/scaffold.js';
 import { isVendorMapV2 } from '../../../libs/domain/types.js';
 
@@ -66,21 +62,6 @@ assertEqual(
     ?.intentId,
   'sendMessage',
 );
-
-// Answer sheet fills Q3/Q4 from evidence
-const sheet = fillAnswerSheetFromEvidence(
-  [{ kind: 'openapi', urlOrPath: fixture, content: raw }],
-  { vendor: 'example_notify' },
-);
-assertTrue('Q2 endpoints filled', !!sheet.dimensions.Q2.answer);
-assertTrue('Q3 intent candidates filled', !!sheet.dimensions.Q3.answer);
-assertTrue('Q3 mentions extension or operationId', /domain-op|operationId|sendMessage/i.test(sheet.dimensions.Q3.answer));
-assertTrue('Q4 fields filled', !!sheet.dimensions.Q4.answer && /to|subject/.test(sheet.dimensions.Q4.answer));
-assertTrue('Q5 remains agent privacy review work', !sheet.dimensions.Q5.answer);
-assertTrue('Q1 auth from securitySchemes', /bearer/i.test(sheet.dimensions.Q1.answer ?? ''));
-
-const fieldsDesc = describeFieldsFromOpenApi(parsed);
-assertTrue('describeFields non-null', !!fieldsDesc);
 
 // Scaffold map from openapi (v2 multi-op)
 const proposal = scaffoldVendorMapFromOpenApi({

@@ -1,5 +1,0 @@
-{
-  "id": "research-cli-fill",
-  "suite": "ci",
-  "title": "research fill from openapi+curl produces answers and residual gaps"
-}

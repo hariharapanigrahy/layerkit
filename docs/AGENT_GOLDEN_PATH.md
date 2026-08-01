@@ -21,9 +21,6 @@ Placeholders used below:
 | `<proposal.json>` | Path to a draft proposal file |
 | `<proposal-id>` | Id after submit (or file path accepted by CLI) |
 | `<openapi.yaml>` | Path to OpenAPI/Swagger file |
-| `<curl.txt>` | Path to a curl sample (or inline curl string) |
-| `<hub.md>` | Path to a docs hub markdown with links |
-| `<sheet.json>` | Path for research answer sheet output |
 
 Optional global flag on every command: `--project-dir <project-dir>`.
 
@@ -32,7 +29,7 @@ Optional global flag on every command: `--project-dir <project-dir>`.
 ## Day-1 flow (ordered)
 
 ```text
-install → agent status/next → research CLI → design → author proposal
+install → agent status/next → research skill → design → author proposal
   → validate / submit / approve → generate → dry-run → doctor → promote
 ```
 
@@ -243,24 +240,11 @@ layerkit map list
 layerkit map show <vendor>
 layerkit memory list --vendor <vendor>
 
-# Contract intake (first-time or heal when map exists)
-layerkit research fill \
-  --vendor <vendor> \
-  --openapi <openapi.yaml> \
-  [--doc <url>] \
-  --out <sheet.json>
-# pins out/contracts/<vendor>/ · CONTRACT_DRIFT.json · mode=heal if map applied
-
-# Docs-only intake is skill work: AI reads/cites docs and writes
-# .layerkit/out/contracts/<vendor>/openapi-from-doc.json, then:
+# Contract intake is skill work: AI reads/cites docs/OpenAPI/curl and writes
+# a structured contract file, then:
 layerkit heal run --vendor <vendor> \
-  --openapi .layerkit/out/contracts/<vendor>/openapi-from-doc.json \
+  --openapi <openapi.yaml> \
   --module-root <production-module>
-
-layerkit research openapi <openapi.yaml> [--json]
-layerkit research curl <curl.txt> [--json]
-layerkit research deepen <hub.md> [--json]
-layerkit research gaps <sheet.json> [--json]
 
 # Fan-out after contract update
 layerkit agent multi --vendor <vendor> --mode heal --openapi <openapi.yaml>
@@ -427,7 +411,7 @@ Ask humans **only** after evidence is exhausted. Do **not** open a full question
 
 | Ask a human | Do **not** ask |
 |-------------|----------------|
-| Residual Q dimensions after deepen L0–L4 (`layerkit research gaps`) | Q1/Q2 already answered from OpenAPI/curl |
+| Residual contract or mapping uncertainty after skill research | Agent has cited evidence for the change |
 | Legal basis / consent purposes missing from customer docs | Field names present in customer code (discover) |
 | Checker / privacy_reviewer approval (never self-approve as maker) | Re-deriving facts already in `{projectDir}/memory/` |
 | Production host credentials and live probe consent | Inventing values to avoid residual gaps |
@@ -459,17 +443,9 @@ Orchestrate stop conditions (full list): [`skills/layerkit-orchestrate-integrati
 
 ---
 
-## Research CLI quick reference
+## Research Skill
 
-Implemented over `libs/research` (parse OpenAPI/curl, deepen hubs, fill answer sheets, residual gaps):
-
-```bash
-layerkit research openapi <file> [--json]
-layerkit research curl <file-or-inline> [--json]
-layerkit research deepen <hub.md> [--json]
-layerkit research fill [--openapi <file>]... [--curl <file>]... [--hub <file>]... [--vendor <id>] [--out <sheet.json>] [--json]
-layerkit research gaps <sheet.json> [--json]
-```
+Vendor research is agent/skill work, not a deterministic CLI parser. The agent reads primary docs/OpenAPI/curl evidence, writes a structured contract or proposal with citations, and uses CLI gates only for validation/heal/dry-run.
 
 Related store commands:
 

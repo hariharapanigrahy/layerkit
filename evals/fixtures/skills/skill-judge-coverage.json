@@ -63,8 +63,8 @@
       "ciCases": ["privacy-dry-run-warn", "privacy-live-require", "promote-hard-gates"]
     },
     "layerkit-research-vendor": {
-      "dimensions": ["evidence-before-human", "docs-link-contract-curation", "no-invent-endpoint"],
-      "ciCases": ["agent-evidence-before-human", "evidence-no-invent", "research-cli-fill", "skill-hybrid-heal-judge"]
+      "dimensions": ["docs-link-contract-curation", "semantic-rename-evidence", "no-deterministic-research-cli"],
+      "ciCases": ["research-contract-drift", "skill-hybrid-heal-judge"]
     },
     "layerkit-session-handoff": {
       "dimensions": ["runbook-written", "resume-safe-state"],

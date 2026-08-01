@@ -93,18 +93,7 @@ import {
   type MemoryEntryType,
 } from '../../libs/memory/index.js';
 import { applyVendorMap } from '../../libs/vendor-memory/map-engine.js';
-import {
-  deepenFromHubMarkdown,
-  diffOpenApiAgainstMap,
-  fillAnswerSheetFromEvidence,
-  formatContractUpdateMarkdown,
-  hasInventedEndpoint,
-  parseCurl,
-  parseOpenAPI,
-  pinContractEvidence,
-  residualGaps,
-  type ResearchSeed,
-} from '../../libs/research/index.js';
+import { parseOpenAPI } from '../../libs/research/index.js';
 import {
   createVendorMemoryStore,
   type CheckerRole,
@@ -234,41 +223,10 @@ const cliCommands: CliCommand[] = [
     showInTopLevelHelp: true,
   },
   {
-    path: ['research', 'openapi'],
-    usage: 'research openapi <file> [--json]',
-    handler: runResearchOpenapi,
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['research', 'curl'],
-    usage: 'research curl <file-or-inline> [--json]',
-    handler: runResearchCurl,
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['research', 'deepen'],
-    usage: 'research deepen <hub.md> [--json]',
-    handler: runResearchDeepen,
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['research', 'fill'],
-    usage:
-      'research fill --vendor <id> --openapi <file> [--doc <url>]... [--curl <file>]... [--hub <file>]... [--out <sheet.json>] [--module-root <dir>] [--no-pin] [--json]',
-    handler: (args, ctx) => runResearchFill(args, ctx),
-    showInTopLevelHelp: true,
-  },
-  {
     path: ['heal', 'run'],
     usage:
       'heal run --vendor <id> --openapi <file> [--doc <url>]... [--rename-decisions <file>] [--module-root <dir>] [--json] [--project-dir <path>]',
     handler: (args, ctx) => runHealCli(args, ctx),
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['research', 'gaps'],
-    usage: 'research gaps <sheet.json> [--json]',
-    handler: runResearchGaps,
     showInTopLevelHelp: true,
   },
   {
@@ -1379,12 +1337,6 @@ function emitJsonOrText(args: string[], data: unknown, text: () => void): void {
   text();
 }
 
-function readTextArg(pathOrInline: string): string {
-  const abs = resolve(pathOrInline);
-  if (existsSync(abs)) return readFileSync(abs, 'utf8');
-  return pathOrInline;
-}
-
 function collectFlags(args: string[], name: string): string[] {
   const out: string[] = [];
   for (let i = 0; i < args.length; i++) {
@@ -1398,46 +1350,6 @@ function collectFlags(args: string[], name: string): string[] {
     }
   }
   return out;
-}
-
-function runResearchOpenapi(args: string[]): void {
-  const file = requireArg(args[0], 'research openapi <file> [--json]');
-  const raw = readFileSync(resolve(file), 'utf8');
-  const parsed = parseOpenAPI(raw);
-  emitJsonOrText(args, parsed, () => {
-    console.log(`OpenAPI operations: ${parsed.operations.length}`);
-    const lines = parsed.operations.slice(0, 20).map((o) => `  ${o.method} ${o.path}`);
-    if (parsed.operations.length > 20) lines.push(`  … +${parsed.operations.length - 20} more`);
-    console.log(lines.join('\n') || '  (no operations)');
-  });
-}
-
-function runResearchCurl(args: string[]): void {
-  const input = requireArg(args[0], 'research curl <file-or-inline> [--json]');
-  const raw = readTextArg(input);
-  const parsed = parseCurl(raw);
-  emitJsonOrText(args, parsed, () => {
-    console.log(`${parsed.method} ${parsed.url}`);
-    if (parsed.host) console.log(`host: ${parsed.host}`);
-    if (parsed.path) console.log(`path: ${parsed.path}`);
-    const headers = Object.keys(parsed.headers ?? {});
-    if (headers.length) console.log(`headers: ${headers.join(', ')}`);
-  });
-}
-
-function runResearchDeepen(args: string[]): void {
-  const file = requireArg(args[0], 'research deepen <hub.md> [--json]');
-  const raw = readFileSync(resolve(file), 'utf8');
-  const plan = deepenFromHubMarkdown(raw, file);
-  emitJsonOrText(args, plan, () => {
-    console.log(`enqueue: ${plan.enqueue.length}  needsHuman: ${plan.needsHuman}`);
-    for (const s of plan.enqueue) {
-      console.log(`  ${s.kind}\t${s.ref}`);
-    }
-    for (const e of plan.deepenLog) {
-      console.log(`  log L${e.level} ${e.action}${e.detail ? `: ${e.detail}` : ''}`);
-    }
-  });
 }
 
 /** Heal rails: pin contract → drift/map update → agent-owned source edits. */
@@ -1523,183 +1435,6 @@ function loadHealRenameDecisions(file: string | undefined): HealRenameDecision[]
       confidence: value.confidence ?? 'low',
       evidence: value.evidence.filter((e): e is string => typeof e === 'string'),
     };
-  });
-}
-
-/** Pin contract evidence, fill answer sheet, diff against applied map when present. */
-function runResearchFill(args: string[], ctx: CliContext): void {
-  const openapis = collectFlags(args, '--openapi');
-  const curls = collectFlags(args, '--curl');
-  const hubs = collectFlags(args, '--hub');
-  const docs = collectFlags(args, '--doc');
-  const vendor = flag(args, '--vendor');
-  const out = flag(args, '--out');
-  const moduleRoot = flag(args, '--module-root') ?? flag(args, '--moduleRoot');
-  const noPin = hasFlag(args, '--no-pin');
-
-  if (!openapis.length && !curls.length && !hubs.length) {
-    throw new Error(
-      'Usage: layerkit research fill --vendor <id> --openapi <file> [--doc <url>]... [--curl ...] [--hub ...] [--out sheet.json]',
-    );
-  }
-
-  const store = openStore(ctx);
-  store.ensureDirs();
-
-  let pinnedOpenApiPath: string | undefined;
-  let openapiRawForDiff: string | undefined;
-  let primaryOpenApi = openapis[0] ? resolve(openapis[0]) : undefined;
-
-  if (vendor && primaryOpenApi && !noPin) {
-    const pin = pinContractEvidence({
-      projectDir: store.projectDir,
-      vendor,
-      openapiPath: primaryOpenApi,
-      docUrls: docs,
-    });
-    pinnedOpenApiPath = pin.pinnedOpenApiPath;
-    openapiRawForDiff = readFileSync(pin.pinnedOpenApiPath, 'utf8');
-    primaryOpenApi = pin.pinnedOpenApiPath;
-  } else if (primaryOpenApi) {
-    openapiRawForDiff = readFileSync(primaryOpenApi, 'utf8');
-  }
-
-  const seeds: ResearchSeed[] = [];
-  const openapiList = pinnedOpenApiPath ? [pinnedOpenApiPath] : openapis.map((f) => resolve(f));
-  for (const f of openapiList) {
-    seeds.push({
-      kind: 'openapi',
-      urlOrPath: f,
-      content: readFileSync(f, 'utf8'),
-    });
-  }
-  for (const f of curls) {
-    seeds.push({ kind: 'curl', command: readTextArg(f) });
-  }
-  for (const f of hubs) {
-    seeds.push({
-      kind: 'hub_md',
-      path: resolve(f),
-      content: readFileSync(resolve(f), 'utf8'),
-    });
-  }
-  for (const url of docs) {
-    seeds.push({
-      kind: 'url',
-      url,
-      note: 'customer-supplied doc for contract update',
-    });
-  }
-
-  const sheet = fillAnswerSheetFromEvidence(seeds, { vendor });
-  const gaps = residualGaps(sheet);
-  const invented = hasInventedEndpoint(sheet);
-
-  const sheetPath = out
-    ? resolve(out)
-    : vendor
-      ? join(store.projectDir, 'out', 'contracts', vendor, 'sheet.json')
-      : undefined;
-  if (sheetPath) {
-    mkdirSync(join(sheetPath, '..'), { recursive: true });
-    writeFileSync(sheetPath, JSON.stringify(sheet, null, 2) + '\n', 'utf8');
-  }
-
-  let drift = null as ReturnType<typeof diffOpenApiAgainstMap> | null;
-  let updateMdPath: string | undefined;
-  let driftPath: string | undefined;
-  if (vendor && openapiRawForDiff) {
-    const map = store.loadMap(vendor);
-    drift = diffOpenApiAgainstMap(vendor, openapiRawForDiff, map);
-    const mode = map ? 'heal' : 'first_time';
-    if (mode === 'heal') {
-      setPipelineMode(store.projectDir, 'heal', {
-        vendor,
-        note: `digest=${drift.contractDigest}`,
-      });
-    } else {
-      setPipelineMode(store.projectDir, 'full', { vendor });
-    }
-    driftPath = join(store.projectDir, 'out', 'CONTRACT_DRIFT.json');
-    writeFileSync(driftPath, JSON.stringify(drift, null, 2) + '\n', 'utf8');
-    updateMdPath = join(store.projectDir, 'out', 'CONTRACT_UPDATE.md');
-    writeFileSync(
-      updateMdPath,
-      formatContractUpdateMarkdown({
-        vendor,
-        drift,
-        pinnedOpenApiPath: pinnedOpenApiPath ?? primaryOpenApi ?? '',
-        sheetPath,
-        moduleRoot,
-        mode,
-      }),
-      'utf8',
-    );
-  }
-
-  const payload = {
-    sheet,
-    residualGaps: gaps,
-    inventedEndpoint: invented,
-    vendor: vendor ?? null,
-    pinnedOpenApiPath: pinnedOpenApiPath ?? null,
-    drift,
-    contractUpdateMd: updateMdPath ?? null,
-    pipelineMode: vendor ? loadPipelineMode(store.projectDir) : null,
-  };
-
-  emitJsonOrText(args, payload, () => {
-    if (sheetPath) console.log(`Wrote answer sheet → ${sheetPath}`);
-    if (pinnedOpenApiPath) console.log(`Pinned contract → ${pinnedOpenApiPath}`);
-    if (drift) {
-      console.log(drift.summary);
-      console.log(`Drift severity: ${drift.severity} (${drift.items.length} items)`);
-      for (const it of drift.items.slice(0, 12)) {
-        console.log(`  [${it.severity}] ${it.kind}${it.path ? ` ${it.path}` : ''}: ${it.detail}`);
-      }
-      if (drift.items.length > 12) console.log(`  … +${drift.items.length - 12} more`);
-      if (driftPath) console.log(`Wrote drift → ${driftPath}`);
-      if (updateMdPath) console.log(`Wrote runbook → ${updateMdPath}`);
-      console.log(`Pipeline mode: ${loadPipelineMode(store.projectDir)}`);
-    }
-    const dimCount = Object.keys(sheet.dimensions).length;
-    console.log(`dimensions answered: ${countAnswered(sheet)} / ${dimCount}`);
-    console.log(`residual gaps: ${gaps.length}`);
-    if (invented) console.log('warning: possible invented endpoint signals in sheet');
-    for (const g of gaps.slice(0, 8)) {
-      console.log(`  gap ${g.id}: ${g.topic} (${g.reason})`);
-    }
-    if (vendor && primaryOpenApi) {
-      console.log('');
-      console.log('Next (same pipeline):');
-      console.log(
-        `  layerkit proposal write map-from-openapi --vendor ${vendor} --openapi ${primaryOpenApi} --out ./proposal.json --validate`,
-      );
-      console.log(`  layerkit agent multi --vendor ${vendor} --mode ${drift?.hasExistingMap ? 'heal' : 'full'} --openapi ${primaryOpenApi}`);
-      console.log('  layerkit agent next');
-    }
-  });
-}
-
-function countAnswered(sheet: {
-  dimensions: Record<string, { answer?: string; source?: string }>;
-}): number {
-  return Object.values(sheet.dimensions).filter(
-    (a) => a.answer && a.answer.trim().length > 0 && a.source !== 'needs-evidence' && a.source !== 'unanswered',
-  ).length;
-}
-
-function runResearchGaps(args: string[]): void {
-  const file = requireArg(args[0], 'research gaps <sheet.json> [--json]');
-  const sheet = JSON.parse(readFileSync(resolve(file), 'utf8'));
-  const gaps = residualGaps(sheet);
-  const invented = hasInventedEndpoint(sheet);
-  emitJsonOrText(args, { residualGaps: gaps, inventedEndpoint: invented }, () => {
-    console.log(`residual gaps: ${gaps.length}`);
-    if (invented) console.log('warning: possible invented endpoint signals');
-    for (const g of gaps) {
-      console.log(`  ${g.id}\t${g.topic}\t${g.reason}`);
-    }
   });
 }
 

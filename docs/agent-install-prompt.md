@@ -45,7 +45,7 @@ Do not invent vendor field maps during install.
 Do not research or author maps until install + doctor are green.
 
 Next (and only next): follow docs/AGENT_GOLDEN_PATH.md under skill
-layerkit-orchestrate-integration (agent status/next → research CLI → design →
+layerkit-orchestrate-integration (agent status/next → research skill → design →
 author → validate/submit/approve → generate → dry-run → doctor → promote).
 
 Final answer: platform, hooks mode, projectDir, doctor status, and that the

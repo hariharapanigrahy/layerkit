@@ -1,9 +1,0 @@
-{
-  "id": "evidence-openapi-q1q2",
-  "suite": "ci",
-  "title": "parse mini OpenAPI fills Q1/Q2 with source openapi (not human)",
-  "owners": ["research"],
-  "featurePr": "W4",
-  "fixtures": ["openapi/mini-events.json"],
-  "tags": ["deterministic", "no-network", "evidence"]
-}

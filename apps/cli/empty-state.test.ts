@@ -45,7 +45,7 @@ describe('CLI empty-state output', () => {
     assert.equal(listResult.status, 0);
     assert.match(listResult.stdout, /No Layerkit project found yet\./);
     assert.match(listResult.stdout, /Next step: run layerkit install/);
-    assert.doesNotMatch(listResult.stdout, /research openapi|proposal write|proposal apply/);
+    assert.doesNotMatch(listResult.stdout, /proposal write|proposal apply/);
 
     const doctorResult = runCli(['doctor', '--project-dir', projectDir], repoRoot);
     assert.equal(doctorResult.status, 1);

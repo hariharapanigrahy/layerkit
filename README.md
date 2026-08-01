@@ -191,7 +191,6 @@ layerkit proposal validate <file>
 layerkit proposal apply <file>
 layerkit process dry-run --vendor <v> --intent <i>
 layerkit generate --module-root <dir> [--vendor <id>]
-layerkit research fill --vendor <v> --openapi <file>
 layerkit heal run --vendor <v> --openapi <file> --module-root <dir> [--rename-decisions <file>]
 layerkit agent multi --vendor <id> [--mode heal] [--openapi <file>]
 ```
