@@ -28,6 +28,12 @@ for (const pattern of [
   /TODO/i,
   /unsupported/i,
   /remove\/update stale|Stale code\/docs\/tests/i,
+  /client-package edit path/i,
+  /mapping semantics/i,
+  /deletion-first behavior/i,
+  /what must pass/i,
+  /proof artifact/i,
+  /fallback/i,
 ]) {
   assertTrue(`source-edit instructions include ${pattern}`, pattern.test(combined), combined);
 }

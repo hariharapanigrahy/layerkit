@@ -37,6 +37,9 @@ for (const forbidden of [
   'designs',
   'docs/designs',
   '.layerkit',
+  '.cursor',
+  '.github',
+  'AI_WORKING_RULES.md',
   'out',
   'openapi',
 ]) {

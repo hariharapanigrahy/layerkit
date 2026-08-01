@@ -82,10 +82,31 @@ assertIncludesAll('strategic redirects require proof before rewrite', judgedCorp
   /eval|end-to-end QA check|contract-heal case|before\/after acceptance test/i,
 ]);
 
+assertIncludesAll('plans require outcome checkpoints with fallback', judgedCorpus, [
+  /outcome checkpoints/i,
+  /what must pass/i,
+  /proof artifact/i,
+  /fallback|alternative approach/i,
+]);
+
+assertIncludesAll('major decisions define proof before implementation', judgedCorpus, [
+  /before implementation|before source edits start|before edits start/i,
+  /passing judge|package-level fixture|release checklist item|before\/after behavior/i,
+]);
+
+assertIncludesAll('release hardening requires executable test backing', judgedCorpus, [
+  /test backing|executable tests|tests proportional/i,
+  /client-package edit path/i,
+  /mapping semantics/i,
+  /deletion-first behavior/i,
+  /CI\/eval gates|CI\/eval gate/i,
+]);
+
 assertIncludesAll('skills require secret literals to move out of source', judgedCorpus, [
   /API keys|passwords|tokens|credentials/i,
   /environment variables|secrets manager|SecretRef/i,
   /source string literals|literals/i,
+  /release blockers|release blocker/i,
 ]);
 
 assertForbidden('heal skill path forbids fake PR packaging artifacts', judgedCorpus, [
