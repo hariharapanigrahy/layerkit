@@ -490,11 +490,21 @@ function updateExistingJavaAdapter(existingSrc: string, map: VendorMap, drift?: 
     if (existingTargetFields.has(targetField)) continue;
     const source = sourceByDomain.get(normalizeFieldName(row.domain));
     const setter = `set${toPascal(row.vendor)}`;
-    if (source) {
+    const receiverType = existingSrc
+      .match(new RegExp(`\\b([A-Za-z_][A-Za-z0-9_]*(?:<[^;=]+>)?)\\s+${receiver}\\s*=`))?.[1]
+      ?.replace(/<.*>$/, '');
+    const targetSupported = Boolean(
+      receiverType &&
+        new RegExp(
+          `\\b(?:class|record)\\s+${receiverType}\\b[\\s\\S]*\\b(?:public|private|protected)?\\s*(?:static\\s+)?[A-Za-z_][A-Za-z0-9_<>, ?\\[\\]]*\\s+${setter}\\s*\\(`,
+        ).test(existingSrc),
+    );
+    if (source && targetSupported) {
       additions.push(`${indent}${receiver}.${setter}(${source});`);
     } else {
+      const missing = source ? 'target setter' : 'source expression';
       additions.push(
-        `${indent}// TODO(layerkit): map ${row.domain} -> ${row.vendor}; missing source expression in existing adapter`,
+        `${indent}// TODO(layerkit): map ${row.domain} -> ${row.vendor}; missing ${missing} in existing adapter`,
       );
     }
   }

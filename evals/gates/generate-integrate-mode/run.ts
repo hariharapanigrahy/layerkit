@@ -86,6 +86,7 @@ const postmarkMap: VendorMap = {
   fields: [
     { domain: 'name', vendor: 'name', transform: { type: 'identity' } },
     { domain: 'email', vendor: 'email_id', transform: { type: 'identity' } },
+    { domain: 'phone', vendor: 'phone_id', transform: { type: 'identity' } },
   ],
   auth: { type: 'bearer' },
   documentation: [{ title: 'Email Fixture API', url: 'https://api.email-fixture.test/docs' }],
@@ -99,10 +100,12 @@ const postmarkPlan = buildIntegratePlan({
   driftByVendor: {
     postmark: {
       severity: 'breaking',
-      summary: 'Vendor renamed email to email_id',
+      summary: 'Vendor renamed email to email_id and phone to phone_id',
       items: [
         { kind: 'field_removed', severity: 'breaking', detail: 'email removed', path: 'email' },
         { kind: 'field_added', severity: 'breaking', detail: 'email_id added', path: 'email_id' },
+        { kind: 'field_removed', severity: 'breaking', detail: 'phone removed', path: 'phone' },
+        { kind: 'field_added', severity: 'breaking', detail: 'phone_id added', path: 'phone_id' },
       ],
     },
   },
@@ -125,6 +128,16 @@ assertTrue(
 assertTrue(
   'old vendor target removed',
   !postmarkPatch!.content!.includes('payload.setEmail(event.getEmail());'),
+  postmarkPatch!.content!,
+);
+assertTrue(
+  'missing target setter does not invent call',
+  !postmarkPatch!.content!.includes('payload.setPhoneId(event.getPhone());'),
+  postmarkPatch!.content!,
+);
+assertTrue(
+  'missing target setter becomes TODO',
+  postmarkPatch!.content!.includes('TODO(layerkit): map phone -> phone_id; missing target setter'),
   postmarkPatch!.content!,
 );
 assertTrue(

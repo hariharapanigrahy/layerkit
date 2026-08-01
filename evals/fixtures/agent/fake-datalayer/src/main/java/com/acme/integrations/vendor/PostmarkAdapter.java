@@ -26,6 +26,7 @@ public class PostmarkAdapter implements VendorAdapter {
     EmailPayload payload = new EmailPayload();
     payload.setName(event.getName());
     payload.setEmail(event.getEmail());
+    payload.setPhone(event.getPhone());
     return payload;
   }
 
@@ -37,6 +38,10 @@ public class PostmarkAdapter implements VendorAdapter {
     String getEmail() {
       return "ada@example.test";
     }
+
+    String getPhone() {
+      return "+15550123";
+    }
   }
 
   static class EmailPayload {
@@ -45,5 +50,7 @@ public class PostmarkAdapter implements VendorAdapter {
     void setEmail(String email) {}
 
     void setEmailId(String email) {}
+
+    void setPhone(String phone) {}
   }
 }
