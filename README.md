@@ -37,6 +37,71 @@ import { createObservationBus } from 'layerkit/observation';
 import { evaluateRouting, loadRoutingPolicy } from 'layerkit/routing';
 ```
 
+> **Apps must provide the glue.** `track()` produces a `TrackResult` but does not send it. Your application is responsible for connecting `TrackResult` to `createDeliverySimulator().deliver()`. See the [Production Send Path](#production-send-path) section and [docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GOLDEN_PATH.md) for a complete example.
+
+## Production Send Path
+
+`track(event, maps, { projectDir, mode })` is the deterministic runtime layer. It selects vendor maps, applies vendor maps or flows, evaluates privacy, and produces `TrackResult` plus diagnostics / observations when needed.
+
+`track()` does not perform production HTTP delivery. Flow execution is also deterministic and does not open live HTTP in the runtime path. Flow live HTTP is unsupported inside runtime; network delivery is handled by the delivery layer after runtime completes.
+
+```text
+Application
+  │
+  ▼
+track(event)
+  │
+  ▼
+Vendor selection
+  │
+  ▼
+Map / Flow execution
+  │
+  ▼
+Privacy + Observation
+  │
+  ▼
+TrackResult
+  │
+  ▼
+DeliverySimulator / deliver()
+  │
+  ▼
+sendWithRetry()
+  │
+  ▼
+Vendor API
+```
+
+The delivery layer is responsible for live network communication, retries, idempotency, DLQ handling, and HTTP failures. **Applications must provide the glue** — `track()` does not call `deliver()` automatically.
+
+Minimal send glue — architecture (your app provides this):
+
+```text
+1. track(event, maps, opts)
+      → TrackResult { results: VendorTrackResult[] }
+
+2. Application inspects result.results
+      → build a DeliveryRequest per vendor
+        (url / method / headers come from your vendor map config,
+         wire comes from VendorTrackResult.wire)
+
+3. createDeliverySimulator({ projectDir, allowNetwork: true })
+      .deliver(deliveryRequest)
+```
+
+> **Unsupported:** flow live HTTP inside runtime is not supported. Do not expect `track()` or a flow step to open network connections. Network delivery always happens in the delivery layer, after runtime completes.
+
+Delivery modes:
+
+| Mode | Network | Behavior |
+|------|---------|----------|
+| `dry_run` | No | Simulated success, no network calls |
+| `shadow` | No | Simulated success, no network calls |
+| `live` | Yes, only when explicitly allowed | Performs HTTP delivery with retry / idempotency / DLQ handling |
+
+See the [Runtime Send Path section in docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GOLDEN_PATH.md#runtime-send-path) for the full send-path explanation.
+
 `track(event, maps, { projectDir, mode })` loads privacy policies and flow refs from the project store, emits audit events when `projectDir` is set, and returns `diagnostics` / `filteredOut` when no vendor is eligible (never silent empty success).
 
 **Routing (declarative fan-out):** author a customer-owned `RoutingPolicy` (vendor sets + optional intent expansions + routes). Use `trackRouted` or CLI `route plan` / `process dry-run --route` so attribute-based vendor selection stays out of app `if/else` and tag matrices. See skill `layerkit-design-routing`.
@@ -45,7 +110,7 @@ import { evaluateRouting, loadRoutingPolicy } from 'layerkit/routing';
 
 ## Agent quick start
 
-**Day-1 any-vendor path:** [docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GOLDEN_PATH.md) (orchestrate + CLI only).
+**Day-1 any-vendor path:** [docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GOLDEN_PATH.md) (orchestrate + CLI only). For the runtime send path, see the runtime send-path section in that doc.
 
 Paste into your coding agent:
 
