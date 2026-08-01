@@ -9,7 +9,7 @@ Team of agents on the **same** integration pipeline. CLI builds a deterministic 
 
 ## Start
 
-### Contract heal (map already exists — human supplies OpenAPI)
+### Contract heal (map already exists — human supplies OpenAPI/docs)
 
 ```bash
 layerkit heal run --vendor resend --openapi ./contract-v2.json --module-root <dir>
@@ -18,6 +18,7 @@ layerkit agent multi --vendor resend --mode heal --openapi ./contract-v2.json [-
 
 - Discover task **omitted**
 - Researcher = pin + deterministic drift + evidence-backed semantic rename decisions when needed
+- If only docs are supplied, researcher/AI must read/cite docs and write a structured contract before heal
 - Heal edits production source/map files directly; do not emit PR packages or INTEGRATE.md
 - Pass `--rename-decisions <json>` only when docs/code evidence supports a removed→added field rename
 

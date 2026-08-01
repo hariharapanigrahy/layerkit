@@ -210,7 +210,7 @@ export function buildMultiAgentPlan(opts: BuildMultiAgentPlanOptions): MultiAgen
     parallel: true,
   });
 
-  // --- Phase: research (contract-first; heal = pin + drift + map-from-openapi) ---
+  // --- Phase: research (contract-first; heal = pin + drift from OpenAPI/docs contract) ---
   const researchIds: string[] = [];
   const researchVendors = vendors.length ? vendors : ['<vendor>'];
   for (const vendor of researchVendors.slice(0, maxParallel * 2)) {
@@ -239,7 +239,7 @@ export function buildMultiAgentPlan(opts: BuildMultiAgentPlanOptions): MultiAgen
       doneWhen:
         mode === 'heal'
           ? `Heal complete for ${vendor}: map applied, source files updated`
-          : `Map + source edits for ${vendor} from OpenAPI ready`,
+          : `Map + source edits for ${vendor} from structured contract ready`,
       dependsOn: scanIds,
     });
     tasks.push(t);
@@ -250,8 +250,8 @@ export function buildMultiAgentPlan(opts: BuildMultiAgentPlanOptions): MultiAgen
     title: mode === 'heal' ? 'Research (contract heal)' : 'Research',
     detail:
       mode === 'heal'
-        ? `Pin OpenAPI → drift vs applied map → map-from-openapi (cap ~${maxParallel})`
-        : `Parallel per vendor (cap ~${maxParallel}) — contract/OpenAPI evidence-first maps`,
+        ? `Pin OpenAPI/docs contract → drift vs applied map (cap ~${maxParallel})`
+        : `Parallel per vendor (cap ~${maxParallel}) — contract/docs evidence-first maps`,
     taskIds: researchIds,
     parallel: true,
   });
@@ -520,7 +520,7 @@ export function formatMultiAgentPlanMarkdown(plan: MultiAgentPlan): string {
     '1. **Orchestrator**: `layerkit agent status`.',
     '2. Spawn **one subagent per task**; same `parallelGroup` may run concurrently.',
     '3. Do **not** start a phase until `dependsOn` tasks are done.',
-    '4. **Research** from customer OpenAPI/docs — pin + drift, never invent.',
+    '4. **Research** from customer OpenAPI/docs — structured contract + drift, never invent.',
     plan.mode === 'heal'
       ? '5. **Heal** edits production source/map files directly; no `INTEGRATE.md` phase.'
       : '5. **Integrate** from `INTEGRATE.md` into production code.',
@@ -708,9 +708,10 @@ function researcherPrompt(
     moduleRoot ? `Module root: ${moduleRoot}` : 'Module root: pass --module-root',
     '1. layerkit map show <vendor>',
     '2. layerkit heal run --vendor <v> --openapi <file> --module-root <dir>',
-    '3. Review out/CONTRACT_DRIFT.json',
-    '4. If removed/added fields are semantic renames, pass --rename-decisions with evidence',
-    '5. Verify real source/map changes with dry-run + quality before promote',
+    '3. If the user supplied docs, first curate a structured contract with citations, then use it as --openapi.',
+    '4. Review out/CONTRACT_DRIFT.json',
+    '5. If removed/added fields are semantic renames, pass --rename-decisions with evidence',
+    '6. Verify real source/map changes with dry-run + quality before promote',
     'Evidence only from the supplied contract. Breaking drift → human before promote.',
   ].join('\n');
 }

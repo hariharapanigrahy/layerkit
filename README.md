@@ -173,7 +173,7 @@ Cheat sheet: [docs/CHEATSHEET.md](./docs/CHEATSHEET.md). Golden path: [docs/AGEN
 | Gates | CLI | `proposal validate` / dry-run / apply, doctor, install |
 | Runtime | Your app or Layerkit delivery | Deterministic map apply + HTTP — **no LLM on the hot path** |
 | Generate | Agent + CLI | Integrate plan into production datalayer (`INTEGRATE.md` / `--module-root`) |
-| Heal | Agent + CLI | Pin OpenAPI, diff drift, validate semantic rename decisions, edit production source/map files directly |
+| Heal | Agent + CLI | Pin structured contract, diff drift, validate semantic rename decisions, edit production source/map files directly |
 
 **No vendor catalog.** Project stores start with zero maps. Agents research any vendor from official docs and apply customer-owned proposals under `{projectDir}` (default `.layerkit`).
 
@@ -195,6 +195,8 @@ layerkit research fill --vendor <v> --openapi <file>
 layerkit heal run --vendor <v> --openapi <file> --module-root <dir> [--rename-decisions <file>]
 layerkit agent multi --vendor <id> [--mode heal] [--openapi <file>]
 ```
+
+Docs-link-only heal is an AI-agent workflow, not CLI-only. The skill reads/cites vendor docs and writes a structured OpenAPI/contract file plus optional rename decisions; the CLI then deterministically validates and applies that structured input.
 
 `generate` writes an integrate plan to `{projectDir}/out/INTEGRATE.md` for agents to edit **production code**. Requires production entrypoints or `--module-root`.
 

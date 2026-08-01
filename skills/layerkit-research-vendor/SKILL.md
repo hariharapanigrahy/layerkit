@@ -1,23 +1,38 @@
 ---
 name: layerkit-research-vendor
-description: Evidence-first vendor research and contract updates (OpenAPI pin + drift vs map); residual human only.
+description: Evidence-first vendor research and contract updates (docs/OpenAPI → structured contract → drift vs map); residual human only.
 ---
 
 # layerkit-research-vendor
 
 You create or **update** integration knowledge from **primary evidence**. Core ships empty maps. Never invent.
 
-**Contract update (heal)** is the direct production update path: human supplies OpenAPI/docs → pin → deterministic drift → optional evidence-backed semantic rename decisions → update the existing source/map files. Do not route heal through `layerkit generate` or `INTEGRATE.md`.
+**Contract update (heal)** is the direct production update path: human supplies OpenAPI/docs → AI agent curates structured contract → deterministic drift → optional evidence-backed semantic rename decisions → update the existing source/map files. Do not route heal through `layerkit generate` or `INTEGRATE.md`.
 
 ## Protocol
 
-### A. Contract heal (prefer when OpenAPI exists)
+### A. Contract heal
 
 ```bash
 layerkit heal run --vendor <vendor> --openapi ./openapi.json \
   --module-root <production-module>
 # pin + drift + map apply + direct source edits
 ```
+
+When the user gives a docs link instead of OpenAPI, you are the AI reader. Fetch/read the official docs, keep citations, and write a structured OpenAPI-compatible contract file from evidence before calling heal:
+
+```text
+.layerkit/out/contracts/<vendor>/openapi-from-doc.json
+```
+
+Then run:
+
+```bash
+layerkit heal run --vendor <vendor> --openapi .layerkit/out/contracts/<vendor>/openapi-from-doc.json \
+  --module-root <production-module>
+```
+
+The CLI does not understand arbitrary docs. It validates/applies structured contract input. If docs are ambiguous, preserve uncertainty in the contract notes and leave unresolved TODOs rather than inventing fields.
 
 Review `out/CONTRACT_DRIFT.json`.
 If deterministic drift says one vendor field was removed and another was added, inspect docs and existing source before deciding it is a rename. When evidence is strong, pass decisions to heal:
@@ -51,7 +66,7 @@ layerkit research deepen ./hub.md --json
 layerkit research gaps ./sheet.json
 ```
 
-- OpenAPI → Q1 auth, Q2 endpoints, Q3 intent candidates, Q4 body fields, Q5 PII-ish names
+- Structured contract/OpenAPI → Q1 auth, Q2 endpoints, Q3 intent candidates, Q4 body fields, Q5 PII-ish names
 - curl → method, host, path, auth class
 - deepen hub → enqueue openapi before humans
 
@@ -72,14 +87,14 @@ Include drift severity when heal. Residual questionnaire only after deepen L0–
 - Inventing hash/phone/auth/endpoint rules when evidence is silent
 - Guessing field renames from names alone; deterministic heal applies only evidence-backed decisions
 - Ignoring applied map on heal (must diff / surgical update)
-- Opening full human questionnaire while OpenAPI already answers Q1/Q2
+- Opening full human questionnaire while OpenAPI/docs/curl already answer Q1/Q2
 - Trusting third-party maps without customer re-verify
 - Self-approve in strict maker-checker
 
 ## Success criteria
 
-- [ ] Contract pinned when OpenAPI was supplied
+- [ ] Structured contract pinned when OpenAPI or docs were supplied
 - [ ] Drift reviewed if map existed (severity in note)
 - [ ] Each answered Q has ≥1 citation
-- [ ] Map proposal from OpenAPI with sources[]
+- [ ] Map proposal from structured contract with sources[]
 - [ ] `layerkit agent next` advances past research after apply

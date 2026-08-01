@@ -40,11 +40,12 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
     skill: 'layerkit-research-vendor',
     cliHints: [
       'layerkit heal run --vendor <v> --openapi <contract.json> --module-root <dir>',
+      'Docs-only: AI skill reads/cites docs, writes <contract.json>, then run heal --openapi <contract.json>',
       'layerkit map show <vendor>',
       'Review out/CONTRACT_DRIFT.json',
     ],
     doneWhen:
-      'Contract pinned; map applied from OpenAPI; source files updated; drift reviewed',
+      'Contract pinned from OpenAPI or curated docs; map/source files updated; drift reviewed',
   },
   {
     id: 'design',

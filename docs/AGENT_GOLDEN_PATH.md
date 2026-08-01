@@ -251,6 +251,12 @@ layerkit research fill \
   --out <sheet.json>
 # pins out/contracts/<vendor>/ · CONTRACT_DRIFT.json · mode=heal if map applied
 
+# Docs-only intake is skill work: AI reads/cites docs and writes
+# .layerkit/out/contracts/<vendor>/openapi-from-doc.json, then:
+layerkit heal run --vendor <vendor> \
+  --openapi .layerkit/out/contracts/<vendor>/openapi-from-doc.json \
+  --module-root <production-module>
+
 layerkit research openapi <openapi.yaml> [--json]
 layerkit research curl <curl.txt> [--json]
 layerkit research deepen <hub.md> [--json]
@@ -546,4 +552,3 @@ If an existing workflow still applies `pending` proposals without approve, pin l
 ```
 
 No automatic “missing key → true”; pin explicitly if needed.
-

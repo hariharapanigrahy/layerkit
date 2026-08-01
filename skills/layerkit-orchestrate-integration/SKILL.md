@@ -11,7 +11,7 @@ Master loop: full-stack integration developer. Skills author knowledge; CLI gate
 
 `discover → research → design → author → privacy → deletion-first → generate → handoff`
 
-Heal = human supplies updated OpenAPI/docs → `heal run` pins + diffs + applies map/source edits (discover skipped via `mode: heal`). The deterministic drift step reports removed/added fields; agent reasoning may supply semantic rename decisions with evidence, and heal validates them before editing source. `layerkit generate` is a separate optional planning command, not part of the heal path.
+Heal = human supplies updated OpenAPI/docs → AI-curated structured contract → `heal run` pins + diffs + applies map/source edits (discover skipped via `mode: heal`). The CLI does not understand arbitrary docs; the skill/agent reads, cites, and curates the contract or rename decisions, then deterministic heal validates before editing source. `layerkit generate` is a separate optional planning command, not part of the heal path.
 
 ## Primary commands
 
@@ -45,7 +45,7 @@ Step ids: `discover` | `research` | `design` | `author` | `privacy` | `generate`
 | id | Skill | Contract heal focus |
 |----|-------|---------------------|
 | `discover` | `layerkit-discover-data-layer` | **Skipped** when `mode: heal` |
-| `research` | `layerkit-research-vendor` | Pin OpenAPI → drift → map-from-openapi |
+| `research` | `layerkit-research-vendor` | Read docs/OpenAPI → curate structured contract → heal drift |
 | `design` | `layerkit-design-flow` | Re-validate shape under new contract |
 | `author` | `layerkit-author-processor` | Only processors affected by drift |
 | `privacy` | `layerkit-privacy-review` | Human if new PII fields |
@@ -58,6 +58,7 @@ Step ids: `discover` | `research` | `design` | `author` | `privacy` | `generate`
 | Stage | Stop if |
 |-------|---------|
 | research | no contract/evidence → residual human; do not invent |
+| research docs | docs are prose-heavy/ambiguous → AI curates structured contract with citations; CLI-only heal is insufficient |
 | research heal | removed/added fields look like a rename but evidence is weak → leave unresolved/TODO, do not guess |
 | research heal | severity=breaking → flag human/checker before promote |
 | privacy | new PII without policy |

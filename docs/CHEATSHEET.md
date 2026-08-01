@@ -43,7 +43,7 @@ layerkit agent multi --vendor <v> [--mode heal] [--openapi <f>] [--module-root <
 
 ## Contract heal (update integration)
 
-Human supplies new OpenAPI/docs:
+Human supplies new OpenAPI or docs:
 
 ```bash
 layerkit heal run --vendor <v> --openapi <spec.json> \
@@ -58,7 +58,9 @@ layerkit heal run --vendor <v> --openapi <spec.json> \
 layerkit process dry-run --vendor <v> --intent <i>
 ```
 
-Evidence only · map fields from OpenAPI only.
+Docs-link-only heal is skill/AI work: read/cite docs, write a structured contract file, then run `heal --openapi <contract>`.
+
+Evidence only · map fields from structured contract only.
 
 ---
 
