@@ -238,19 +238,11 @@ function planActionsForVendor(
     } catch {
       existingSrc = undefined;
     }
-    const content =
-      topology.language === 'typescript'
-        ? tsAdapterStub(vendor, map, existingAdapter.path, drift)
-        : javaAdapterFromExistingOrStub(
-            pkg,
-            pascal,
-            vendor,
-            map,
-            topology,
-            existingAdapter,
-            existingSrc,
-            drift,
-          );
+    const content = existingSrc
+      ? topology.language === 'typescript'
+        ? appendTargetedTodoBlock(existingSrc, map, drift)
+        : updateExistingJavaAdapter(existingSrc, map, drift)
+      : undefined;
 
     actions.push({
       kind: 'patch',
@@ -271,8 +263,8 @@ function planActionsForVendor(
         driftBlock,
         `Pattern: ${topology.addVendorPattern}`,
         content
-          ? 'Proposed full file body is in plan action content (also under out/pr/…).'
-          : 'Implement field projection like sibling adapters.',
+          ? 'Proposed targeted file body preserves existing mappings; TODOs are only for unresolved source expressions.'
+          : 'Implement field projection like sibling adapters; no full-file scaffold will overwrite an existing adapter.',
       ]
         .filter(Boolean)
         .join(' '),
@@ -456,34 +448,128 @@ ${mappings || '    // (no field rows on map)'}
 `;
 }
 
-/** Prefer regenerating adapter body from map; keep package/imports hints from existing source. */
-function javaAdapterFromExistingOrStub(
-  pkg: string,
-  pascal: string,
-  vendor: string,
-  map: VendorMap,
-  topology: IntegrationTopology,
-  existing: { path: string; symbol?: string },
-  existingSrc: string | undefined,
-  drift?: DriftNotes,
-): string {
-  const base = javaAdapterStub(pkg, pascal, vendor, map, topology, existing, drift);
-  if (!existingSrc) return base;
-  // Preserve OkHttp (or similar) dependency pattern when sibling uses it
-  if (/OkHttpClient/i.test(existingSrc) && !/OkHttpClient/i.test(base)) {
-    return base
-      .replace(
-        'public class ',
-        'import okhttp3.OkHttpClient;\n\npublic class ',
-      )
-      .replace(
-        '// TODO: inject HTTP client / config like sibling adapters',
-        'private final OkHttpClient http;\n\n  public ' +
-          pascal +
-          'Adapter(OkHttpClient http) {\n    this.http = http;\n  }',
-      );
+interface SetterLine {
+  full: string;
+  indent: string;
+  receiver: string;
+  setter: string;
+  arg: string;
+  field: string;
+}
+
+function updateExistingJavaAdapter(existingSrc: string, map: VendorMap, drift?: DriftNotes): string {
+  const setters = parseJavaSetterLines(existingSrc);
+  if (!setters.length) return appendTargetedTodoBlock(existingSrc, map, drift);
+
+  const activeFields = new Set((map.fields ?? []).map((f) => normalizeFieldName(f.vendor)));
+  const removedFields = new Set(
+    (drift?.items ?? [])
+      .filter((i) => i.kind === 'field_removed' && i.path)
+      .map((i) => normalizeFieldName(i.path!))
+      .filter((field) => !activeFields.has(field)),
+  );
+  const sourceByDomain = inferJavaSourcesByDomain(setters, map);
+  const existingTargetFields = new Set(setters.map((s) => s.field));
+  const receiver = setters[0]!.receiver;
+  const indent = setters[0]!.indent;
+  const insertAfter =
+    [...setters].reverse().find((s) => !removedFields.has(s.field))?.full ??
+    setters[setters.length - 1]!.full;
+
+  let updated = existingSrc;
+  for (const setter of setters) {
+    if (removedFields.has(setter.field)) {
+      updated = updated.replace(setter.full, '');
+      existingTargetFields.delete(setter.field);
+    }
   }
-  return base;
+
+  const additions: string[] = [];
+  for (const row of map.fields ?? []) {
+    const targetField = normalizeFieldName(row.vendor);
+    if (existingTargetFields.has(targetField)) continue;
+    const source = sourceByDomain.get(normalizeFieldName(row.domain));
+    const setter = `set${toPascal(row.vendor)}`;
+    if (source) {
+      additions.push(`${indent}${receiver}.${setter}(${source});`);
+    } else {
+      additions.push(
+        `${indent}// TODO(layerkit): map ${row.domain} -> ${row.vendor}; missing source expression in existing adapter`,
+      );
+    }
+  }
+
+  if (!additions.length) return updated;
+  const additionBlock = `${insertAfter}\n${additions.join('\n')}`;
+  return updated.includes(insertAfter)
+    ? updated.replace(insertAfter, additionBlock)
+    : appendTargetedTodoBlock(updated, map, drift);
+}
+
+function parseJavaSetterLines(src: string): SetterLine[] {
+  const out: SetterLine[] = [];
+  const re = /^([ \t]*)([A-Za-z_][A-Za-z0-9_]*)\.(set[A-Z][A-Za-z0-9_]*)\(([^;\n]+)\);\s*$/gm;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(src))) {
+    out.push({
+      full: m[0],
+      indent: m[1]!,
+      receiver: m[2]!,
+      setter: m[3]!,
+      arg: m[4]!.trim(),
+      field: normalizeFieldName(m[3]!.slice(3)),
+    });
+  }
+  return out;
+}
+
+function inferJavaSourcesByDomain(setters: SetterLine[], map: VendorMap): Map<string, string> {
+  const sources = new Map<string, string>();
+  for (const row of map.fields ?? []) {
+    const aliases = fieldAliases(row.domain);
+    const direct = setters.find((s) =>
+      aliases.some((alias) => s.arg.toLowerCase().includes(`get${toPascal(alias).toLowerCase()}(`)),
+    );
+    if (direct) {
+      for (const alias of aliases) sources.set(normalizeFieldName(alias), direct.arg);
+      continue;
+    }
+    const byTarget = setters.find((s) => s.field === normalizeFieldName(row.vendor));
+    if (byTarget) {
+      for (const alias of aliases) sources.set(normalizeFieldName(alias), byTarget.arg);
+    }
+  }
+  for (const setter of setters) {
+    const getter = setter.arg.match(/\bget([A-Z][A-Za-z0-9_]*)\s*\(/)?.[1];
+    if (getter) sources.set(normalizeFieldName(getter), setter.arg);
+  }
+  return sources;
+}
+
+function appendTargetedTodoBlock(src: string, map: VendorMap, drift?: DriftNotes): string {
+  const unresolved = (map.fields ?? [])
+    .map((f) => ` * TODO(layerkit): map ${f.domain} -> ${f.vendor}; source/target support not proven`)
+    .join('\n');
+  const block = [
+    '',
+    '/*',
+    ` * Layerkit contract update${drift ? `: ${drift.summary}` : ''}`,
+    unresolved || ' * TODO(layerkit): verify adapter mapping for updated contract',
+    ' */',
+    '',
+  ].join('\n');
+  return src.trimEnd() + block;
+}
+
+function fieldAliases(path: string): string[] {
+  const parts = path.split(/[^A-Za-z0-9_]+/).filter(Boolean);
+  const aliases = new Set<string>([path]);
+  if (parts.length) aliases.add(parts[parts.length - 1]!);
+  return [...aliases];
+}
+
+function normalizeFieldName(field: string): string {
+  return field.replace(/[^A-Za-z0-9]+/g, '').toLowerCase();
 }
 
 function javaTestStub(

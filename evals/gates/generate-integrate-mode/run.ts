@@ -75,6 +75,69 @@ assertTrue(
   plan!.actions.some((a) => a.kind === 'skip' && /DataLayerClient/i.test(a.path)),
 );
 
+const postmarkMap: VendorMap = {
+  schemaVersion: 1,
+  vendor: 'postmark',
+  displayName: 'Postmark',
+  version: '2.0.0',
+  status: 'map_complete',
+  endpoint: { method: 'POST', path: '/emails', baseUrl: 'https://api.email-fixture.test' },
+  intents: { 'notify.sendEmail': { eventName: 'email.send' } },
+  fields: [
+    { domain: 'name', vendor: 'name', transform: { type: 'identity' } },
+    { domain: 'email', vendor: 'email_id', transform: { type: 'identity' } },
+  ],
+  auth: { type: 'bearer' },
+  documentation: [{ title: 'Email Fixture API', url: 'https://api.email-fixture.test/docs' }],
+};
+
+const postmarkPlan = buildIntegratePlan({
+  repoRoot: fixtureRoot,
+  scanRoot: fixtureRoot,
+  maps: [postmarkMap],
+  vendors: ['postmark'],
+  driftByVendor: {
+    postmark: {
+      severity: 'breaking',
+      summary: 'Vendor renamed email to email_id',
+      items: [
+        { kind: 'field_removed', severity: 'breaking', detail: 'email removed', path: 'email' },
+        { kind: 'field_added', severity: 'breaking', detail: 'email_id added', path: 'email_id' },
+      ],
+    },
+  },
+});
+assertTrue('postmark plan non-null', postmarkPlan.plan != null);
+const postmarkPatch = postmarkPlan.plan!.actions.find(
+  (a) => a.kind === 'patch' && a.vendor === 'postmark' && a.content,
+);
+assertTrue('postmark existing adapter patch has content', postmarkPatch != null);
+assertTrue(
+  'existing mapping preserved',
+  postmarkPatch!.content!.includes('payload.setName(event.getName());'),
+  postmarkPatch!.content!,
+);
+assertTrue(
+  'renamed vendor target uses existing domain source',
+  postmarkPatch!.content!.includes('payload.setEmailId(event.getEmail());'),
+  postmarkPatch!.content!,
+);
+assertTrue(
+  'old vendor target removed',
+  !postmarkPatch!.content!.includes('payload.setEmail(event.getEmail());'),
+  postmarkPatch!.content!,
+);
+assertTrue(
+  'supported rename does not become TODO',
+  !postmarkPatch!.content!.includes('TODO(layerkit): map email -> email_id'),
+  postmarkPatch!.content!,
+);
+assertTrue(
+  'existing adapter not replaced by scaffold',
+  !postmarkPatch!.content!.includes('Layerkit integrate: postmark'),
+  postmarkPatch!.content!,
+);
+
 const md = formatIntegratePlanMarkdown(plan!);
 assertTrue('md mentions integrate', /integrat/i.test(md));
 

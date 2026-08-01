@@ -21,4 +21,29 @@ public class PostmarkAdapter implements VendorAdapter {
   public void send(String intent, String jsonBody) throws Exception {
     // fixture stub
   }
+
+  public EmailPayload buildPayload(EmailEvent event) {
+    EmailPayload payload = new EmailPayload();
+    payload.setName(event.getName());
+    payload.setEmail(event.getEmail());
+    return payload;
+  }
+
+  static class EmailEvent {
+    String getName() {
+      return "Ada";
+    }
+
+    String getEmail() {
+      return "ada@example.test";
+    }
+  }
+
+  static class EmailPayload {
+    void setName(String name) {}
+
+    void setEmail(String email) {}
+
+    void setEmailId(String email) {}
+  }
 }
