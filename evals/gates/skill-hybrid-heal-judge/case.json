@@ -1,0 +1,8 @@
+{
+  "id": "skill-hybrid-heal-judge",
+  "suite": "ci",
+  "title": "Skill judge: hybrid docs-to-contract heal, rename evidence, and deletion-first update mode",
+  "owners": ["skills", "agent", "heal"],
+  "fixtures": ["skills/hybrid-heal-rubric.json"],
+  "tags": ["deterministic", "no-network", "skill-judge", "agent-process", "heal"]
+}
