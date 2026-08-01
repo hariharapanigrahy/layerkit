@@ -17,9 +17,9 @@ layerkit agent multi --vendor resend --mode heal --openapi ./contract-v2.json [-
 ```
 
 - Discover task **omitted**
-- Researcher = pin + deterministic drift + evidence-backed semantic rename decisions when needed
+- Researcher = pin + drift + evidence-backed semantic rename decisions when needed
 - If only docs are supplied, researcher/AI must read/cite docs and write a structured contract before heal
-- Heal edits production source/map files directly; do not emit PR packages or INTEGRATE.md
+- Heal updates map/proposal evidence; the AI agent edits production source/test files directly
 - Pass `--rename-decisions <json>` only when docs/code evidence supports a removed→added field rename
 
 ### First-time / multi-vendor
@@ -43,7 +43,7 @@ Artifacts:
 | researcher | research-vendor | contract pin + drift |
 | designer / author | design / processor | surgical on drift |
 | privacy | privacy-review | human if new PII |
-| integrator | generate-java | first-time planning/patch path only |
+| integrator | generate-java | first-time planning/context path only |
 | verifier | fix-from-dry-run + doctor | dry-run + quality |
 | checker | checker-assist | read-only |
 
@@ -58,6 +58,7 @@ Artifacts:
 - Two agents on the same registry file
 - Re-running full discover on heal when domain is known
 - Invented fields or guessed renames; self-approve
+- Treating generated plans as production source code
 
 ## Success
 

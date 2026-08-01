@@ -1,5 +1,5 @@
 /**
- * Gate: heal run pins contract, applies map, writes code directly.
+ * Gate: heal run pins contract and updates map evidence without deterministic source edits.
  */
 import { existsSync, cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -57,16 +57,14 @@ const result = runHeal({
   openapiPath: openapiV2,
   moduleRoot,
   applyMap: true,
-  applyCode: true,
-  force: true,
   agentId: 'heal-gate',
 });
 
 assertEqual('mode heal', result.mode, 'heal');
 assertTrue('map applied', result.mapApplied);
 assertTrue('drift has reply_to', result.drift.items.some((i) => i.path === 'reply_to'));
-assertTrue('integration actions created', result.integrationActionCount > 0);
-assertTrue('code written directly', result.writtenCode.length > 0, JSON.stringify(result.skippedCode));
+assertTrue('source edit requires agent', result.sourceEditRequired);
+assertTrue('source edit reason names agent', /agent/i.test(result.sourceEditReason), result.sourceEditReason);
 assertTrue('no PR metadata directory', !existsSync(join(projectDir, 'out', 'pr')));
 assertTrue('no integrate plan markdown', !existsSync(join(projectDir, 'out', 'INTEGRATE.md')));
 assertTrue('no integrate plan json', !existsSync(join(projectDir, 'out', 'integrate-plan.json')));
@@ -107,11 +105,10 @@ assertTrue(
   JSON.stringify(map!.fields),
 );
 
-const writtenContent = result.writtenCode.map((p) => readFileSync(p, 'utf8')).join('\n');
 assertTrue(
-  'written code references contract field',
-  /reply_to|buildPayload/i.test(writtenContent),
-  writtenContent.slice(0, 400),
+  'heal next steps tell agent to update production files',
+  result.agentNextSteps.some((step) => /production adapter\/interface\/test files/i.test(step)),
+  JSON.stringify(result.agentNextSteps),
 );
 
 const mapperTmp = mkdtempSync(join(tmpdir(), 'layerkit-heal-mapper-'));
@@ -222,22 +219,22 @@ const mapperAdapter = readFileSync(
   'utf8',
 );
 assertTrue(
-  'supported renamed field updates real adapter',
-  mapperAdapter.includes('payload.setEmailId(event.getEmail());'),
+  'heal does not deterministically update real adapter',
+  !mapperAdapter.includes('payload.setEmailId(event.getEmail());'),
   mapperAdapter,
 );
 assertTrue(
-  'old renamed field setter removed from real adapter',
-  !mapperAdapter.includes('payload.setEmail(event.getEmail());'),
+  'old real adapter source remains for agent to edit',
+  mapperAdapter.includes('payload.setEmail(event.getEmail());'),
   mapperAdapter,
 );
 assertTrue(
-  'unsupported renamed field TODO written to real adapter',
-  mapperAdapter.includes('TODO(layerkit): map phone -> phone_id; missing target setter'),
+  'heal does not write deterministic TODOs into real adapter',
+  !mapperAdapter.includes('TODO(layerkit): map phone -> phone_id; missing target setter'),
   mapperAdapter,
 );
 assertTrue(
-  'supported renamed field has no TODO',
+  'heal still does not add supported-field TODO',
   !mapperAdapter.includes('TODO(layerkit): map email -> email_id'),
   mapperAdapter,
 );

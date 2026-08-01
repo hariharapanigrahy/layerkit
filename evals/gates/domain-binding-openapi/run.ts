@@ -76,7 +76,7 @@ assertTrue('Q2 endpoints filled', !!sheet.dimensions.Q2.answer);
 assertTrue('Q3 intent candidates filled', !!sheet.dimensions.Q3.answer);
 assertTrue('Q3 mentions extension or operationId', /domain-op|operationId|sendMessage/i.test(sheet.dimensions.Q3.answer));
 assertTrue('Q4 fields filled', !!sheet.dimensions.Q4.answer && /to|subject/.test(sheet.dimensions.Q4.answer));
-assertTrue('Q5 pii hint for email field', !!sheet.dimensions.Q5.answer && /email/i.test(sheet.dimensions.Q5.answer));
+assertTrue('Q5 remains agent privacy review work', !sheet.dimensions.Q5.answer);
 assertTrue('Q1 auth from securitySchemes', /bearer/i.test(sheet.dimensions.Q1.answer ?? ''));
 
 const fieldsDesc = describeFieldsFromOpenApi(parsed);
@@ -92,6 +92,7 @@ const proposal = scaffoldVendorMapFromOpenApi({
 assertEqual('proposal kind', proposal.kind, 'vendor_map');
 const payload = proposal.payload as Record<string, unknown>;
 assertTrue('v2 multi-op map', isVendorMapV2(payload as never) || payload.schemaVersion === 2);
+assertEqual('openapi scaffold remains skeleton', payload.status, 'skeleton');
 assertTrue(
   'intent notify.send present',
   !!(payload.intents as Record<string, unknown>)?.['notify.send'],

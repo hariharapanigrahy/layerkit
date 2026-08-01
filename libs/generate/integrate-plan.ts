@@ -1,6 +1,6 @@
 /**
- * Build and apply IntegrationPlans from topology + vendor maps.
- * Creates next to existing adapters; patches are instructional with optional --apply for creates.
+ * Build IntegrationPlans from topology + vendor maps.
+ * Plans are agent-facing context; semantic source edits are skill-owned.
  */
 import {
   existsSync,
@@ -8,7 +8,7 @@ import {
   readFileSync,
   writeFileSync,
 } from 'node:fs';
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 import type { GenerateConfig, VendorMap } from '../domain/types.js';
 import type { StyleProfile } from '../agent/style-profile.js';
 import { scanIntegrationTopology } from './scan-topology.js';
@@ -34,7 +34,7 @@ export interface BuildIntegratePlanOptions {
   forceThin?: boolean;
   /**
    * Optional drift notes by vendor id (from contract heal).
-   * Injected into patch/create instructions and patch content when present.
+   * Injected into patch/create instructions when present.
    */
   driftByVendor?: Record<
     string,
@@ -221,7 +221,6 @@ function planActionsForVendor(
   const actions: PlanAction[] = [];
   const vendor = map.vendor;
   const pascal = toPascal(vendor);
-  const pkg = topology.package ?? 'com.example.integrations';
   const driftBlock = formatDriftInstructions(drift);
   const existingAdapter = topology.entrypoints.find(
     (e) =>
@@ -231,19 +230,6 @@ function planActionsForVendor(
   );
 
   if (existingAdapter) {
-    const absExisting = resolve(topology.scanRoot, existingAdapter.path);
-    let existingSrc: string | undefined;
-    try {
-      if (existsSync(absExisting)) existingSrc = readFileSync(absExisting, 'utf8');
-    } catch {
-      existingSrc = undefined;
-    }
-    const content = existingSrc
-      ? topology.language === 'typescript'
-        ? appendTargetedTodoBlock(existingSrc, map, drift)
-        : updateExistingJavaAdapter(existingSrc, map, drift)
-      : undefined;
-
     actions.push({
       kind: 'patch',
       path: existingAdapter.path,
@@ -254,7 +240,6 @@ function planActionsForVendor(
       anchors: [existingAdapter.symbol ?? pascal, 'send', 'map', 'buildRequest', 'buildPayload'].filter(
         Boolean,
       ),
-      content,
       instructions: [
         `Update ${existingAdapter.path} to match applied map for ${vendor}.`,
         `Endpoint: ${map.endpoint?.method ?? '?'} ${map.endpoint?.baseUrl ?? ''}${map.endpoint?.path ?? ''}`,
@@ -262,9 +247,7 @@ function planActionsForVendor(
         `Fields: ${(map.fields ?? []).map((f) => f.vendor).join(', ') || '(none)'}`,
         driftBlock,
         `Pattern: ${topology.addVendorPattern}`,
-        content
-          ? 'Proposed targeted file body preserves existing mappings; TODOs are only for unresolved source or target support.'
-          : 'Implement field projection like sibling adapters; no full-file scaffold will overwrite an existing adapter.',
+        'The AI agent must inspect the existing interface/datalayer and edit this file directly; this plan does not synthesize mapper code.',
       ]
         .filter(Boolean)
         .join(' '),
@@ -272,10 +255,6 @@ function planActionsForVendor(
   } else {
     const sibling = topology.entrypoints.find((e) => e.role === 'adapter');
     const adapterPath = guessNewAdapterPath(topology, vendor, pascal, sibling);
-    const content =
-      topology.language === 'typescript'
-        ? tsAdapterStub(vendor, map, sibling?.path, drift)
-        : javaAdapterStub(pkg, pascal, vendor, map, topology, sibling, drift);
 
     actions.push({
       kind: 'create',
@@ -284,13 +263,13 @@ function planActionsForVendor(
       reason: drift
         ? `New adapter for ${vendor} after contract update: ${drift.summary}`
         : `New adapter for ${vendor} beside existing integration code`,
-      content,
       instructions: [
         `Create ${adapterPath} implementing the same interface/pattern as sibling adapters.`,
         sibling ? `Mirror structure of ${sibling.path}.` : 'Use VendorPort/Adapter style from topology.',
         `Wire endpoint ${map.endpoint?.method ?? 'POST'} ${map.endpoint?.path ?? ''}.`,
         driftBlock,
         'Register in registry (see patch action).',
+        'Do not use a generated stub as production code; author the adapter from the real client patterns.',
       ]
         .filter(Boolean)
         .join(' '),
@@ -303,10 +282,6 @@ function planActionsForVendor(
     path: testPath,
     vendor,
     reason: `Tests for ${vendor} matching existing test stack`,
-    content:
-      topology.language === 'typescript'
-        ? undefined
-        : javaTestStub(pkg, pascal, vendor, topology, map),
     instructions: [
       `Add tests at ${testPath} (or next to existing vendor tests).`,
       `Stack: ${topology.test ?? 'match project'}.`,
@@ -379,274 +354,6 @@ function guessTestPath(
   return `src/test/java/${pkgPath}/vendor/${pascal}AdapterTest.java`;
 }
 
-function fieldMappingLines(map: VendorMap, drift?: DriftNotes): string {
-  const changed = new Set(
-    (drift?.items ?? [])
-      .filter((i) => i.path && (i.kind === 'field_added' || i.kind === 'field_removed' || i.kind === 'field_required_changed'))
-      .map((i) => i.path!),
-  );
-  return (map.fields ?? [])
-    .map((f) => {
-      const mark = changed.has(f.vendor) ? ' // contract-change' : '';
-      return `    // ${f.domain} -> ${f.vendor}${f.optional ? ' (optional)' : ''}${mark}`;
-    })
-    .join('\n');
-}
-
-function javaAdapterStub(
-  pkg: string,
-  pascal: string,
-  vendor: string,
-  map: VendorMap,
-  topology: IntegrationTopology,
-  sibling?: { path: string; symbol?: string },
-  drift?: DriftNotes,
-): string {
-  const iface =
-    topology.entrypoints.find((e) => e.role === 'port')?.symbol ??
-    topology.entrypoints.find((e) => e.role === 'adapter' && /interface/i.test(e.evidence))
-      ?.symbol ??
-    'VendorAdapter';
-  const method = map.endpoint?.method ?? 'POST';
-  const path = map.endpoint?.path ?? '/';
-  const baseUrl = map.endpoint?.baseUrl ?? '';
-  const mappings = fieldMappingLines(map, drift);
-  const driftNote = drift ? ` * Drift: ${drift.summary}\n` : '';
-  return `package ${pkg}.vendor;
-
-/**
- * Layerkit integrate: ${vendor}.
- * Sibling: ${sibling?.path ?? '(none)'}
- * Endpoint: ${method} ${baseUrl}${path}
- * Intents: ${Object.keys(map.intents ?? {}).join(', ') || 'none'}
-${driftNote} * HTTP: ${topology.http ?? 'project default'}; DI: ${topology.di ?? 'project default'}.
- */
-public class ${pascal}Adapter implements ${iface} {
-  public static final String VENDOR_ID = "${vendor}";
-  public static final String ENDPOINT = "${method} ${baseUrl}${path}";
-
-  // TODO: inject HTTP client / config like sibling adapters
-
-  public String vendorId() {
-    return VENDOR_ID;
-  }
-
-  /**
-   * Map domain event fields to vendor payload (applied map rows only).
-   */
-  public java.util.Map<String, Object> buildPayload(java.util.Map<String, Object> domain) {
-    java.util.Map<String, Object> body = new java.util.LinkedHashMap<>();
-${mappings || '    // (no field rows on map)'}
-    // TODO: put domain values into body keys above; do not invent keys
-    return body;
-  }
-
-  public void send(String intent, String jsonBody) throws Exception {
-    // TODO: POST ENDPOINT with jsonBody using project HTTP client
-  }
-}
-`;
-}
-
-interface SetterLine {
-  full: string;
-  indent: string;
-  receiver: string;
-  setter: string;
-  arg: string;
-  field: string;
-}
-
-function updateExistingJavaAdapter(existingSrc: string, map: VendorMap, drift?: DriftNotes): string {
-  const setters = parseJavaSetterLines(existingSrc);
-  if (!setters.length) return appendTargetedTodoBlock(existingSrc, map, drift);
-
-  const activeFields = new Set((map.fields ?? []).map((f) => normalizeFieldName(f.vendor)));
-  const removedFields = new Set(
-    (drift?.items ?? [])
-      .filter((i) => i.kind === 'field_removed' && i.path)
-      .map((i) => normalizeFieldName(i.path!))
-      .filter((field) => !activeFields.has(field)),
-  );
-  const sourceByDomain = inferJavaSourcesByDomain(setters, map);
-  const existingTargetFields = new Set(setters.map((s) => s.field));
-  const receiver = setters[0]!.receiver;
-  const indent = setters[0]!.indent;
-  const insertAfter =
-    [...setters].reverse().find((s) => !removedFields.has(s.field))?.full ??
-    setters[setters.length - 1]!.full;
-
-  let updated = existingSrc;
-  for (const setter of setters) {
-    if (removedFields.has(setter.field)) {
-      updated = updated.replace(setter.full, '');
-      existingTargetFields.delete(setter.field);
-    }
-  }
-
-  const additions: string[] = [];
-  for (const row of map.fields ?? []) {
-    const targetField = normalizeFieldName(row.vendor);
-    if (existingTargetFields.has(targetField)) continue;
-    const source = sourceByDomain.get(normalizeFieldName(row.domain));
-    const setter = `set${toPascal(row.vendor)}`;
-    const receiverType = existingSrc
-      .match(new RegExp(`\\b([A-Za-z_][A-Za-z0-9_]*(?:<[^;=]+>)?)\\s+${receiver}\\s*=`))?.[1]
-      ?.replace(/<.*>$/, '');
-    const targetSupported = Boolean(
-      receiverType &&
-        new RegExp(
-          `\\b(?:class|record)\\s+${receiverType}\\b[\\s\\S]*\\b(?:public|private|protected)?\\s*(?:static\\s+)?[A-Za-z_][A-Za-z0-9_<>, ?\\[\\]]*\\s+${setter}\\s*\\(`,
-        ).test(existingSrc),
-    );
-    if (source && targetSupported) {
-      additions.push(`${indent}${receiver}.${setter}(${source});`);
-    } else {
-      const missing = source ? 'target setter' : 'source expression';
-      additions.push(
-        `${indent}// TODO(layerkit): map ${row.domain} -> ${row.vendor}; missing ${missing} in existing adapter`,
-      );
-    }
-  }
-
-  if (!additions.length) return updated;
-  const additionBlock = `${insertAfter}\n${additions.join('\n')}`;
-  return updated.includes(insertAfter)
-    ? updated.replace(insertAfter, additionBlock)
-    : appendTargetedTodoBlock(updated, map, drift);
-}
-
-function parseJavaSetterLines(src: string): SetterLine[] {
-  const out: SetterLine[] = [];
-  const re = /^([ \t]*)([A-Za-z_][A-Za-z0-9_]*)\.(set[A-Z][A-Za-z0-9_]*)\(([^;\n]+)\);\s*$/gm;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(src))) {
-    out.push({
-      full: m[0],
-      indent: m[1]!,
-      receiver: m[2]!,
-      setter: m[3]!,
-      arg: m[4]!.trim(),
-      field: normalizeFieldName(m[3]!.slice(3)),
-    });
-  }
-  return out;
-}
-
-function inferJavaSourcesByDomain(setters: SetterLine[], map: VendorMap): Map<string, string> {
-  const sources = new Map<string, string>();
-  for (const row of map.fields ?? []) {
-    const aliases = fieldAliases(row.domain);
-    const direct = setters.find((s) =>
-      aliases.some((alias) => s.arg.toLowerCase().includes(`get${toPascal(alias).toLowerCase()}(`)),
-    );
-    if (direct) {
-      for (const alias of aliases) sources.set(normalizeFieldName(alias), direct.arg);
-      continue;
-    }
-    const byTarget = setters.find((s) => s.field === normalizeFieldName(row.vendor));
-    if (byTarget) {
-      for (const alias of aliases) sources.set(normalizeFieldName(alias), byTarget.arg);
-    }
-  }
-  for (const setter of setters) {
-    const getter = setter.arg.match(/\bget([A-Z][A-Za-z0-9_]*)\s*\(/)?.[1];
-    if (getter) sources.set(normalizeFieldName(getter), setter.arg);
-  }
-  return sources;
-}
-
-function appendTargetedTodoBlock(src: string, map: VendorMap, drift?: DriftNotes): string {
-  const unresolved = (map.fields ?? [])
-    .map((f) => ` * TODO(layerkit): map ${f.domain} -> ${f.vendor}; source/target support not proven`)
-    .join('\n');
-  const block = [
-    '',
-    '/*',
-    ` * Layerkit contract update${drift ? `: ${drift.summary}` : ''}`,
-    unresolved || ' * TODO(layerkit): verify adapter mapping for updated contract',
-    ' */',
-    '',
-  ].join('\n');
-  return src.trimEnd() + block;
-}
-
-function fieldAliases(path: string): string[] {
-  const parts = path.split(/[^A-Za-z0-9_]+/).filter(Boolean);
-  const aliases = new Set<string>([path]);
-  if (parts.length) aliases.add(parts[parts.length - 1]!);
-  return [...aliases];
-}
-
-function normalizeFieldName(field: string): string {
-  return field.replace(/[^A-Za-z0-9]+/g, '').toLowerCase();
-}
-
-function javaTestStub(
-  pkg: string,
-  pascal: string,
-  vendor: string,
-  topology: IntegrationTopology,
-  map?: VendorMap,
-): string {
-  const fieldCount = map?.fields?.length ?? 0;
-  return `package ${pkg}.vendor;
-
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
-
-/**
- * Layerkit integrate tests for ${vendor}.
- * Stack: ${topology.test ?? 'JUnit 5'}
- * Map fields: ${fieldCount}
- */
-class ${pascal}AdapterTest {
-  @Test
-  void vendorId_isStable() {
-    ${pascal}Adapter adapter = new ${pascal}Adapter${/OkHttp/i.test(topology.http ?? '') ? '(null)' : '()'};
-    assertEquals("${vendor}", adapter.vendorId());
-  }
-
-  @Test
-  void buildPayload_hasMapKeys() {
-    ${pascal}Adapter adapter = new ${pascal}Adapter${/OkHttp/i.test(topology.http ?? '') ? '(null)' : '()'};
-    java.util.Map<String, Object> body = adapter.buildPayload(java.util.Map.of());
-    assertNotNull(body);
-  }
-}
-`;
-}
-
-function tsAdapterStub(
-  vendor: string,
-  map: VendorMap,
-  siblingPath?: string,
-  drift?: DriftNotes,
-): string {
-  const fields = (map.fields ?? [])
-    .map((f) => `  // ${f.domain} -> ${f.vendor}`)
-    .join('\n');
-  const driftLine = drift ? `// Drift: ${drift.summary}\n` : '';
-  return `/**
- * Layerkit integrate: ${vendor} adapter.
- * Sibling: ${siblingPath ?? '(none)'}
- * Endpoint: ${map.endpoint?.method ?? 'POST'} ${map.endpoint?.path ?? ''}
- */
-${driftLine}export const vendorId = ${JSON.stringify(vendor)} as const;
-
-export function buildPayload(domain: Record<string, unknown>): Record<string, unknown> {
-  const body: Record<string, unknown> = {};
-${fields || '  // no fields'}
-  return body;
-}
-
-export async function send(/* event, ctx */): Promise<void> {
-  // TODO: implement with existing HTTP client
-  throw new Error('Not implemented: ${vendor}');
-}
-`;
-}
-
 /**
  * Format plan as agent-facing markdown.
  */
@@ -697,79 +404,6 @@ export function formatIntegratePlanMarkdown(plan: IntegrationPlan): string {
   return lines.join('\n');
 }
 
-export interface ApplyIntegratePlanResult {
-  written: string[];
-  skipped: string[];
-  errors: string[];
-}
-
-export interface ApplyIntegratePlanOptions {
-  plan: IntegrationPlan;
-  repoRoot: string;
-  /** Write create/test content when missing */
-  applyCreates?: boolean;
-  /** Write patch actions that include proposed content */
-  applyPatches?: boolean;
-  /** Allow overwriting existing files */
-  force?: boolean;
-}
-
-/**
- * Apply create/test writes; optionally patch writes when action.content is set.
- */
-export function applyIntegratePlan(opts: ApplyIntegratePlanOptions): ApplyIntegratePlanResult {
-  const written: string[] = [];
-  const skipped: string[] = [];
-  const errors: string[] = [];
-  const wantCreate = Boolean(opts.applyCreates);
-  const wantPatch = Boolean(opts.applyPatches);
-  if (!wantCreate && !wantPatch) {
-    return {
-      written,
-      skipped: opts.plan.actions.map((a) => a.path),
-      errors: [],
-    };
-  }
-  const root = resolve(opts.repoRoot);
-  for (const action of opts.plan.actions) {
-    const isCreate = action.kind === 'create' || action.kind === 'test';
-    const isPatch = action.kind === 'patch';
-    if (isCreate && !wantCreate) {
-      skipped.push(`skip-create:${action.path}`);
-      continue;
-    }
-    if (isPatch && !wantPatch) {
-      skipped.push(`skip-patch:${action.path}`);
-      continue;
-    }
-    if (!isCreate && !isPatch) {
-      skipped.push(`${action.kind}:${action.path}`);
-      continue;
-    }
-    if (!action.content) {
-      skipped.push(`no-content:${action.path}`);
-      continue;
-    }
-    if (isDenied(action.path, opts.plan.denyEdit)) {
-      errors.push(`denyEdit blocked: ${action.path}`);
-      continue;
-    }
-    const abs = resolvePlanPath(root, opts.plan.topology, action.path);
-    if (existsSync(abs) && !opts.force) {
-      skipped.push(`exists:${action.path}`);
-      continue;
-    }
-    try {
-      mkdirSync(dirname(abs), { recursive: true });
-      writeFileSync(abs, action.content, 'utf8');
-      written.push(abs);
-    } catch (e) {
-      errors.push(`${action.path}: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  }
-  return { written, skipped, errors };
-}
-
 /**
  * Persist plan JSON + markdown under projectDir/out/
  */
@@ -796,25 +430,6 @@ export function loadIntegratePlan(projectDir: string): IntegrationPlan | null {
   }
 }
 
-function resolvePlanPath(
-  repoRoot: string,
-  topology: IntegrationTopology,
-  planPath: string,
-): string {
-  if (planPath.startsWith('/') || /^[A-Za-z]:[\\/]/.test(planPath)) return planPath;
-  // Prefer relative to scanRoot, then moduleRoot, then repoRoot
-  const candidates = [
-    join(topology.scanRoot, planPath),
-    join(topology.moduleRoot, planPath),
-    join(repoRoot, planPath),
-  ];
-  for (const c of candidates) {
-    if (existsSync(c)) return c;
-  }
-  // Default write under scanRoot
-  return join(topology.scanRoot, planPath);
-}
-
 function toRepoRel(repoRoot: string, scanRoot: string, pathFromScan: string): string {
   const abs = resolve(scanRoot, pathFromScan);
   try {
@@ -822,19 +437,6 @@ function toRepoRel(repoRoot: string, scanRoot: string, pathFromScan: string): st
   } catch {
     return pathFromScan;
   }
-}
-
-function isDenied(path: string, deny: string[]): boolean {
-  const norm = path.replace(/\\/g, '/');
-  for (const d of deny) {
-    const raw = d.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*');
-    try {
-      if (new RegExp(raw, 'i').test(norm)) return true;
-    } catch {
-      if (norm.includes(d)) return true;
-    }
-  }
-  return false;
 }
 
 function toPascal(vendor: string): string {

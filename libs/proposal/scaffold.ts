@@ -97,9 +97,9 @@ export function scaffoldVendorMapProposal(opts: ScaffoldVendorMapOpts): Proposal
       url: s.url,
       ...(s.excerpt ? { excerpt: s.excerpt } : {}),
     })),
-    status: hasContent ? 'map_complete' : 'skeleton',
+    status: 'skeleton',
     notes: hasContent
-      ? undefined
+      ? 'Scaffold evidence seed — agent must confirm completeness before map_complete'
       : 'Scaffold only — fill endpoint, intents, and fields from cited evidence',
   };
 
@@ -112,7 +112,7 @@ export function scaffoldVendorMapProposal(opts: ScaffoldVendorMapOpts): Proposal
     id: `map-${opts.vendor}-v1`,
     vendor: opts.vendor,
     summary: hasContent
-      ? `Scaffold vendor map for ${opts.vendor}`
+      ? `Scaffold vendor map for ${opts.vendor} — confirm before map_complete`
       : `Scaffold vendor map for ${opts.vendor} — needs-evidence`,
     payload,
     sources,
@@ -310,8 +310,8 @@ function authFromOpenApi(parsed: ParsedOpenApi): AuthSpec {
 
 /**
  * Scaffold a vendor_map proposal from OpenAPI evidence + project domain-binding convention.
- * Does not invent endpoints/fields: only properties and ops present in the document.
- * Domain intent ids come from convention (extensions / operationId / path_method) — not vendor hardcoding.
+ * This is an evidence seed, not a completed map: shallow schema properties and
+ * operation ids do not prove domain meaning or production-ready field mapping.
  */
 export function scaffoldVendorMapFromOpenApi(opts: ScaffoldMapFromOpenApiOpts): Proposal {
   if (!opts.vendor?.trim()) {
@@ -382,9 +382,9 @@ export function scaffoldVendorMapFromOpenApi(opts: ScaffoldMapFromOpenApiOpts): 
       vendor: opts.vendor,
       displayName: displayNameFromVendor(opts.vendor),
       version: parsed.version ?? '1',
-      status: 'map_complete',
+      status: 'skeleton',
       documentation: sources,
-      notes: `Scaffolded from OpenAPI; intent binding: ${convention.intentFrom.join('→')}`,
+      notes: `OpenAPI evidence seed; agent must confirm domain mapping before map_complete. Intent binding source order: ${convention.intentFrom.join('→')}`,
       auth,
       operations,
       intents,
@@ -432,8 +432,8 @@ export function scaffoldVendorMapFromOpenApi(opts: ScaffoldMapFromOpenApiOpts): 
     intents,
     fields,
     documentation: sources,
-    status: 'map_complete',
-    notes: `Scaffolded from OpenAPI; intent source=${r.source} (${r.evidence})`,
+    status: 'skeleton',
+    notes: `OpenAPI evidence seed; agent must confirm domain mapping before map_complete. Intent source=${r.source} (${r.evidence})`,
   };
 
   return {

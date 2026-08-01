@@ -1,0 +1,8 @@
+{
+  "id": "heal-run-pr",
+  "suite": "ci",
+  "title": "Heal records drift and map updates without PR artifacts or source-writing stubs",
+  "owners": ["heal", "agent"],
+  "featurePr": "heal-run",
+  "tags": ["deterministic", "no-network", "heal", "pr"]
+}

@@ -5,13 +5,13 @@ description: Master skill — same pipeline for first integrate and contract hea
 
 # layerkit-orchestrate-integration
 
-Master loop: full-stack integration developer. Skills author knowledge; CLI gates/store; **no LLM on track()**.
+Master loop: full-stack integration developer. Skills author knowledge and source edits; CLI gates/store; **no LLM on track()**.
 
-**One pipeline** for first-time integrate and **contract heal** (Dependabot-for-APIs wedge), but contract heal uses `layerkit heal run` to edit production source/map files directly.
+**One pipeline** for first-time integrate and **contract heal** (Dependabot-for-APIs wedge), but contract heal uses `layerkit heal run` only for contract pinning, drift, and map proposal/application. The AI agent edits production source files directly after reading docs and code.
 
-`discover → research → design → author → privacy → deletion-first → generate → handoff`
+`discover → research → design → author → privacy → deletion-first → source-edit → verify → handoff`
 
-Heal = human supplies updated OpenAPI/docs → AI-curated structured contract → `heal run` pins + diffs + applies map/source edits (discover skipped via `mode: heal`). The CLI does not understand arbitrary docs; the skill/agent reads, cites, and curates the contract or rename decisions, then deterministic heal validates before editing source. `layerkit generate` is a separate optional planning command, not part of the heal path.
+Heal = human supplies updated OpenAPI/docs → AI-curated structured contract → `heal run` pins + diffs + updates map/proposal (discover skipped via `mode: heal`) → AI edits source/tests in the package. The CLI does not understand arbitrary docs or semantic mappings; the skill/agent reads, cites, curates contract/rename decisions, and performs source changes. `layerkit generate` is a separate optional planning/context command, not part of the heal path.
 
 ## Primary commands
 
@@ -33,8 +33,8 @@ layerkit agent mark-done --step <id>
 
 | Command | Purpose |
 |---------|---------|
-| `heal run --vendor --openapi --module-root` | Pin contract, drift vs map, update source/map files |
-| `heal run --rename-decisions <json>` | Apply evidence-backed field renames after deterministic validation |
+| `heal run --vendor --openapi --module-root` | Pin contract, drift vs map, update map/proposal; source edit remains agent-owned |
+| `heal run --rename-decisions <json>` | Carry explicit evidence-backed field renames into the map/proposal |
 | `agent multi --mode heal` | Coordinate direct heal work without discover |
 | `agent status` / `next` / `mark-done` | Same step ids always |
 
@@ -50,7 +50,7 @@ Step ids: `discover` | `research` | `design` | `author` | `privacy` | `generate`
 | `author` | `layerkit-author-processor` | Only processors affected by drift |
 | `privacy` | `layerkit-privacy-review` | Human if new PII fields |
 | `deletion-first` | `layerkit-deletion-first` | Remove stale docs/tests/shims before adding code |
-| `generate` | `layerkit-generate-java` | Optional first-time planning path; not used by direct heal |
+| `source-edit` | `layerkit-generate-java` or direct agent edit | Agent edits existing source/tests; generate is optional context, not codegen |
 | `handoff` | checker + promote | Human; breaking severity never silent |
 
 ## Stop conditions
@@ -79,11 +79,12 @@ Step ids: `discover` | `research` | `design` | `author` | `privacy` | `generate`
 - Inventing map fields without OpenAPI/docs
 - Self-approve in STRICT
 - LLM on `track()`
-- Treating `.layerkit/out/java` as production when integrate applies
+- Treating generated plans, stubs, or `.layerkit/out` as production source
 
 ## Success criteria
 
 - [ ] `mode: heal` or `full` recorded in pipeline-status
 - [ ] Drift artifact when updating existing map
-- [ ] Applied maps have sources[] from supplied contract
+- [ ] Applied maps/proposals have sources[] from supplied contract
+- [ ] Production source/test edits were made by the agent in real package files
 - [ ] Dry-run + quality green before promote

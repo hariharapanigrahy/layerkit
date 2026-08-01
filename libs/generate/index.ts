@@ -20,7 +20,6 @@ export {
 } from './scan-topology.js';
 export type { ScanTopologyOptions } from './scan-topology.js';
 export {
-  applyIntegratePlan,
   buildIntegratePlan,
   formatIntegratePlanMarkdown,
   loadIntegratePlan,
@@ -28,8 +27,6 @@ export {
   writeIntegratePlanArtifacts,
 } from './integrate-plan.js';
 export type {
-  ApplyIntegratePlanOptions,
-  ApplyIntegratePlanResult,
   BuildIntegratePlanOptions,
 } from './integrate-plan.js';
 export type {

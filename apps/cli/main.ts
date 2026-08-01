@@ -25,11 +25,8 @@ import {
   type IntegrationShape,
   runSequentialMapFixes,
   evaluateDryRunWire,
-  pathFixFromDoc,
-  detectPathMismatch,
   type MapPathFixPatch,
   type WireExpectation,
-  extractPathFromDocExcerpt,
   writeHandoffRunbook,
   STYLE_PROFILE_RUNBOOK_REL,
   type StyleProfile,
@@ -52,7 +49,6 @@ import {
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
 import {
-  applyIntegratePlan,
   buildIntegratePlan,
   checkJavaQuality,
   defaultJacocoSearchRoots,
@@ -265,7 +261,7 @@ const cliCommands: CliCommand[] = [
   {
     path: ['heal', 'run'],
     usage:
-      'heal run --vendor <id> --openapi <file> [--doc <url>]... [--rename-decisions <file>] [--module-root <dir>] [--force] [--force-thin] [--json] [--project-dir <path>]',
+      'heal run --vendor <id> --openapi <file> [--doc <url>]... [--rename-decisions <file>] [--module-root <dir>] [--json] [--project-dir <path>]',
     handler: (args, ctx) => runHealCli(args, ctx),
     showInTopLevelHelp: true,
   },
@@ -296,17 +292,11 @@ const cliCommands: CliCommand[] = [
     showInTopLevelHelp: true,
   },
 
-{
+  {
     path: ['fix', 'dry-run'],
     usage:
       'fix dry-run --map <map.json> --patches <patches.json> [--expect-event <name>] [--require-field <path>]... [--forbid-field <path>]... [--out <fixed-map.json>] [--json]',
     handler: runFixDryRun,
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['fix', 'suggest'],
-    usage: 'fix suggest --map <map.json> --doc <file.md> [--json]',
-    handler: runFixSuggest,
     showInTopLevelHelp: true,
   },
 {
@@ -779,7 +769,7 @@ const cliCommands: CliCommand[] = [
   {
     path: ['generate'],
     usage:
-      'generate [--lang java|typescript|ts] [--module-root <dir>] [--root <scan>] [--vendor <id>]... [--apply] [--force] [--project-dir <path>]',
+      'generate [--lang java|typescript|ts] [--module-root <dir>] [--root <scan>] [--vendor <id>]... [--project-dir <path>]',
     handler: (args, ctx) => {
       runGenerate(args, ctx);
     },
@@ -1243,7 +1233,7 @@ function runAgentMulti(args: string[], ctx: CliContext): void {
  * 1. map_status — map_complete with fields/intents
  * 2. quality — JaCoCo when --strict (default; --no-strict skips)
  * 3. secret_scan — no doctor secret-scan critical findings
- * 4. privacy_policy — policy under projectDir/privacy when PII-looking fields
+ * 4. privacy_policy — explicit policy under projectDir/privacy
  * 5. dry_run — applyVendorMap wire for purchase or first intent
  *    (default on; --no-dry-run-check break-glass)
  */
@@ -1450,24 +1440,18 @@ function runResearchDeepen(args: string[]): void {
   });
 }
 
-/**
- * Full heal: pin contract → map from OpenAPI → direct code edits.
- */
+/** Heal rails: pin contract → drift/map update → agent-owned source edits. */
 function runHealCli(args: string[], ctx: CliContext): void {
   const vendor = flag(args, '--vendor');
   const openapi = flag(args, '--openapi');
   if (!vendor || !openapi) {
     throw new Error(
-      'Usage: layerkit heal run --vendor <id> --openapi <file> [--module-root <dir>] [--force]',
+      'Usage: layerkit heal run --vendor <id> --openapi <file> [--module-root <dir>]',
     );
   }
   const docs = collectFlags(args, '--doc');
   const moduleRoot = flag(args, '--module-root') ?? flag(args, '--moduleRoot');
   const applyMap = !hasFlag(args, '--no-apply-map');
-  const applyCode = !hasFlag(args, '--no-apply-code');
-  const applyCreates = applyCode;
-  const force = hasFlag(args, '--force') || applyCode;
-  const forceThin = hasFlag(args, '--force-thin');
   const semanticRenames = loadHealRenameDecisions(flag(args, '--rename-decisions'));
 
   const store = openStore(ctx);
@@ -1481,10 +1465,6 @@ function runHealCli(args: string[], ctx: CliContext): void {
     docUrls: docs,
     moduleRoot,
     applyMap,
-    applyCode,
-    applyCreates,
-    force,
-    forceThin,
     semanticRenames,
     agentId: flag(args, '--agent') ?? 'heal-cli',
   });
@@ -1504,18 +1484,11 @@ function runHealCli(args: string[], ctx: CliContext): void {
   console.log(`  Pinned: ${result.pinnedOpenApiPath}`);
   console.log(`  Proposal: ${result.proposalPath}`);
   console.log(`  Map applied: ${result.mapApplied}`);
-  console.log(`  Integration actions: ${result.integrationActionCount}`);
-  if (result.writtenCode.length) {
-    console.log(`  Code written (${result.writtenCode.length}):`);
-    for (const w of result.writtenCode.slice(0, 12)) console.log(`    ${w}`);
-  }
-  if (result.codeErrors.length) {
-    for (const e of result.codeErrors) console.error(`  error ${e}`);
-    process.exitCode = 1;
-  }
+  console.log(`  Source edit: ${result.sourceEditRequired ? 'agent required' : 'not needed'}`);
+  console.log(`  Reason: ${result.sourceEditReason}`);
   console.log('');
   console.log('Next:');
-  console.log(`  layerkit process dry-run --vendor ${vendor} --intent <primary>`);
+  for (const step of result.agentNextSteps) console.log(`  - ${step}`);
 }
 
 function loadHealRenameDecisions(file: string | undefined): HealRenameDecision[] {
@@ -2172,41 +2145,6 @@ function runFixDryRun(args: string[]): void {
   });
 }
 
-function runFixSuggest(args: string[]): void {
-  const mapPath = flag(args, '--map');
-  const docPath = flag(args, '--doc');
-  if (!mapPath || !docPath) {
-    throw new Error('Usage: layerkit fix suggest --map <map.json> --doc <file.md> [--json]');
-  }
-
-  const map = JSON.parse(readFileSync(resolve(mapPath), 'utf8')) as VendorMap;
-  const doc = readFileSync(resolve(docPath), 'utf8');
-  const docPathExtracted = extractPathFromDocExcerpt(doc);
-  const mismatch = detectPathMismatch(map, doc);
-  const patch = pathFixFromDoc(map, doc);
-
-  const payload = {
-    mapPath: mismatch.mapPath,
-    docPath: docPathExtracted,
-    mismatch: mismatch.mismatch,
-    detail: mismatch.detail,
-    // null when no inventable fix (doc has no path, or paths already match)
-    patch,
-  };
-
-  emitJsonOrText(args, payload, () => {
-    console.log(`map path: ${mismatch.mapPath ?? '(none)'}`);
-    console.log(`doc path: ${docPathExtracted ?? '(none extractable)'}`);
-    console.log(`mismatch: ${mismatch.mismatch}${mismatch.detail ? ` — ${mismatch.detail}` : ''}`);
-    if (patch) {
-      console.log('suggested patch:');
-      console.log(JSON.stringify(patch, null, 2));
-    } else {
-      console.log('suggested patch: (none — no invent when doc has no path or paths match)');
-    }
-  });
-}
-
 function runHandoffWrite(args: string[], ctx: CliContext): void {
   const vendor = flag(args, '--vendor');
   const goal = flag(args, '--goal');
@@ -2263,9 +2201,6 @@ function runGenerate(args: string[], ctx: CliContext): void {
   const moduleRootFlag = flag(args, '--module-root') ?? flag(args, '--moduleRoot');
   const scanRoot = flag(args, '--root') ?? ctx.repoRoot;
   const vendors = flagsAll(args, '--vendor');
-  const applyCreates = hasFlag(args, '--apply');
-  const force = hasFlag(args, '--force');
-  const forceThin = hasFlag(args, '--force-thin');
 
   const generateCfg = {
     ...project.generate,
@@ -2287,7 +2222,6 @@ function runGenerate(args: string[], ctx: CliContext): void {
     vendors: vendors.length ? vendors : undefined,
     style,
     mode: 'integrate',
-    forceThin,
   });
 
   console.log(`Generate: integrate (from ${resolution.resolvedFrom})`);
@@ -2314,23 +2248,7 @@ function runGenerate(args: string[], ctx: CliContext): void {
   }
   if (plan.actions.length > 12) console.log(`  … ${plan.actions.length - 12} more`);
 
-  if (applyCreates) {
-    const result = applyIntegratePlan({
-      plan,
-      repoRoot: ctx.repoRoot,
-      applyCreates: true,
-      force,
-    });
-    for (const w of result.written) console.log(`  wrote ${w}`);
-    for (const s of result.skipped.slice(0, 8)) console.log(`  skip ${s}`);
-    for (const e of result.errors) console.error(`  error ${e}`);
-    if (result.errors.length) process.exitCode = 1;
-    console.log(
-      `Apply creates: ${result.written.length} written, ${result.skipped.length} skipped (patches are agent/PR only)`,
-    );
-  } else {
-    console.log('Tip: --apply writes new adapter/test stubs only; patches stay for the agent/PR.');
-  }
+  console.log('Plan only: the agent must inspect existing code and edit production files directly.');
 
   if (!project.generate?.moduleRoot && plan.topology.moduleRoot) {
     const rel = plan.topology.moduleRoot.startsWith(ctx.repoRoot)

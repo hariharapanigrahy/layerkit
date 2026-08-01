@@ -68,8 +68,8 @@ Evidence only · map fields from structured contract only.
 
 ```bash
 layerkit style-profile scan --root .
-layerkit generate --module-root <dir> [--vendor <v>] [--apply]
-# → out/INTEGRATE.md  (edit production module)
+layerkit generate --module-root <dir> [--vendor <v>]
+# → out/INTEGRATE.md  (context; agent edits production module)
 ```
 
 `project.json`:

@@ -1,0 +1,8 @@
+{
+  "id": "research-contract-drift",
+  "suite": "ci",
+  "title": "Research contract drift extraction captures added and removed vendor fields",
+  "owners": ["research", "heal"],
+  "featurePr": "contract-drift",
+  "tags": ["deterministic", "no-network", "research", "heal"]
+}

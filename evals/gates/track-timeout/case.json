@@ -1,0 +1,8 @@
+{
+  "id": "track-timeout",
+  "suite": "ci",
+  "title": "Track timeout helpers fail closed without unhandled late errors",
+  "owners": ["runtime"],
+  "featurePr": "track-timeout",
+  "tags": ["deterministic", "no-network", "runtime", "timeout"]
+}

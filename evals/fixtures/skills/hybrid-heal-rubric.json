@@ -9,7 +9,7 @@
         "AI agent writes a structured OpenAPI-compatible contract artifact",
         "heal is run with --openapi pointing at the structured contract",
         "CLI is not described as understanding arbitrary docs",
-        "a real PR is raised from the edited package source/map/test files"
+        "AI agent edits the real package source/map/test files before raising a PR"
       ],
       "forbiddenSkillBehavior": [
         "layerkit heal run --doc",
@@ -25,12 +25,14 @@
         "AI agent decides rename only from docs/code evidence",
         "rename decision includes fromVendor and toVendor",
         "rename decision includes confidence and evidence",
-        "deterministic heal validates the rename decision before editing source"
+        "heal carries explicit rename decisions into map/proposal evidence",
+        "AI agent performs the production source edit after inspecting client interface and datalayer"
       ],
       "forbiddenSkillBehavior": [
         "guess renames from names alone",
         "replace supported mapping with TODO",
-        "invent fields missing from the structured contract"
+        "invent fields missing from the structured contract",
+        "deterministically rewrite production mapper code"
       ]
     },
     {

@@ -1,6 +1,7 @@
 /**
- * Deterministic fix-loop helpers for agent process-quality evals.
- * Pure TS simulation of "agent reads doc → patches wrong map path" — no LLM.
+ * Deterministic fix-loop helpers for agent-authored patches.
+ * The agent decides patch semantics from evidence; these helpers only apply
+ * explicit patch objects and verify dry-run output.
  */
 import type { Proposal, VendorMap, VendorMapV1 } from '../domain/types.js';
 import { isVendorMapV1 } from '../domain/types.js';
@@ -17,83 +18,6 @@ export interface MapPathFixPatch {
   reason?: string;
   /** Excerpt from vendor doc used as evidence */
   evidenceExcerpt?: string;
-}
-
-export interface PathMismatch {
-  mismatch: boolean;
-  mapPath?: string;
-  /** Path extracted from doc (e.g. /events) */
-  suggestedPath?: string;
-  detail?: string;
-}
-
-/**
- * Extract first HTTP path-looking token from a doc excerpt.
- * Matches patterns like `POST /events`, path: `/v1/events`, `path `/events``.
- */
-export function extractPathFromDocExcerpt(doc: string): string | undefined {
-  // Prefer explicit "path: /..." or "path `/...`"
-  const labeled =
-    doc.match(/\bpath\s*[:=]\s*[`"]?(\/[A-Za-z0-9_{}\-./]+)[`"]?/i) ??
-    doc.match(/\bendpoint\s*[:=]\s*[`"]?(\/[A-Za-z0-9_{}\-./]+)[`"]?/i);
-  if (labeled?.[1]) return labeled[1];
-
-  // METHOD /path
-  const methodPath = doc.match(
-    /\b(?:GET|POST|PUT|PATCH|DELETE)\s+([`"]?)(\/[A-Za-z0-9_{}\-./]+)\1/i,
-  );
-  if (methodPath?.[2]) return methodPath[2];
-
-  // bare `/something` after "correct" / "use" wording
-  const bare = doc.match(
-    /\b(?:use|correct|actual|endpoint)\b[^/\n]*(\/[A-Za-z0-9_{}\-./]+)/i,
-  );
-  if (bare?.[1]) return bare[1];
-
-  return undefined;
-}
-
-function getEndpointPath(map: VendorMap): string | undefined {
-  if (isVendorMapV1(map)) {
-    return map.endpoint?.path;
-  }
-  // v2: first operation path or legacy mirror
-  if (map.endpoint?.path) return map.endpoint.path;
-  const ops = Object.values(map.operations ?? {});
-  return ops[0]?.endpoint?.path;
-}
-
-/**
- * Compare map endpoint path against a doc excerpt; report mismatch + suggested path.
- */
-export function detectPathMismatch(map: VendorMap, docExcerpt: string): PathMismatch {
-  const mapPath = getEndpointPath(map);
-  const suggestedPath = extractPathFromDocExcerpt(docExcerpt);
-  if (!mapPath) {
-    return {
-      mismatch: true,
-      mapPath,
-      suggestedPath,
-      detail: 'map has no endpoint path',
-    };
-  }
-  if (!suggestedPath) {
-    return {
-      mismatch: false,
-      mapPath,
-      suggestedPath: undefined,
-      detail: 'doc excerpt has no extractable path',
-    };
-  }
-  const mismatch = mapPath !== suggestedPath;
-  return {
-    mismatch,
-    mapPath,
-    suggestedPath,
-    detail: mismatch
-      ? `map path "${mapPath}" differs from doc path "${suggestedPath}"`
-      : 'paths match',
-  };
 }
 
 function setByDotPath(obj: Record<string, unknown>, path: string, value: unknown): void {
@@ -298,21 +222,6 @@ export function applyProposalMapFixes(
     current = applyProposalMapFix(current, patch, opts);
   }
   return current;
-}
-
-/**
- * Convenience: build a path patch from map + doc when mismatch detected.
- */
-export function pathFixFromDoc(map: VendorMap, docExcerpt: string): MapPathFixPatch | null {
-  const det = detectPathMismatch(map, docExcerpt);
-  if (!det.mismatch || !det.suggestedPath || !det.mapPath) return null;
-  return {
-    field: 'endpoint.path',
-    from: det.mapPath,
-    to: det.suggestedPath,
-    reason: det.detail,
-    evidenceExcerpt: docExcerpt.slice(0, 240),
-  };
 }
 
 /** Type guard helper for tests that assert v1 shape after fix. */

@@ -1,12 +1,9 @@
 /**
  * wireFingerprint: SHA-256 of canonical non-PII wire JSON.
- * Never includes raw emails/phones/user.* by default.
+ * Does not infer PII from field names; classification belongs to policy/agent.
  */
 import { createHash } from 'node:crypto';
 import type { ObservationConfig, TelemetryPii } from './types.js';
-
-const DEFAULT_PII_KEY_RE =
-  /^(user|user_data|email|phone|em|ph|fn|ln|ge|db|ct|st|zp|country|external_id|client_ip_address|client_user_agent)$/i;
 
 const EMAIL_VALUE_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
 
@@ -18,7 +15,7 @@ export interface FingerprintOptions {
 }
 
 /**
- * Compute wire fingerprint after dropping PII keys/values.
+ * Compute wire fingerprint after dropping explicitly marked PII paths.
  * Returns hex sha256 of canonical JSON, or undefined if nothing remains.
  */
 export function wireFingerprint(
@@ -41,7 +38,9 @@ export function wireFingerprint(
 }
 
 /**
- * Scrub wire for audit payload inspection (no raw PII).
+ * Scrub wire for audit payload inspection.
+ * This is deliberately not a semantic classifier: callers must pass piiPaths
+ * or telemetryFieldAllowlist from agent/user-owned policy.
  */
 export function scrubWire(
   wire: unknown,
@@ -65,12 +64,13 @@ export function scrubWire(
     return out;
   }
 
-  return deepDropPii(wire, opts.piiPaths ?? []);
+  return deepDropDeclaredPii(wire, opts.piiPaths ?? []);
 }
 
-function deepDropPii(value: unknown, piiPaths: string[], path = ''): unknown {
+function deepDropDeclaredPii(value: unknown, piiPaths: string[], path = ''): unknown {
   if (value === null || value === undefined) return value;
   if (typeof value === 'string') {
+    // Last-resort audit safety only; field meaning still belongs to policy/agent.
     if (EMAIL_VALUE_RE.test(value)) return undefined;
     return value;
   }
@@ -78,35 +78,22 @@ function deepDropPii(value: unknown, piiPaths: string[], path = ''): unknown {
 
   if (Array.isArray(value)) {
     return value
-      .map((v) => deepDropPii(v, piiPaths, path ? `${path}[]` : '[]'))
+      .map((v) => deepDropDeclaredPii(v, piiPaths, path ? `${path}[]` : '[]'))
       .filter((v) => v !== undefined);
   }
 
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
     const childPath = path ? `${path}.${k}` : k;
-    if (isPiiKey(k) || piiPaths.some((p) => childPath === p || childPath.startsWith(p + '.'))) {
+    if (piiPaths.some((p) => childPath === p || childPath.startsWith(p + '.'))) {
       continue;
     }
-    const scrubbed = deepDropPii(v, piiPaths, childPath);
+    const scrubbed = deepDropDeclaredPii(v, piiPaths, childPath);
     if (scrubbed !== undefined) {
       out[k] = scrubbed;
     }
   }
   return out;
-}
-
-function isPiiKey(key: string): boolean {
-  if (DEFAULT_PII_KEY_RE.test(key)) return true;
-  const lower = key.toLowerCase();
-  return (
-    lower.includes('email') ||
-    lower.includes('phone') ||
-    lower === 'user' ||
-    lower === 'user_data' ||
-    lower.endsWith('_email') ||
-    lower.endsWith('_phone')
-  );
 }
 
 function looksLikePiiValue(v: unknown): boolean {

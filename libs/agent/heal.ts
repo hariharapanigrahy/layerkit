@@ -1,13 +1,9 @@
 /**
- * Contract heal: OpenAPI in → map update → direct integration edits.
+ * Contract heal: OpenAPI in → drift/map update → agent-owned source edits.
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import type { FieldMapRow, Proposal, VendorMap } from '../domain/types.js';
-import {
-  applyIntegratePlan,
-  buildIntegratePlan,
-} from '../generate/index.js';
 import { scaffoldVendorMapFromOpenApi } from '../proposal/scaffold.js';
 import { validateProposal } from '../proposal/validate.js';
 import {
@@ -122,16 +118,10 @@ export interface HealRunOptions {
   agentId?: string;
   /** Apply map into project store (default true) */
   applyMap?: boolean;
-  /** Write create stubs into production module (default true with applyCode) */
-  applyCreates?: boolean;
-  /** Write patch file bodies into production module (default true) */
-  applyCode?: boolean;
-  force?: boolean;
-  forceThin?: boolean;
-  scanRoot?: string;
   /**
    * Semantic rename decisions produced by an agent/skill from contract + code evidence.
-   * Heal validates these against deterministic drift before applying them.
+   * Heal only checks that decisions refer to removed/added contract fields before
+   * carrying the mapping forward. The agent remains responsible for meaning.
    */
   semanticRenames?: HealRenameDecision[];
 }
@@ -151,15 +141,19 @@ export interface HealRunResult {
   pinnedOpenApiPath: string;
   proposalPath: string;
   mapApplied: boolean;
-  integrationActionCount: number;
-  writtenCode: string[];
-  skippedCode: string[];
-  codeErrors: string[];
+  sourceEditRequired: boolean;
+  sourceEditReason: string;
+  agentNextSteps: string[];
   summary: string;
 }
 
 /**
- * Run full heal pipeline for one vendor contract update.
+ * Run heal rails for one vendor contract update.
+ *
+ * This function intentionally does not patch production source code. Contract
+ * meaning, data-layer mapping, nested model changes, and interface edits are
+ * skill/agent work. Heal records evidence and map drift so the agent can edit
+ * the real package files and let deterministic gates validate afterward.
  */
 export function runHeal(opts: HealRunOptions): HealRunResult {
   const repoRoot = resolve(opts.repoRoot);
@@ -249,67 +243,22 @@ export function runHeal(opts: HealRunOptions): HealRunResult {
     mapApplied = true;
   }
 
-  const maps = store.listMaps();
-  const healMap = maps.find((m) => m.vendor === vendor);
-  if (!healMap && !applyMap) {
-    // Use proposal payload in-memory for direct integration without saving
-  }
-  const planMaps = healMap ? maps : [...maps.filter((m) => m.vendor !== vendor), payload];
-
-  const project = store.loadProject();
-  const generateCfg = {
-    ...project?.generate,
-    ...(opts.moduleRoot ? { moduleRoot: opts.moduleRoot } : {}),
-    mode: 'integrate' as const,
-  };
-
-  const driftByVendor = {
-    [vendor]: {
-      summary: drift.summary,
-      severity: drift.severity,
-      items: drift.items.map((i) => ({
-        kind: i.kind,
-        severity: i.severity,
-        detail: i.detail,
-        path: i.path,
-      })),
-    },
-  };
-
-  const { plan } = buildIntegratePlan({
-    repoRoot,
-    scanRoot: opts.scanRoot ?? opts.moduleRoot ?? repoRoot,
-    projectGenerate: generateCfg,
-    maps: planMaps.filter((m) => m.vendor === vendor || (m.fields?.length ?? 0) > 0),
-    vendors: [vendor],
-    forceThin: opts.forceThin,
-    driftByVendor,
-  });
-
-  let writtenCode: string[] = [];
-  let skippedCode: string[] = [];
-  let codeErrors: string[] = [];
-  const applyCode = opts.applyCode !== false;
-  const applyCreates = opts.applyCreates ?? applyCode;
-  if (plan && (applyCreates || applyCode)) {
-    const result = applyIntegratePlan({
-      plan,
-      repoRoot,
-      applyCreates: Boolean(applyCreates || applyCode),
-      applyPatches: Boolean(applyCode),
-      force: Boolean(opts.force ?? applyCode),
-    });
-    writtenCode = result.written;
-    skippedCode = result.skipped;
-    codeErrors = result.errors;
-  }
+  const sourceEditRequired = drift.items.length > 0 || mode === 'first_time';
+  const sourceEditReason = sourceEditRequired
+    ? 'agent must inspect docs, existing interfaces, and datalayer before editing production source'
+    : 'no contract drift detected';
+  const agentNextSteps = [
+    'Review .layerkit/out/CONTRACT_DRIFT.json and the cited contract/docs.',
+    'Update existing production adapter/interface/test files directly; prefer rewrite/delete over additive files.',
+    'Use TODOs only where the client interface or datalayer truly lacks the field.',
+    `Run layerkit process dry-run --vendor ${vendor} --intent <primary> plus package tests.`,
+  ];
 
   const summary = [
     mode,
     drift.summary,
-    plan ? `integration-actions=${plan.actions.length}` : 'no integration actions (need --module-root)',
     mapApplied ? 'map=applied' : 'map=proposal-only',
-    writtenCode.length ? `code-written=${writtenCode.length}` : '',
+    sourceEditRequired ? 'source-edit=agent-required' : 'source-edit=not-needed',
   ]
     .filter(Boolean)
     .join(' · ');
@@ -321,10 +270,9 @@ export function runHeal(opts: HealRunOptions): HealRunResult {
     pinnedOpenApiPath: pin.pinnedOpenApiPath,
     proposalPath,
     mapApplied,
-    integrationActionCount: plan?.actions.length ?? 0,
-    writtenCode,
-    skippedCode,
-    codeErrors,
+    sourceEditRequired,
+    sourceEditReason,
+    agentNextSteps,
     summary,
   };
 }

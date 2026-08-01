@@ -55,11 +55,6 @@ export interface PlanAction {
   path: string;
   vendor?: string;
   reason: string;
-  /**
-   * Full file body for kind=create (and optional test stubs).
-   * Never overwrite existing files unless apply --force.
-   */
-  content?: string;
   /** Text anchors / registration sites for kind=patch */
   anchors?: string[];
   /** Human/agent instructions for the edit */

@@ -245,17 +245,3 @@ export function describeFieldsFromOpenApi(parsed: ParsedOpenApi): string | null 
     .map((f) => `${f.name}:${f.type}${f.required ? ' (required)' : ''}`)
     .join('; ');
 }
-
-/** PII-ish field names present in schemas (heuristic labels only — not processors). */
-export function describePiiFieldHintsFromOpenApi(parsed: ParsedOpenApi): string | null {
-  const names = new Set<string>();
-  for (const o of parsed.operations) {
-    for (const f of o.bodyFields ?? []) {
-      if (/email|phone|msisdn|ssn|password|token|secret|pii/i.test(f.name)) {
-        names.add(f.name);
-      }
-    }
-  }
-  if (!names.size) return null;
-  return `Schema fields that look PII-sensitive (verify in privacy review): ${[...names].sort().join(', ')}`;
-}

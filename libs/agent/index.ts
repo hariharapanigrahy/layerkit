@@ -49,18 +49,14 @@ export {
 } from './discover-domain.js';
 
 export {
-  extractPathFromDocExcerpt,
-  detectPathMismatch,
   applyMapPathFix,
   applyMapPatches,
   runSequentialMapFixes,
   evaluateDryRunWire,
   applyProposalMapFix,
   applyProposalMapFixes,
-  pathFixFromDoc,
   asV1Map,
   type MapPathFixPatch,
-  type PathMismatch,
   type FixLoopStepResult,
   type WireExpectation,
   type DryRunCheckResult,
@@ -93,7 +89,6 @@ export {
   formatPromoteGateFailures,
   hasPrivacyPolicyForVendor,
   listPrivacyPolicyIds,
-  mapHasPiiLookingFields,
   type PromoteGateFailure,
   type PromoteGateId,
   type PromoteGatesInput,

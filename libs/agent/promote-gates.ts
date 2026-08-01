@@ -6,7 +6,7 @@
  * 1. map_status — map_complete with fields or intents
  * 2. quality — JaCoCo (CLI supplies result; skip with --no-strict)
  * 3. secret_scan — no doctor secret-scan error findings
- * 4. privacy_policy — policy file when map has PII-looking fields
+ * 4. privacy_policy — explicit policy before live promotion
  * 5. dry_run — applyVendorMap produces wire for purchase or first intent
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -76,36 +76,6 @@ export interface PromoteGatesResult {
   lines: string[];
   /** Vendors that passed all map-scoped gates (ready to set live). */
   eligibleVendors: string[];
-}
-
-/** Domain / vendor path fragments that look like PII egress. */
-const PII_PATH_RE =
-  /(^|[._])(email|e_?mail|phone|tel|mobile|first_?name|last_?name|fn|ln|ssn|dob|date_of_birth|ip_address|client_ip|user_data|external_?id)([._]|$)/i;
-
-const PII_PROCESSOR_RE = /(email|phone|sha256|hash|pii|redact)/i;
-
-/**
- * True when the map maps fields that look like PII (privacy policy required before live).
- */
-export function mapHasPiiLookingFields(map: VendorMap): boolean {
-  for (const f of map.fields ?? []) {
-    if (PII_PATH_RE.test(f.domain) || PII_PATH_RE.test(f.vendor)) return true;
-    if (f.transform?.type === 'processor' && f.transform.processorId) {
-      if (PII_PROCESSOR_RE.test(f.transform.processorId)) return true;
-    }
-  }
-  // staticFields often carry user identifiers
-  const intents = map.intents ?? {};
-  for (const wire of Object.values(intents)) {
-    if (!wire || typeof wire !== 'object') continue;
-    const staticFields = (wire as { staticFields?: Record<string, unknown> }).staticFields;
-    if (staticFields) {
-      for (const k of Object.keys(staticFields)) {
-        if (PII_PATH_RE.test(k)) return true;
-      }
-    }
-  }
-  return false;
 }
 
 /**
@@ -336,24 +306,20 @@ export function evaluatePromoteGates(input: PromoteGatesInput): PromoteGatesResu
       lines.push(`  ✓ map_status [${map.vendor}]`);
     }
 
-    // privacy_policy (when PII-looking fields)
-    if (mapHasPiiLookingFields(map)) {
-      if (!hasPrivacyPolicyForVendor(map.vendor, privacyIds)) {
-        const fail: PromoteGateFailure = {
-          gate: 'privacy_policy',
-          vendor: map.vendor,
-          message:
-            `map ${map.vendor}: PII-looking fields present but no privacy policy ` +
-            `(add privacy/${map.vendor}.json or default policy under projectDir/privacy/)`,
-        };
-        failures.push(fail);
-        lines.push(`  ✗ privacy_policy [${map.vendor}]: ${fail.message}`);
-        mapOk = false;
-      } else {
-        lines.push(`  ✓ privacy_policy [${map.vendor}]`);
-      }
+    // privacy_policy: do not classify fields in core; require explicit policy for live.
+    if (!hasPrivacyPolicyForVendor(map.vendor, privacyIds)) {
+      const fail: PromoteGateFailure = {
+        gate: 'privacy_policy',
+        vendor: map.vendor,
+        message:
+          `map ${map.vendor}: no privacy policy for live promotion ` +
+          `(add privacy/${map.vendor}.json or default policy under projectDir/privacy/)`,
+      };
+      failures.push(fail);
+      lines.push(`  ✗ privacy_policy [${map.vendor}]: ${fail.message}`);
+      mapOk = false;
     } else {
-      lines.push(`  · privacy_policy [${map.vendor}]: not required (no PII-looking fields)`);
+      lines.push(`  ✓ privacy_policy [${map.vendor}]`);
     }
 
     // dry_run

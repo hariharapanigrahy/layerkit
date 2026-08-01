@@ -29,7 +29,7 @@ layerkit memory append --type dry-runs --title "dry-run fail <v>/<i>" --vendor <
    - privacy drop → consent path or policy rule (privacy-review)
    - empty map skip → research not applied yet
    - shape mismatch → re-read OpenAPI/curl; do **not** guess wire names
-   - wrong endpoint path → use `fix suggest` + doc excerpt (below)
+   - wrong endpoint path → author an explicit `MapPathFixPatch` from cited docs
 3. Re-open cited docs/OpenAPI/curl for the failing dimension; deepen if needed.
 4. Emit a **revised proposal** (new id or `changeLog` + `baseArtifactVersion`) with sources covering the fix.
 5. Validate and re-run dry-run:
@@ -44,17 +44,9 @@ layerkit process dry-run --vendor <v> --intent <i>
 
 ## Deterministic fix CLI (`libs/agent/fix-loop`)
 
-Use these when you already have a map JSON and either patches from evidence or a doc excerpt for path correction. Pure local apply — no network, no invent.
+Use these when you already have a map JSON and agent-authored patches from evidence. Pure local apply — no network, no invent.
 
-### Suggest a path patch from docs
-
-Extracts a path from the doc (`POST /v1/events`, `path: /...`). If the map endpoint differs, prints a `MapPathFixPatch`. **No invent** when the doc has no extractable path.
-
-```bash
-layerkit fix suggest --map ./map.json --doc ./vendor-doc.md [--json]
-```
-
-Write the suggested patch into a patches file (or combine with other field fixes from evidence):
+Author a patches file yourself after re-reading docs/OpenAPI/curl:
 
 ```json
 [
@@ -97,7 +89,7 @@ layerkit process dry-run --vendor <v> --intent <i>
 
 - Inventing field names or defaults to silence dry-run
 - Applying fixes without new/confirmed sources
-- Using `fix suggest` to invent a path when the doc has none
+- Asking the CLI to infer a patch from prose docs
 - Skipping privacy when the failure was a privacy drop
 - Live promote while dry-run fails
 

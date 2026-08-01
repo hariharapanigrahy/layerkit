@@ -193,7 +193,7 @@ export function buildMultiAgentPlan(opts: BuildMultiAgentPlanOptions): MultiAgen
     doneWhen:
       mode === 'heal'
         ? 'Style profile in memory/runbooks; topology understood for direct source edits'
-        : 'Style profile in memory/runbooks; INTEGRATE.md when production module detected',
+        : 'Style profile in memory/runbooks; INTEGRATE.md context when production module detected',
     dependsOn: [],
   });
   tasks.push(stylist);
@@ -238,8 +238,8 @@ export function buildMultiAgentPlan(opts: BuildMultiAgentPlanOptions): MultiAgen
       prompt: researcherPrompt(vendor, opts.projectDir, mode, openapiPath, moduleRoot),
       doneWhen:
         mode === 'heal'
-          ? `Heal complete for ${vendor}: map applied, source files updated`
-          : `Map + source edits for ${vendor} from structured contract ready`,
+          ? `Heal rails complete for ${vendor}: drift/map recorded; source edit tasks identified`
+          : `Map + source edit tasks for ${vendor} from structured contract ready`,
       dependsOn: scanIds,
     });
     tasks.push(t);
@@ -522,8 +522,8 @@ export function formatMultiAgentPlanMarkdown(plan: MultiAgentPlan): string {
     '3. Do **not** start a phase until `dependsOn` tasks are done.',
     '4. **Research** from customer OpenAPI/docs — structured contract + drift, never invent.',
     plan.mode === 'heal'
-      ? '5. **Heal** edits production source/map files directly; no `INTEGRATE.md` phase.'
-      : '5. **Integrate** from `INTEGRATE.md` into production code.',
+      ? '5. **Heal** records drift/map; agents edit production source files directly; no `INTEGRATE.md` phase.'
+      : '5. **Integrate** with `INTEGRATE.md` as context; agents author production code.',
     '6. **Checker** is read-only; humans approve/promote.',
     '',
     '```bash',
@@ -685,7 +685,7 @@ function stylistPrompt(
       ? ['2. Summarize package, DI, HTTP/SDK client pattern, entrypoints for direct heal edits.']
       : [
           '2. layerkit generate --lang java --root <root> [--module-root ...]',
-          '3. Follow INTEGRATE.md — production adapters are the destination.',
+          '3. Read INTEGRATE.md as context; inspect real code before editing production adapters.',
           '4. Summarize package, DI, HTTP/SDK client pattern, entrypoints.',
         ]),
     'Do not implement adapters yet.',
@@ -711,7 +711,7 @@ function researcherPrompt(
     '3. If the user supplied docs, first curate a structured contract with citations, then use it as --openapi.',
     '4. Review out/CONTRACT_DRIFT.json',
     '5. If removed/added fields are semantic renames, pass --rename-decisions with evidence',
-    '6. Verify real source/map changes with dry-run + quality before promote',
+    '6. Edit real source/tests yourself, then verify with dry-run + quality before promote',
     'Evidence only from the supplied contract. Breaking drift → human before promote.',
   ].join('\n');
 }
@@ -759,9 +759,9 @@ function integratorPrompt(
     'Skill: layerkit-generate-java (integrate mode)',
     `Project dir: ${projectDir}`,
     `Scan root: ${root}`,
-    moduleRoot ? `Module root: ${moduleRoot}` : 'Use project.generate.moduleRoot / INTEGRATE.md',
-    '1. layerkit generate --lang java --mode integrate --vendor <vendor> [--module-root] [--apply for stubs only]',
-    '2. Read out/INTEGRATE.md — implement CREATE for this vendor only.',
+    moduleRoot ? `Module root: ${moduleRoot}` : 'Use project.generate.moduleRoot / INTEGRATE.md context',
+    '1. layerkit generate --lang java --mode integrate --vendor <vendor> [--module-root]',
+    '2. Read out/INTEGRATE.md as topology/context; do not treat it as generated source.',
     '3. Edit production code beside existing adapters.',
     '4. Do NOT patch the shared registry (another agent owns integrator:registry).',
     '5. Add tests mirroring sibling vendor tests. No LLM on hot path. No invented fields.',

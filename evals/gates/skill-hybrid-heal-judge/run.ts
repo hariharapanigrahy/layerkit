@@ -63,7 +63,7 @@ assertIncludesAll('docs-link heal is hybrid skill flow', judgedCorpus, [
   /structured OpenAPI-compatible contract/i,
   /heal run --vendor <vendor> --openapi .*openapi-from-doc\.json/i,
   /CLI does not understand arbitrary docs/i,
-  /PR-ready handoff|real source\/map changes|production source\/map files/i,
+  /agent edits source directly|AI agent edits production source|source edits are agent-owned|edit real source\/tests/i,
 ]);
 
 assertForbidden('docs-link heal forbids fake CLI parser path', judgedCorpus, [
@@ -80,7 +80,7 @@ assertIncludesAll('semantic rename requires evidence handoff', judgedCorpus, [
   /confidence/i,
   /evidence/i,
   /Guessing field renames from names alone/i,
-  /deterministic heal (?:validates|applies only evidence-backed decisions)/i,
+  /source edits require docs\/code evidence|agent remains responsible for meaning|AI agent performs the production source edit/i,
   /--rename-decisions/i,
 ]);
 
@@ -98,6 +98,13 @@ assertForbidden('heal skill path forbids fake PR packaging artifacts', judgedCor
   /PR metadata/i,
   /apply-to-repo\.sh/i,
   /heal run[^\n]+INTEGRATE\.md/i,
+]);
+
+assertForbidden('heal skill path forbids deterministic source editing claims', judgedCorpus, [
+  /heal run[^\n]+direct source edits/i,
+  /heal run[^\n]+updates source\/map files directly/i,
+  /deterministic heal validates.*editing source/i,
+  /--apply for stubs only/i,
 ]);
 
 assertTrue(

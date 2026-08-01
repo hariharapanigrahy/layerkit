@@ -5,9 +5,11 @@ description: Author declarative RoutingPolicy (vendor sets, expansions, routes) 
 
 # layerkit-design-routing
 
-Design **customer-owned** routing under `{projectDir}/routing.json` (or `routing/{id}.json`).
+Design **customer-owned** routing under `{projectDir}/routing.json` (or `routing/{id}.json`). The AI agent owns routing meaning: which attributes matter, which vendors belong together, which extra intents should exist, and when a route should stop.
 
-Runtime is deterministic: `evaluateRouting` → plan → `trackRouted` / map apply. **No LLM on the hot path.** Do not hardcode business taxonomies into Layerkit core — only into the project store.
+Runtime is deterministic only after the policy exists: `evaluateRouting` executes the explicit JSON policy → plan → `trackRouted` / map apply. **No LLM on the hot path.** Do not hardcode business taxonomies into Layerkit core — only into the project store.
+
+Layerkit CLI must not infer or generate routing logic from maps/events/docs. It may validate a supplied policy and show a route plan for a sample event. If routing meaning is unclear, ask the human or leave a documented TODO in the policy proposal.
 
 ## When to use
 
@@ -17,10 +19,10 @@ Runtime is deterministic: `evaluateRouting` → plan → `trackRouted` / map app
 
 ## Protocol
 
-1. Discover domain attributes used for decisions (segment, product id, region, …) via `layerkit-discover-data-layer`.
-2. Define **vendor sets** (named groups of map ids) — membership changes without new rules.
-3. Define **routes**: condition + intent → vendor set (`priority`, optional `stop`).
-4. Optional **expansions**: when condition on base event, emit extra intents (`keepBaseIntent` default true).
+1. Discover domain attributes used for decisions (segment, product id, region, …) from code and product/business evidence.
+2. Define **vendor sets** (named groups of map ids) from evidence; never from name similarity.
+3. Define **routes**: condition + intent → vendor set (`priority`, optional `stop`) from product requirements.
+4. Optional **expansions** only when evidence says one event must emit additional intents.
 5. Write design decision to memory (rationale, sets, residual human questions).
 6. Author `routing_policy` proposal with `sources[]` (product brief, analytics plan — not invented vendors).
 7. Validate + plan dry-run:
@@ -83,6 +85,7 @@ await trackRouted(event, maps, { mode: 'dry_run', projectDir, routing: policy })
 ## Forbidden
 
 - Inventing vendor ids not present as maps in the project store
+- Inferring route conditions, vendor sets, or expansions in Layerkit core/CLI
 - Encoding thousands of one-off triggers instead of sets + rules
 - Putting customer-sensitive taxonomy into Layerkit package source
 - LLM decisions on the send path

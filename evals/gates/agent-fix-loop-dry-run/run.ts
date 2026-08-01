@@ -1,16 +1,13 @@
 /**
  * Gate: agent-fix-loop-dry-run
- * Pure TS simulation of agent fix-loop: wrong path map + doc excerpt →
+ * Pure TS simulation of agent fix-loop: explicit evidence-backed patch →
  * corrected proposal validates and applyVendorMap succeeds.
  */
 import { assertEqual, assertTrue } from '../../harness/assert.js';
-import { loadFixture, loadFixtureText } from '../../harness/load-fixture.js';
+import { loadFixture } from '../../harness/load-fixture.js';
 import {
   applyMapPathFix,
   applyProposalMapFix,
-  detectPathMismatch,
-  extractPathFromDocExcerpt,
-  pathFixFromDoc,
   type MapPathFixPatch,
 } from '../../../libs/agent/index.js';
 import { validateProposal, isValidProposal } from '../../../libs/proposal/validate.js';
@@ -18,26 +15,12 @@ import { applyVendorMap } from '../../../libs/vendor-memory/map-engine.js';
 import type { Proposal, VendorMap } from '../../../libs/domain/types.js';
 
 const wrongMap = loadFixture<VendorMap>('agent/wrong-path-map.json');
-const doc = loadFixtureText('agent/doc-excerpt-events.md');
 const patchFixture = loadFixture<MapPathFixPatch>('agent/fix-patch.json');
 
-// 1) Doc excerpt yields correct path
-const fromDoc = extractPathFromDocExcerpt(doc);
-assertEqual('doc excerpt path is /v1/events', fromDoc, '/v1/events');
+assertEqual('agent-authored patch.to', patchFixture.to, '/v1/events');
+assertEqual('agent-authored patch.from', patchFixture.from, '/v1/wrong/ingest');
 
-// 2) Detect mismatch against wrong map
-const det = detectPathMismatch(wrongMap, doc);
-assertTrue('path mismatch detected', det.mismatch === true, det.detail);
-assertEqual('map had wrong path', det.mapPath, '/v1/wrong/ingest');
-assertEqual('suggested path from doc', det.suggestedPath, '/v1/events');
-
-// 3) Auto patch from doc matches fixture
-const autoPatch = pathFixFromDoc(wrongMap, doc);
-assertTrue('pathFixFromDoc produces patch', autoPatch !== null);
-assertEqual('auto patch.to', autoPatch!.to, patchFixture.to);
-assertEqual('auto patch.from', autoPatch!.from, patchFixture.from);
-
-// 4) Apply fixture patch
+// 1) Apply explicit fixture patch
 const fixedMap = applyMapPathFix(wrongMap, patchFixture);
 assertEqual(
   'fixed endpoint.path',
@@ -51,7 +34,7 @@ assertEqual(
   '/v1/wrong/ingest',
 );
 
-// 5) Proposal path: invalid → fix → valid
+// 2) Proposal path: invalid → fix → valid
 const badProposal: Proposal = {
   schemaVersion: 1,
   kind: 'vendor_map',
@@ -104,7 +87,7 @@ assertTrue(
   (fixedProposal.sources?.length ?? 0) >= 1,
 );
 
-// 6) Dry-run map apply succeeds with corrected path (identity field only)
+// 3) Dry-run map apply succeeds with corrected path (identity field only)
 const wire = applyVendorMap(
   { intent: 'purchase', eventId: 'ord_fix_1', user: { email: 'a@b.com' } },
   fixedProposal.payload as VendorMap,
@@ -112,9 +95,5 @@ const wire = applyVendorMap(
 assertTrue('map apply not skipped', !wire.skipped, wire.reason);
 assertTrue('event_name Purchase', wire.wire?.event_name === 'Purchase');
 assertEqual('event_id mapped', wire.wire?.event_id, 'ord_fix_1');
-
-// Post-fix mismatch should be false
-const after = detectPathMismatch(fixedProposal.payload as VendorMap, doc);
-assertTrue('no mismatch after fix', after.mismatch === false, after.detail);
 
 console.log('agent-fix-loop-dry-run: all checks passed');

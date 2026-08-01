@@ -1,12 +1,11 @@
 /**
- * Gate: topology → integrate plan against production module fixture.
+ * Gate: topology → agent-facing integrate plan against production module fixture.
  */
-import { mkdtempSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { assertEqual, assertTrue } from '../../harness/assert.js';
 import {
-  applyIntegratePlan,
   buildIntegratePlan,
   formatIntegratePlanMarkdown,
   resolveGenerateMode,
@@ -112,43 +111,23 @@ const postmarkPlan = buildIntegratePlan({
 });
 assertTrue('postmark plan non-null', postmarkPlan.plan != null);
 const postmarkPatch = postmarkPlan.plan!.actions.find(
-  (a) => a.kind === 'patch' && a.vendor === 'postmark' && a.content,
+  (a) => a.kind === 'patch' && a.vendor === 'postmark',
 );
-assertTrue('postmark existing adapter patch has content', postmarkPatch != null);
+assertTrue('postmark existing adapter patch exists', postmarkPatch != null);
 assertTrue(
-  'existing mapping preserved',
-  postmarkPatch!.content!.includes('payload.setName(event.getName());'),
-  postmarkPatch!.content!,
-);
-assertTrue(
-  'renamed vendor target uses existing domain source',
-  postmarkPatch!.content!.includes('payload.setEmailId(event.getEmail());'),
-  postmarkPatch!.content!,
+  'patch does not synthesize source content',
+  !JSON.stringify(postmarkPatch).includes('"content"'),
+  JSON.stringify(postmarkPatch),
 );
 assertTrue(
-  'old vendor target removed',
-  !postmarkPatch!.content!.includes('payload.setEmail(event.getEmail());'),
-  postmarkPatch!.content!,
+  'patch delegates mapper meaning to agent',
+  /agent must inspect/i.test(postmarkPatch!.instructions),
+  postmarkPatch!.instructions,
 );
 assertTrue(
-  'missing target setter does not invent call',
-  !postmarkPatch!.content!.includes('payload.setPhoneId(event.getPhone());'),
-  postmarkPatch!.content!,
-);
-assertTrue(
-  'missing target setter becomes TODO',
-  postmarkPatch!.content!.includes('TODO(layerkit): map phone -> phone_id; missing target setter'),
-  postmarkPatch!.content!,
-);
-assertTrue(
-  'supported rename does not become TODO',
-  !postmarkPatch!.content!.includes('TODO(layerkit): map email -> email_id'),
-  postmarkPatch!.content!,
-);
-assertTrue(
-  'existing adapter not replaced by scaffold',
-  !postmarkPatch!.content!.includes('Layerkit integrate: postmark'),
-  postmarkPatch!.content!,
+  'plan carries drift context without doing semantic code change',
+  /email_id|phone_id/i.test(postmarkPatch!.instructions),
+  postmarkPatch!.instructions,
 );
 
 const md = formatIntegratePlanMarkdown(plan!);
@@ -164,30 +143,17 @@ const planCopy = {
     scanRoot: tmp,
     moduleRoot: tmp,
   },
-  actions: plan!.actions.map((a) =>
-    a.kind === 'create' && a.content
-      ? { ...a, path: `src/main/java/com/acme/integrations/vendor/EmailFixtureAdapter.java` }
-      : a,
-  ),
+  actions: plan!.actions,
 };
 const arts = writeIntegratePlanArtifacts(projectDir, planCopy);
 assertTrue('wrote json', existsSync(arts.jsonPath));
 assertTrue('wrote md', existsSync(arts.mdPath));
 
-const applied = applyIntegratePlan({
-  plan: planCopy,
-  repoRoot: tmp,
-  applyCreates: true,
-});
 assertTrue(
-  'wrote at least one create',
-  applied.written.length >= 1,
-  JSON.stringify(applied),
+  'plan is instruction-only, not generated adapter/test source bodies',
+  !JSON.stringify(planCopy.actions).includes('"content"'),
+  JSON.stringify(planCopy.actions),
 );
-const created = applied.written[0]!;
-assertTrue('created file exists', existsSync(created));
-const body = readFileSync(created, 'utf8');
-assertTrue('stub mentions email fixture', /email_fixture|EmailFixture/i.test(body));
 
 const emptyDir = mkdtempSync(join(tmpdir(), 'layerkit-empty-'));
 const emptyTopo = scanIntegrationTopology({ root: emptyDir });

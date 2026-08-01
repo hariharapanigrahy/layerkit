@@ -22,7 +22,6 @@ export {
   describeEndpointsFromOpenApi,
   describeIntentCandidatesFromOpenApi,
   describeFieldsFromOpenApi,
-  describePiiFieldHintsFromOpenApi,
 } from './parse-openapi.js';
 
 export { parseCurl } from './parse-curl.js';

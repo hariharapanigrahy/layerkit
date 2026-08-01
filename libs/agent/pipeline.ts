@@ -91,12 +91,12 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
     skill: 'layerkit-generate-java',
     cliHints: [
       'First-time only: layerkit generate --module-root <production-module> [--vendor <v>]',
-      'Heal mode: source/map files were already updated by layerkit heal run',
+      'Heal mode: layerkit heal run records drift/map; agent edits source/tests directly',
       'Run tests in generate.moduleRoot',
       'layerkit doctor --quality --strict',
     ],
     doneWhen:
-      'Production datalayer updated directly for heal or per INTEGRATE.md for first-time integrate; quality gate green',
+      'Production datalayer updated by the agent; INTEGRATE.md is context only for first-time integrate; quality gate green',
   },
   {
     id: 'handoff',

@@ -3,7 +3,7 @@
  * - map without map_complete → blocked
  * - map_complete + dry-run ok + no secrets → evaluatePromoteGates ok
  * - secret_scan critical findings block
- * - PII-looking fields without privacy policy block
+ * - live promotion without privacy policy block
  */
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -14,7 +14,6 @@ import {
   collectSecretFindings,
   evaluatePromoteGates,
   formatPromoteGateFailures,
-  mapHasPiiLookingFields,
 } from '../../../libs/agent/index.js';
 import type { VendorMapV1 } from '../../../libs/domain/types.js';
 
@@ -68,23 +67,6 @@ assertTrue('empty map_complete still fails', checkMapStatusGate(emptyComplete) !
 const good = baseMap({ vendor: 'acme', status: 'map_complete' });
 assertTrue('map_complete with fields/intents passes status', checkMapStatusGate(good) === null);
 
-// --- pure: PII detection ---
-const withPii = baseMap({
-  vendor: 'pii_vendor',
-  status: 'map_complete',
-  fields: [
-    { domain: 'eventId', vendor: 'event_id', transform: { type: 'identity' } },
-    // domain path looks like PII; identity so dry-run does not need a processor
-    {
-      domain: 'user.email',
-      vendor: 'user_data.em',
-      transform: { type: 'identity' },
-    },
-  ],
-});
-assertTrue('PII-looking fields detected', mapHasPiiLookingFields(withPii));
-assertTrue('non-PII map not flagged', !mapHasPiiLookingFields(good));
-
 await withTempProject(async ({ store, projectDir }) => {
   // 1) draft map → evaluatePromoteGates not ok
   store.saveMap(draft);
@@ -103,12 +85,29 @@ await withTempProject(async ({ store, projectDir }) => {
   );
   assertEqual('non-complete eligible empty', blocked.eligibleVendors.length, 0);
 
-  // 2) map_complete + dry-run ok + no secrets → ok
+  // 2) map_complete + no privacy policy → blocked
   store.saveMap(good);
+  const noPolicy = evaluatePromoteGates({
+    maps: [good],
+    secretFindings: collectSecretFindings([good]),
+    projectDir,
+    privacyPolicyIds: [],
+    quality: { ok: true },
+    requireDryRun: true,
+  });
+  assertTrue('live promotion without policy blocked', noPolicy.ok === false);
+  assertTrue(
+    'missing policy fails privacy_policy',
+    noPolicy.failures.some((f) => f.gate === 'privacy_policy'),
+    formatPromoteGateFailures(noPolicy.failures).join('\n'),
+  );
+
+  // 3) map_complete + dry-run ok + no secrets + policy → ok
   const okResult = evaluatePromoteGates({
     maps: [good],
     secretFindings: collectSecretFindings([good]),
     projectDir,
+    privacyPolicyIds: ['default'],
     quality: { ok: true },
     requireDryRun: true,
   });
@@ -132,7 +131,7 @@ await withTempProject(async ({ store, projectDir }) => {
   }
   assertEqual('store status live after promote', store.loadMap('acme')!.status, 'live');
 
-  // 3) secret_scan critical blocks
+  // 4) secret_scan critical blocks
   const TOKEN = 'sk_live_4eC39HqLyjWDarjtT1zdp7dc_AbCdEfGhIjKlMn';
   const leaky = baseMap({
     vendor: 'leaky',
@@ -154,6 +153,7 @@ await withTempProject(async ({ store, projectDir }) => {
     maps: [leaky],
     secretFindings,
     projectDir,
+    privacyPolicyIds: ['default'],
     quality: { ok: true },
     requireDryRun: true,
   });
@@ -164,23 +164,7 @@ await withTempProject(async ({ store, projectDir }) => {
     formatPromoteGateFailures(secretBlocked.failures).join('\n'),
   );
 
-  // 4) PII without privacy policy blocks
-  const piiBlocked = evaluatePromoteGates({
-    maps: [withPii],
-    secretFindings: [],
-    projectDir,
-    privacyPolicyIds: [],
-    quality: { ok: true },
-    requireDryRun: true,
-  });
-  assertTrue('PII without policy blocked', piiBlocked.ok === false);
-  assertTrue(
-    'privacy_policy failure',
-    piiBlocked.failures.some((f) => f.gate === 'privacy_policy'),
-    formatPromoteGateFailures(piiBlocked.failures).join('\n'),
-  );
-
-  // 5) PII with default privacy policy ok
+  // 5) default privacy policy ok
   mkdirSync(join(projectDir, 'privacy'), { recursive: true });
   writeFileSync(
     join(projectDir, 'privacy', 'default-allow.json'),
@@ -196,18 +180,18 @@ await withTempProject(async ({ store, projectDir }) => {
     'utf8',
   );
   const piiOk = evaluatePromoteGates({
-    maps: [withPii],
+    maps: [good],
     secretFindings: [],
     projectDir,
     quality: { ok: true },
     requireDryRun: true,
   });
   assertTrue(
-    'PII with default policy promotes',
+    'default policy promotes',
     piiOk.ok === true,
     [...piiOk.lines, ...formatPromoteGateFailures(piiOk.failures)].join('\n'),
   );
-  assertTrue('pii_vendor eligible', piiOk.eligibleVendors.includes('pii_vendor'));
+  assertTrue('acme eligible', piiOk.eligibleVendors.includes('acme'));
 
   // 6) --no-dry-run-check skips dry-run (still need map_complete)
   const drySkipped = evaluatePromoteGates({

@@ -1,0 +1,8 @@
+{
+  "id": "routing-policy-apply",
+  "suite": "ci",
+  "title": "Routing policy proposals apply and validate explicit customer-owned policy",
+  "owners": ["routing", "proposal"],
+  "featurePr": "routing",
+  "tags": ["deterministic", "no-network", "routing", "proposal"]
+}

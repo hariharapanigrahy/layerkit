@@ -356,11 +356,11 @@ Strict maker-checker: maker ≠ checker. Use `layerkit-checker-assist` for a ris
 Skill: [`layerkit-generate-java`](../skills/layerkit-generate-java/SKILL.md)
 
 ```bash
-layerkit generate --module-root <path-to-module> [--vendor <id>] [--apply]
+layerkit generate --module-root <path-to-module> [--vendor <id>]
 # → {projectDir}/out/INTEGRATE.md (+ integrate-plan.json)
 ```
 
-Implement creates/patches listed in `INTEGRATE.md` **in the customer module**.
+Use `INTEGRATE.md` as topology/context, then inspect and edit **the customer module** yourself.
 
 Target: JaCoCo line coverage ≥ 0.95 on the module under test when quality gates are enforced.
 
@@ -411,7 +411,7 @@ Doctor must be clean (or only expected empty-map warnings for vendors not in sco
 ```bash
 layerkit promote --vendor <vendor>
 # Hard gates (fail-closed): map_complete + fields/intents, JaCoCo quality (--strict default),
-# doctor secret-scan clean, privacy policy when PII-looking fields, dry-run wire for purchase/first intent.
+# doctor secret-scan clean, explicit privacy policy, dry-run wire for purchase/first intent.
 # Break-glass: --no-strict (skip quality), --no-dry-run-check (skip dry-run only)
 layerkit agent status
 layerkit agent mark-done --step handoff

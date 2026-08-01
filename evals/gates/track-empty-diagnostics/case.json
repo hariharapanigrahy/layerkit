@@ -1,0 +1,8 @@
+{
+  "id": "track-empty-diagnostics",
+  "suite": "ci",
+  "title": "Track returns diagnostics instead of silent success when no maps are eligible",
+  "owners": ["runtime"],
+  "featurePr": "track-diagnostics",
+  "tags": ["deterministic", "no-network", "runtime"]
+}

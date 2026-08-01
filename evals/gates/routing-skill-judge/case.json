@@ -1,0 +1,8 @@
+{
+  "id": "routing-skill-judge",
+  "suite": "ci",
+  "title": "Routing design meaning is skill-owned; runtime only executes explicit policy",
+  "owners": ["skills", "routing"],
+  "featurePr": "routing-skill-judge",
+  "tags": ["deterministic", "no-network", "skill-judge", "routing"]
+}

@@ -55,6 +55,11 @@ try {
   assertTrue('map has sources', (mapProposal.sources?.length ?? 0) >= 1);
   assertEqual('map status draft', mapProposal.status, 'draft');
   assertTrue('map payload vendor', (mapProposal.payload as { vendor?: string }).vendor === 'example_vendor');
+  assertEqual(
+    'map scaffold payload remains skeleton',
+    (mapProposal.payload as { status?: string }).status,
+    'skeleton',
+  );
 
   const mapPath = join(tmp, 'map-proposal.json');
   writeFileSync(mapPath, `${JSON.stringify(mapProposal, null, 2)}\n`, 'utf8');

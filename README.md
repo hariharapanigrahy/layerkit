@@ -104,7 +104,7 @@ See the [Runtime Send Path section in docs/AGENT_GOLDEN_PATH.md](./docs/AGENT_GO
 
 `track(event, maps, { projectDir, mode })` loads privacy policies and flow refs from the project store, emits audit events when `projectDir` is set, and returns `diagnostics` / `filteredOut` when no vendor is eligible (never silent empty success).
 
-**Routing (declarative fan-out):** author a customer-owned `RoutingPolicy` (vendor sets + optional intent expansions + routes). Use `trackRouted` or CLI `route plan` / `process dry-run --route` so attribute-based vendor selection stays out of app `if/else` and tag matrices. See skill `layerkit-design-routing`.
+**Routing (agent-authored fan-out):** the skill authors a customer-owned `RoutingPolicy` from code/product evidence (vendor sets + optional intent expansions + routes). Runtime and CLI only validate/execute that explicit policy via `trackRouted`, `route plan`, or `process dry-run --route`; Layerkit core does not infer routing logic. See skill `layerkit-design-routing`.
 
 ---
 
@@ -190,15 +190,15 @@ layerkit map list|show|validate
 layerkit proposal validate <file>
 layerkit proposal apply <file>
 layerkit process dry-run --vendor <v> --intent <i>
-layerkit generate --module-root <dir> [--vendor <id>] [--apply]
+layerkit generate --module-root <dir> [--vendor <id>]
 layerkit research fill --vendor <v> --openapi <file>
 layerkit heal run --vendor <v> --openapi <file> --module-root <dir> [--rename-decisions <file>]
 layerkit agent multi --vendor <id> [--mode heal] [--openapi <file>]
 ```
 
-Docs-link-only heal is an AI-agent workflow, not CLI-only. The skill reads/cites vendor docs and writes a structured OpenAPI/contract file plus optional rename decisions; the CLI then deterministically validates and applies that structured input.
+Docs-link-only heal is an AI-agent workflow, not CLI-only. The skill reads/cites vendor docs and writes a structured OpenAPI/contract file plus optional rename decisions; the CLI records drift/map evidence, then the agent edits real package files.
 
-`generate` writes an integrate plan to `{projectDir}/out/INTEGRATE.md` for agents to edit **production code**. Requires production entrypoints or `--module-root`.
+`generate` writes an integrate plan to `{projectDir}/out/INTEGRATE.md` as context for agents to edit **production code**. Requires production entrypoints or `--module-root`; it does not generate adapter source.
 
 **Multi-agent:** `layerkit agent multi --vendor …` writes spawn prompts for parallel specialists (research / integrate / verify). Skill: `layerkit-multi-agent`.
 

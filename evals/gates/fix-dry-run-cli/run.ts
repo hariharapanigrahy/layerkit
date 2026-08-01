@@ -2,16 +2,12 @@
  * Gate: fix-dry-run-cli
  * CLI-equivalent pure function path (same libs as `layerkit fix dry-run`):
  * load fix-loop-multi fixtures → apply 2 patches → intermediate fails → final wire ok.
- * Also covers `fix suggest` path via pathFixFromDoc / detectPathMismatch on wrong-path map.
  */
 import { assertEqual, assertTrue } from '../../harness/assert.js';
-import { loadFixture, loadFixtureText } from '../../harness/load-fixture.js';
+import { loadFixture } from '../../harness/load-fixture.js';
 import {
   applyMapPatches,
-  detectPathMismatch,
   evaluateDryRunWire,
-  extractPathFromDocExcerpt,
-  pathFixFromDoc,
   runSequentialMapFixes,
   type MapPathFixPatch,
   type WireExpectation,
@@ -104,25 +100,5 @@ assertEqual(
   (mapV0 as { fields?: Array<{ vendor?: string }> }).fields?.[0]?.vendor,
   'evt_id',
 );
-
-// ── fix suggest path (pathFixFromDoc / detectPathMismatch) ──
-const wrongMap = loadFixture<VendorMap>('agent/wrong-path-map.json');
-const doc = loadFixtureText('agent/doc-excerpt-events.md');
-const fromDoc = extractPathFromDocExcerpt(doc);
-assertEqual('doc excerpt path is /v1/events', fromDoc, '/v1/events');
-const det = detectPathMismatch(wrongMap, doc);
-assertTrue('path mismatch detected', det.mismatch === true, det.detail);
-const suggested = pathFixFromDoc(wrongMap, doc);
-assertTrue('pathFixFromDoc produces patch', suggested !== null);
-assertEqual('suggested field', suggested!.field, 'endpoint.path');
-assertEqual('suggested to', suggested!.to, '/v1/events');
-assertEqual('suggested from', suggested!.from, '/v1/wrong/ingest');
-
-// No invent when doc has no path
-const noPathDoc = '# No HTTP path here\nJust prose about events.';
-const noInvent = pathFixFromDoc(wrongMap, noPathDoc);
-assertEqual('no invent without doc path', noInvent, null);
-const noPathDet = detectPathMismatch(wrongMap, noPathDoc);
-assertTrue('no mismatch invent without doc path', noPathDet.mismatch === false, noPathDet.detail);
 
 console.log('fix-dry-run-cli: all checks passed');

@@ -6,7 +6,6 @@ import {
   describeEndpointsFromOpenApi,
   describeFieldsFromOpenApi,
   describeIntentCandidatesFromOpenApi,
-  describePiiFieldHintsFromOpenApi,
   parseOpenAPI,
 } from './parse-openapi.js';
 import { parseCurl } from './parse-curl.js';
@@ -105,7 +104,7 @@ export function fillAnswerSheetFromEvidence(
         };
       }
 
-      // Q3/Q4/Q5: evidence candidates only (domain meaning is skill + project convention)
+      // Q3/Q4: evidence candidates only (domain meaning is skill + project convention)
       const intentCand = describeIntentCandidatesFromOpenApi(parsed);
       if (intentCand) {
         sheet.dimensions.Q3 = {
@@ -127,18 +126,6 @@ export function fillAnswerSheetFromEvidence(
           source: 'openapi',
           confidence: 'high',
           citations: [{ title: seed.urlOrPath, excerpt: fields.slice(0, 400) }],
-          humanAsked: false,
-        };
-      }
-      const pii = describePiiFieldHintsFromOpenApi(parsed);
-      if (pii) {
-        sheet.dimensions.Q5 = {
-          id: 'Q5',
-          topic: DIMENSION_TOPICS.Q5,
-          answer: pii,
-          source: 'openapi',
-          confidence: 'low',
-          citations: [{ title: seed.urlOrPath, excerpt: pii }],
           humanAsked: false,
         };
       }
