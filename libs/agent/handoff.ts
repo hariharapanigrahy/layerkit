@@ -59,7 +59,7 @@ _(one sentence: what integration outcome this session aimed for)_
 
 ## Quality
 
-- _(last dry-run result; coverage if any)_
+- _(last client package verification result; coverage if any)_
 `;
 
 export interface HandoffRunbookInput {
@@ -136,7 +136,7 @@ export function buildHandoffRunbook(input: HandoffRunbookInput = {}): string {
     '',
     '## Quality',
     '',
-    input.quality?.trim() || '_(last dry-run result; coverage if any)_',
+    input.quality?.trim() || '_(last client package verification result; coverage if any)_',
     '',
   ];
 

@@ -16,7 +16,7 @@ Assist a **human checker**. This skill is **read-only** on the approval path.
    - privacy gaps / missing consent
    - empty maps treated as complete
    - maker ≠ checker identity
-   - dry-run coverage of primary intents
+   - client package verification coverage of primary intents
 3. Suggest residual questions for the human reviewer.
 4. Point at failing gates (`npm run eval:ci`) without re-running network research unless asked.
 

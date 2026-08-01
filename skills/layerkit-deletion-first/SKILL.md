@@ -31,7 +31,7 @@ Check these surfaces before adding:
 
 For heal/integration work, preserve only the spine:
 
-`API spec/doc -> contract drift -> map/proposal update -> privacy/checker -> production datalayer integration -> dry-run/quality`
+`API spec/doc -> contract drift -> map/proposal update -> privacy/checker -> production datalayer integration -> client package verification`
 
 Move required examples into `evals/fixtures`; delete demo/docs packaging around them.
 
