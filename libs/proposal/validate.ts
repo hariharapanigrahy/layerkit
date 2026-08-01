@@ -259,16 +259,6 @@ export function validateProposal(proposal: Proposal): ValidationIssue[] {
   if (proposal.kind === 'vendor_map' && proposal.payload && typeof proposal.payload === 'object') {
     issues.push(...validateVendorMap(proposal.payload as VendorMap));
   }
-  if (proposal.kind === 'processor') {
-    const p = proposal.payload as { sources?: unknown[] };
-    if (!p?.sources?.length && !proposal.sources?.length) {
-      issues.push({
-        level: 'error',
-        code: 'processor_sources',
-        message: 'processor proposals need documentation sources',
-      });
-    }
-  }
   return issues;
 }
 

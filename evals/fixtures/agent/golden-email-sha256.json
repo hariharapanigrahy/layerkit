@@ -1,6 +1,0 @@
-{
-  "inputEmail": "a@b.com",
-  "normalized": "a@b.com",
-  "sha256Hex": "fb98d44ad7501a959f3f4f4a3f004fe2d9e581ea6207e218c4b02c08a4d75adf",
-  "note": "sha256 of lowercase trimmed email; agent process fixture only"
-}

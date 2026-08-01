@@ -1,16 +1,11 @@
 ---
 name: layerkit-generate-java
-description: Use an agent-facing integration plan to edit the production datalayer; style-match; tests ≥95% JaCoCo when Java.
+description: Integrate vendors by editing the production datalayer directly; style-match; run the client package verification command.
 ---
 
 # layerkit-generate-java
 
-Modify the **existing** production datalayer (adapters, registry, router, tests) using the integrate plan as context. The plan is not generated production code.
-
-```bash
-layerkit generate --module-root <path-to-module> [--vendor <id>]
-# Writes {projectDir}/out/INTEGRATE.md + integrate-plan.json
-```
+Modify the **existing** production datalayer (adapters, registry, router, tests) directly from evidence. Do not ask the CLI to generate an integration plan or source patch.
 
 `project.json`:
 
@@ -18,7 +13,6 @@ layerkit generate --module-root <path-to-module> [--vendor <id>]
 {
   "generate": {
     "moduleRoot": "apps/platform/integrations",
-    "qualityRoots": ["apps/platform/integrations"],
     "denyEdit": ["**/legacy/**"]
   }
 }
@@ -26,31 +20,28 @@ layerkit generate --module-root <path-to-module> [--vendor <id>]
 
 ## Protocol
 
-1. Style profile: `layerkit style-profile scan --root <repo>`
-2. Run `layerkit-deletion-first`: remove/update stale code/docs/tests before adding files
-3. `layerkit generate --module-root <module> [--vendor <id>]`
-4. Read `{projectDir}/out/INTEGRATE.md` — topology, likely files, deny-edit rules
-5. Inspect the existing interface/datalayer and implement in **production paths** listed in the plan
-6. Module tests; then:
+1. Read existing production integration code, interfaces, mappers, tests, and package style.
+2. Run `layerkit-deletion-first`: remove/update stale code/docs/tests before adding files.
+3. Inspect the existing interface/datalayer and implement in **production paths**.
+4. For every new file/function/export, list what it replaces; if it replaces nothing, justify why it must exist.
+5. Run the client package verification command, such as the package's build/test/coverage CI target; then:
    ```bash
-   layerkit doctor --quality --strict
-   layerkit process dry-run --vendor <id> --intent <i>
-   layerkit promote --vendor <id>
+   layerkit doctor
    ```
 
 ## Forbidden
 
-- LLM on hot path (`track` / adapter send)
+- AI calls in production adapter send paths
 - Invented field maps
 - Parallel facade beside an existing one
-- Promoting while coverage/doctor fail
+- Handing off while client package verification or doctor fails
 - New adapter abstraction without explaining what existing file/function/export cannot be changed
-- Treating `INTEGRATE.md` or `integrate-plan.json` as generated source code
+- Treating generated plans or `.layerkit/out` files as production source code
 
 ## Success
 
-- [ ] Production files updated by the agent after inspecting existing code, with INTEGRATE.md used only as context
+- [ ] Production files updated by the agent after inspecting existing code
 - [ ] Deletion-first pass complete; new files/functions/exports list what they replace
-- [ ] Style/topology honored
-- [ ] Module tests green; JaCoCo ≥ 0.95 when enforced
-- [ ] Dry-run green for primary intents
+- [ ] Existing style/topology honored from source evidence
+- [ ] Client package build/test/coverage command green
+- [ ] Package verification green for primary intents

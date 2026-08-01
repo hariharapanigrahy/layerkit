@@ -4,11 +4,26 @@
  * Fixture uses generic "acme" vendor (process test only — not catalog).
  */
 import { assertTrue } from '../../harness/assert.js';
-import { loadFixture } from '../../harness/load-fixture.js';
 import { validateProposal } from '../../../libs/proposal/validate.js';
 import type { Proposal, VendorMap } from '../../../libs/domain/types.js';
 
-const map = loadFixture<VendorMap>('agent/wrong-path-map.json');
+const map: VendorMap = {
+  vendor: 'acme',
+  displayName: 'Acme',
+  version: '1.0.0',
+  auth: { type: 'bearer' },
+  endpoint: { method: 'POST', path: '/v1/events', baseUrl: 'https://api.acme.test' },
+  intents: { purchase: { eventName: 'Purchase' } },
+  fields: [{ domain: 'eventId', vendor: 'event_id', transform: { type: 'identity' } }],
+  documentation: [
+    {
+      title: 'Acme Events API',
+      url: 'https://docs.acme-fixture.test/events',
+      excerpt: 'POST /v1/events with Bearer token',
+    },
+  ],
+  status: 'map_complete',
+};
 
 const agentNoSources: Proposal = {
   schemaVersion: 1,

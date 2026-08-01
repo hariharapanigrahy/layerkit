@@ -99,7 +99,7 @@ const expectedIds = [
   'design',
   'author',
   'privacy',
-  'generate',
+  'source-edit',
   'handoff',
 ];
 for (const id of expectedIds) {

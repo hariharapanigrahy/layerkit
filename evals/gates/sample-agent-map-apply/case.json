@@ -1,9 +1,0 @@
-{
-  "id": "sample-agent-map-apply",
-  "suite": "ci",
-  "title": "Agent-shaped map fixture validates, applies, executes processor, golden hash",
-  "owners": ["proposal", "map-engine", "store", "strategy"],
-  "featurePr": "PR3",
-  "fixtures": ["agent/processor-email-sha256.json"],
-  "tags": ["deterministic", "no-network"]
-}

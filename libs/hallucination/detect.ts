@@ -1,5 +1,5 @@
 /**
- * Pure hallucination / invent-signal detectors for proposals and VendorMap payloads.
+ * Pure placeholder / invent-signal guards for proposals and VendorMap payloads.
  * Deterministic — no network, no LLM. Used before store mutation (applyProposal).
  *
  * Break-glass for apply path only: process.env.LAYERKIT_ALLOW_HALLUCINATION === '1'
@@ -14,8 +14,7 @@ import {
   type VendorMap,
 } from '../domain/types.js';
 import type {
-  AssertNoHallucinationOpts,
-  DetectionResult,
+  AssertNoHallucinationIssuesOpts,
   HallucinationIssue,
   HallucinationReport,
 } from './types.js';
@@ -259,7 +258,7 @@ function scanVendorMap(map: VendorMap, sources: DocSource[], issues: Hallucinati
 /**
  * Scan a Proposal (+ VendorMap payload when kind=vendor_map) for invent signals.
  */
-export function detectHallucination(proposal: Proposal): HallucinationReport {
+export function detectHallucinationIssues(proposal: Proposal): HallucinationReport {
   const issues: HallucinationIssue[] = [];
   const sources = proposal.sources ?? [];
 
@@ -276,19 +275,6 @@ export function detectHallucination(proposal: Proposal): HallucinationReport {
     }
   }
 
-  if (proposal.kind === 'processor') {
-    const p = proposal.payload as { sources?: DocSource[] } | null;
-    const payloadSources = p?.sources ?? [];
-    if (!sources.length && !payloadSources.length) {
-      push(issues, {
-        level: 'error',
-        code: 'processor_sources',
-        message: 'processor proposal has no documentation sources on proposal or payload',
-        path: 'sources',
-      });
-    }
-  }
-
   if (proposal.kind === 'vendor_map' && proposal.payload && typeof proposal.payload === 'object') {
     scanVendorMap(proposal.payload as VendorMap, sources, issues);
   }
@@ -297,14 +283,14 @@ export function detectHallucination(proposal: Proposal): HallucinationReport {
 }
 
 /**
- * Throw if the proposal has hallucination errors (and warnings when strict).
+ * Throw if the proposal has guard errors (and warnings when strict).
  * Message format: `hallucination_blocked: code1, code2`
  */
-export function assertNoHallucination(
+export function assertNoHallucinationIssues(
   proposal: Proposal,
-  opts?: AssertNoHallucinationOpts,
+  opts?: AssertNoHallucinationIssuesOpts,
 ): void {
-  const report = detectHallucination(proposal);
+  const report = detectHallucinationIssues(proposal);
   const blocking = opts?.strict
     ? report.issues
     : report.issues.filter((i) => i.level === 'error');
@@ -314,6 +300,6 @@ export function assertNoHallucination(
 }
 
 /** True when any issue is level=error. */
-export function hasHallucinationErrors(report: DetectionResult): boolean {
+export function hasHallucinationErrors(report: HallucinationReport): boolean {
   return report.issues.some((i) => i.level === 'error');
 }

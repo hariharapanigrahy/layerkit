@@ -4,6 +4,6 @@
   "title": "Agent-authored map proposal without sources fails validate",
   "owners": ["agent", "proposal"],
   "featurePr": "agent-dev-evals",
-  "fixtures": ["agent/wrong-path-map.json"],
+  "fixtures": [],
   "tags": ["deterministic", "no-network", "agent-process", "citation"]
 }

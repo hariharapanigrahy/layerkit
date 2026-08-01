@@ -3,7 +3,7 @@
 Paste into your coding agent:
 
 ````txt
-Install Layerkit (agent-first multi-vendor data-layer toolkit).
+Install Layerkit (AI-agent workbench for client-owned vendor integration source edits).
 
 Repo: https://github.com/hariharapanigrahy/layerkit
 
@@ -45,8 +45,8 @@ Do not invent vendor field maps during install.
 Do not research or author maps until install + doctor are green.
 
 Next (and only next): follow docs/AGENT_GOLDEN_PATH.md under skill
-layerkit-orchestrate-integration (agent status/next → research skill → design →
-author → validate/submit/approve → generate → dry-run → doctor → promote).
+layerkit-orchestrate-integration (agent status/next -> research -> design ->
+author -> privacy -> deletion-first -> source-edit -> handoff).
 
 Final answer: platform, hooks mode, projectDir, doctor status, and that the
 next step is the golden path + orchestrate skill (not ad-hoc map authoring).

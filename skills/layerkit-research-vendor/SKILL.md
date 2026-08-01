@@ -7,35 +7,21 @@ description: Evidence-first vendor research and contract updates (docs/OpenAPI �
 
 You create or **update** integration knowledge from **primary evidence**. Core ships empty maps. Never invent.
 
-**Contract update (heal)** is an agent-led production update path: human supplies OpenAPI/docs → AI agent curates structured contract → heal records drift/map proposal → AI agent updates existing source/tests. Do not route heal through `layerkit generate` or `INTEGRATE.md`.
+**Contract update (heal)** is an agent-led production update path: human supplies OpenAPI/docs → AI agent reads/cites evidence → AI agent updates existing maps/source/tests. Do not route heal through deterministic source editing, code generation, or generated patch plans.
 
 ## Protocol
 
 ### A. Contract heal
 
-```bash
-layerkit heal run --vendor <vendor> --openapi ./openapi.json \
-  --module-root <production-module>
-# pin + drift + map/proposal update; source edits are agent-owned
-```
-
-When the user gives a docs link instead of OpenAPI, you are the AI reader. Fetch/read the official docs, keep citations, and write a structured OpenAPI-compatible contract file from evidence before calling heal:
+When the user gives OpenAPI or docs, you are the AI reader. Fetch/read the official evidence, keep citations, and compare it to the existing map/interface/datalayer yourself.
 
 ```text
 .layerkit/out/contracts/<vendor>/openapi-from-doc.json
 ```
 
-Then run:
+The CLI is tooling only: it validates explicit artifacts and package health, but it does not understand arbitrary docs, semantic field meaning, or source edits. If docs are ambiguous, preserve uncertainty in notes and leave localized TODOs rather than inventing fields.
 
-```bash
-layerkit heal run --vendor <vendor> --openapi .layerkit/out/contracts/<vendor>/openapi-from-doc.json \
-  --module-root <production-module>
-```
-
-The CLI does not understand arbitrary docs or semantic field meaning. It records structured contract input and drift; you decide source edits from docs + code evidence. If docs are ambiguous, preserve uncertainty in the contract notes and leave unresolved TODOs rather than inventing fields.
-
-Review `out/CONTRACT_DRIFT.json`.
-If drift says one vendor field was removed and another was added, inspect docs and existing source before deciding it is a rename. When evidence is strong, pass decisions to heal:
+If one vendor field was removed and another was added, inspect docs and existing source before deciding it is a rename. Record your decision in the review note:
 
 ```json
 [
@@ -49,21 +35,15 @@ If drift says one vendor field was removed and another was added, inspect docs a
 ]
 ```
 
-```bash
-layerkit heal run --vendor <vendor> --openapi ./openapi.json \
-  --module-root <production-module> \
-  --rename-decisions ./rename-decisions.json
-```
-
-After heal, edit the real adapter/interface/test files yourself. If the field does not exist in the interface or datalayer, add a localized TODO only in the production change and call it out in review.
+Edit the real adapter/interface/test files yourself. If the field does not exist in the interface or datalayer, add a localized TODO only in the production change and call it out in review.
 
 ### B. Supporting evidence work
 
-Read official docs/OpenAPI/curl examples directly as the AI agent. Curate a structured contract/proposal with citations, then use deterministic CLI only to validate proposals, run heal on a structured contract, and dry-run maps. Privacy classification belongs to `layerkit-privacy-review`.
+Read official docs/OpenAPI/curl examples directly as the AI agent. Curate a structured contract/proposal with citations, then use deterministic CLI only to validate explicit proposals and package health. Privacy classification belongs to `layerkit-privacy-review`.
 
-### C. Domain binding
+### C. Domain meaning
 
-Domain meaning is project convention (`layerkit domain-binding show|init`), not vendor hardcoding. Cite extension / operationId / docs.
+Domain meaning comes from customer code plus vendor evidence, not from operation names alone. Cite docs, schemas, examples, and source files for every non-obvious mapping.
 
 ### D. Memory
 
@@ -84,8 +64,8 @@ Include drift severity when heal. Residual questionnaire only after deepen L0–
 
 ## Success criteria
 
-- [ ] Structured contract pinned when OpenAPI or docs were supplied
-- [ ] Drift reviewed if map existed (severity in note)
+- [ ] OpenAPI/docs evidence reviewed with citations
+- [ ] Existing map/source reviewed if map existed
 - [ ] Each answered Q has ≥1 citation
-- [ ] Map proposal from structured contract with sources[]
+- [ ] Map/source updates from evidence with sources[]
 - [ ] `layerkit agent next` advances past research after apply

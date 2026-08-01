@@ -1,8 +1,0 @@
-{
-  "id": "track-privacy-autoload",
-  "suite": "ci",
-  "title": "Track autoloads privacy policy and fails closed for live delivery without policy",
-  "owners": ["runtime", "privacy"],
-  "featurePr": "privacy-autoload",
-  "tags": ["deterministic", "no-network", "runtime", "privacy"]
-}

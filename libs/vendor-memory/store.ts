@@ -7,7 +7,6 @@ import {
   type LayerkitConfig,
 } from '../config/layerkit-config.js';
 import { resolveProjectDir } from '../config/project-dir.js';
-import { COMMERCE_DOMAIN } from '../domain/commerce.js';
 import {
   formatSecretFindings,
   scanJsonForSecrets,
@@ -17,7 +16,6 @@ import {
   isVendorMapV1,
   type AuthSpec,
   type CheckRecord,
-  type DeliveryPolicy,
   type DomainSpec,
   type FieldMapRow,
   type Identity,
@@ -28,13 +26,19 @@ import {
   type VendorMap,
 } from '../domain/types.js';
 import {
-  detectHallucination,
+  detectHallucinationIssues,
   hasHallucinationErrors,
 } from '../hallucination/index.js';
 import { validateProposal, validateVendorMap } from '../proposal/validate.js';
-import { assertValidRoutingPolicy } from '../routing/validate.js';
-import type { RoutingPolicy } from '../routing/types.js';
 import { mapSchemaVersion, migrateMapV1toV2 } from './migrate.js';
+
+const EMPTY_CUSTOMER_DOMAIN: DomainSpec = {
+  id: 'customer',
+  version: '0.0.0',
+  description: 'Empty customer domain. Agent must discover events and fields from client code.',
+  intents: [],
+  fields: [],
+};
 
 /** Read user config without creating ~/.layerkit (eval-safe). */
 function readUserMakerChecker(): MakerCheckerConfig {
@@ -53,17 +57,10 @@ function readUserMakerChecker(): MakerCheckerConfig {
 
 const STORE_SUBDIRS = [
   'maps',
-  'processors',
   'proposals',
   'out',
   'sessions',
   'memory',
-  'privacy',
-  'flows',
-  'audit',
-  'dlq',
-  'idempotency',
-  'routing',
 ] as const;
 
 const MEMORY_INDEX_SKELETON = `# Layerkit memory index
@@ -123,14 +120,13 @@ export class VendorMemoryStore {
     const project: LayerProject = {
       name: opts.name,
       version: '0.1.0',
-      languages: ['java'],
-      javaPackage: 'io.layerkit.commerce',
-      domain: COMMERCE_DOMAIN,
+      languages: [],
+      domain: EMPTY_CUSTOMER_DOMAIN,
       vendors: [],
       dataLayerVersionId: `${opts.name}@0.1.0`,
     };
     this.writeJson(join(this.projectDir, 'project.json'), project);
-    this.writeJson(join(this.projectDir, 'domain.json'), COMMERCE_DOMAIN);
+    this.writeJson(join(this.projectDir, 'domain.json'), EMPTY_CUSTOMER_DOMAIN);
     this.ensureMemoryIndex();
     void opts.poc;
   }
@@ -405,10 +401,10 @@ export class VendorMemoryStore {
     // Fail-closed invent gate before any store mutation.
     // Break-glass (not for production): LAYERKIT_ALLOW_HALLUCINATION=1
     if (process.env.LAYERKIT_ALLOW_HALLUCINATION !== '1') {
-      const hallu = detectHallucination(proposal);
-      if (hasHallucinationErrors(hallu)) {
+      const guard = detectHallucinationIssues(proposal);
+      if (hasHallucinationErrors(guard)) {
         const codes = [
-          ...new Set(hallu.issues.filter((i) => i.level === 'error').map((i) => i.code)),
+          ...new Set(guard.issues.filter((i) => i.level === 'error').map((i) => i.code)),
         ].join(', ');
         throw new Error(`hallucination_blocked: ${codes}`);
       }
@@ -527,47 +523,26 @@ export class VendorMemoryStore {
   private applyByKind(proposal: Proposal): { kind: string; target: string } {
     switch (proposal.kind) {
       case 'vendor_map':
-        return this.applyVendorMapKind(proposal);
-      case 'processor':
-        return this.applyProcessorKind(proposal);
+        return this.applyVendorMapProposal(proposal);
       case 'field_row':
         return this.applyFieldRowKind(proposal);
       case 'intent_wire':
         return this.applyIntentWireKind(proposal);
       case 'auth':
         return this.applyAuthKind(proposal);
-      case 'flow':
-        return this.applyFlowKind(proposal);
-      case 'privacy_policy':
-        return this.applyPrivacyPolicyKind(proposal);
-      case 'observation_config':
-        return this.applyObservationConfigKind(proposal);
-      case 'delivery_policy':
-        return this.applyDeliveryPolicyKind(proposal);
       case 'domain_spec':
         return this.applyDomainSpecKind(proposal);
       case 'java_artifact':
         return this.applyJavaArtifactKind(proposal);
-      case 'routing_policy':
-        return this.applyRoutingPolicyKind(proposal);
       default:
         throw new Error(`Apply not implemented for kind=${String((proposal as Proposal).kind)}`);
     }
   }
 
-  private applyVendorMapKind(proposal: Proposal): { kind: string; target: string } {
+  private applyVendorMapProposal(proposal: Proposal): { kind: string; target: string } {
     const map = proposal.payload as VendorMap;
     this.saveMap(map);
     return { kind: 'vendor_map', target: map.vendor };
-  }
-
-  private applyProcessorKind(proposal: Proposal): { kind: string; target: string } {
-    const id = proposal.processorId ?? proposal.id;
-    this.writeJson(
-      join(this.projectDir, 'processors', `${id.replace(/\./g, '_')}.json`),
-      proposal.payload,
-    );
-    return { kind: 'processor', target: id };
   }
 
   /**
@@ -650,83 +625,6 @@ export class VendorMemoryStore {
     return { kind: 'auth', target: vendor };
   }
 
-  /**
-   * Payload: IntegrationFlow or { vendor?, flow: IntegrationFlow }.
-   * Writes flows/<vendor>.json and sets map.flowRef when map exists.
-   */
-  private applyFlowKind(proposal: Proposal): { kind: string; target: string } {
-    const p = proposal.payload as Record<string, unknown>;
-    const vendor = proposal.vendor ?? (typeof p.vendor === 'string' ? p.vendor : undefined);
-    if (!vendor) throw new Error('flow requires vendor on proposal or payload');
-    const flow = (p.flow && typeof p.flow === 'object' ? p.flow : p) as { id?: string };
-    const flowId = flow.id ?? vendor;
-
-    this.ensureDirs();
-    this.writeJson(join(this.projectDir, 'flows', `${vendor}.json`), flow);
-
-    const map = this.loadMap(vendor);
-    if (map && map.schemaVersion === 2) {
-      this.saveMap({ ...map, flowRef: flowId });
-    } else if (map) {
-      // v1: attach flowRef as extension via notes-safe optional property
-      this.saveMap({ ...map, ...( { flowRef: flowId } as object) } as VendorMap);
-    }
-    return { kind: 'flow', target: vendor };
-  }
-
-  /** Payload: PrivacyPolicy with id. */
-  private applyPrivacyPolicyKind(proposal: Proposal): { kind: string; target: string } {
-    const p = proposal.payload as { id?: string };
-    const id = p.id ?? proposal.id;
-    this.ensureDirs();
-    this.writeJson(join(this.projectDir, 'privacy', `${id}.json`), proposal.payload);
-    return { kind: 'privacy_policy', target: id };
-  }
-
-  /** Payload: ObservationConfig → projectDir/observation.json */
-  private applyObservationConfigKind(proposal: Proposal): { kind: string; target: string } {
-    this.ensureDirs();
-    this.writeJson(join(this.projectDir, 'observation.json'), proposal.payload);
-    return { kind: 'observation_config', target: 'observation.json' };
-  }
-
-  /**
-   * Payload: { vendor?, delivery: Partial<DeliveryPolicy> } or DeliveryPolicy with optional vendor.
-   * Deep-merge delivery into map when vendor set; else into project (stored as project.delivery if present).
-   */
-  private applyDeliveryPolicyKind(proposal: Proposal): { kind: string; target: string } {
-    const p = proposal.payload as Record<string, unknown>;
-    const vendor = proposal.vendor ?? (typeof p.vendor === 'string' ? p.vendor : undefined);
-    const delivery = (
-      p.delivery && typeof p.delivery === 'object' ? p.delivery : p
-    ) as Partial<DeliveryPolicy>;
-
-    if (vendor) {
-      const map = this.loadMap(vendor);
-      if (!map) throw new Error(`delivery_policy: no map for vendor=${vendor}`);
-      if (map.schemaVersion === 2) {
-        const prev = map.delivery ?? {};
-        this.saveMap({
-          ...map,
-          delivery: deepMerge(prev, delivery) as DeliveryPolicy,
-        });
-      } else {
-        this.saveMap({
-          ...map,
-          ...( { delivery: deepMerge({}, delivery) } as object),
-        } as VendorMap);
-      }
-      return { kind: 'delivery_policy', target: vendor };
-    }
-
-    // Project-level: write delivery.json alongside project
-    this.ensureDirs();
-    const existing =
-      this.readJson<Record<string, unknown>>(join(this.projectDir, 'delivery.json')) ?? {};
-    this.writeJson(join(this.projectDir, 'delivery.json'), deepMerge(existing, delivery));
-    return { kind: 'delivery_policy', target: 'delivery.json' };
-  }
-
   /** Payload: DomainSpec & { merge?: boolean } */
   private applyDomainSpecKind(proposal: Proposal): { kind: string; target: string } {
     const p = proposal.payload as DomainSpec & { merge?: boolean };
@@ -780,26 +678,6 @@ export class VendorMemoryStore {
     return { kind: 'java_artifact', target: files[0]!.path };
   }
 
-  /**
-   * Payload: RoutingPolicy. Writes routing.json (id default) or routing/{id}.json.
-   */
-  private applyRoutingPolicyKind(proposal: Proposal): { kind: string; target: string } {
-    const policy = proposal.payload as RoutingPolicy;
-    if (!policy || typeof policy !== 'object') {
-      throw new Error('routing_policy payload must be a RoutingPolicy object');
-    }
-    assertValidRoutingPolicy(policy);
-
-    this.ensureDirs();
-    const id = (policy.id ?? 'default').trim() || 'default';
-    if (id === 'default') {
-      this.writeJson(join(this.projectDir, 'routing.json'), policy);
-      return { kind: 'routing_policy', target: 'routing.json' };
-    }
-    this.writeJson(join(this.projectDir, 'routing', `${id}.json`), policy);
-    return { kind: 'routing_policy', target: `routing/${id}.json` };
-  }
-
   private writeJson(path: string, data: unknown): void {
     mkdirSync(join(path, '..'), { recursive: true });
     writeFileSync(path, JSON.stringify(data, null, 2) + '\n', 'utf8');
@@ -809,20 +687,6 @@ export class VendorMemoryStore {
     if (!existsSync(path)) return null;
     return JSON.parse(readFileSync(path, 'utf8')) as T;
   }
-}
-
-function deepMerge(a: unknown, b: unknown): unknown {
-  if (b === null || b === undefined) return a;
-  if (Array.isArray(b)) return b;
-  if (typeof b !== 'object') return b;
-  if (typeof a !== 'object' || a === null || Array.isArray(a)) {
-    return { ...(b as object) };
-  }
-  const out: Record<string, unknown> = { ...(a as Record<string, unknown>) };
-  for (const [k, v] of Object.entries(b as Record<string, unknown>)) {
-    out[k] = k in out ? deepMerge(out[k], v) : v;
-  }
-  return out;
 }
 
 /**

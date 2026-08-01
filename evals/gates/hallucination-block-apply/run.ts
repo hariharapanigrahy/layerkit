@@ -7,8 +7,8 @@ import { assertTrue } from '../../harness/assert.js';
 import { withTempProject } from '../../harness/temp-project.js';
 import type { Proposal, VendorMap } from '../../../libs/domain/types.js';
 import {
-  assertNoHallucination,
-  detectHallucination,
+  assertNoHallucinationIssues,
+  detectHallucinationIssues,
 } from '../../../libs/hallucination/index.js';
 
 await withTempProject(async ({ store }) => {
@@ -62,13 +62,13 @@ await withTempProject(async ({ store }) => {
     status: 'pending',
   };
 
-  const goodReport = detectHallucination(goodProposal);
+  const goodReport = detectHallucinationIssues(goodProposal);
   assertTrue(
     'good proposal has no hallucination errors',
     goodReport.issues.filter((i) => i.level === 'error').length === 0,
     goodReport.issues.map((i) => `${i.code}:${i.message}`).join('; '),
   );
-  assertNoHallucination(goodProposal);
+  assertNoHallucinationIssues(goodProposal);
 
   const applied = store.applyProposal(goodProposal);
   assertTrue('good apply kind', applied.kind === 'vendor_map');
@@ -118,7 +118,7 @@ await withTempProject(async ({ store }) => {
     status: 'pending',
   };
 
-  const badReport = detectHallucination(badProposal);
+  const badReport = detectHallucinationIssues(badProposal);
   assertTrue(
     'REPLACE path flagged as invent',
     badReport.issues.some(
@@ -152,5 +152,5 @@ await withTempProject(async ({ store }) => {
     badProposal.status === 'pending',
   );
 
-  console.log('hallucination-block-apply: all checks passed');
+console.log('hallucination-block-apply: all checks passed');
 });

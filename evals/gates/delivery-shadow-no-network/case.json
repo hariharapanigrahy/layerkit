@@ -1,9 +1,0 @@
-{
-  "id": "delivery-shadow-no-network",
-  "suite": "ci",
-  "title": "delivery mode shadow never opens network (networkCalls=0)",
-  "owners": ["delivery"],
-  "featurePr": "W4",
-  "fixtures": [],
-  "tags": ["deterministic", "no-network", "delivery"]
-}

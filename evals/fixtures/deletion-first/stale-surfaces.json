@@ -5,8 +5,8 @@
     "contract drift",
     "map/proposal update",
     "privacy/checker",
-    "production datalayer integration",
-    "dry-run/quality"
+    "production source edit",
+    "client package verification"
   ],
   "surfaces": [
     {
@@ -29,13 +29,25 @@
     },
     {
       "path": "evals/fixtures/openapi/contract-heal/email-v2.openapi.json",
-      "kind": "contract-fixture",
-      "servesHealPath": true,
-      "expectedAction": "keep-as-fixture"
+      "kind": "stale-deterministic-heal-fixture",
+      "servesHealPath": false,
+      "expectedAction": "delete"
     },
     {
       "path": "libs/agent/heal.ts",
-      "kind": "heal-runtime",
+      "kind": "deterministic-heal-source-edit",
+      "servesHealPath": false,
+      "expectedAction": "delete"
+    },
+    {
+      "path": "skills/layerkit-orchestrate-integration/SKILL.md",
+      "kind": "agent-skill",
+      "servesHealPath": true,
+      "expectedAction": "keep"
+    },
+    {
+      "path": "evals/gates/skill-hybrid-heal-judge",
+      "kind": "skill-judge",
       "servesHealPath": true,
       "expectedAction": "keep"
     }

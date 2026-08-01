@@ -1,9 +1,0 @@
-{
-  "id": "privacy-dry-run-warn",
-  "suite": "ci",
-  "title": "dry_run + no privacy policy → allow with privacy_policy_missing warn",
-  "owners": ["privacy"],
-  "featurePr": "W3/PR6",
-  "fixtures": ["privacy/event-purchase.json"],
-  "tags": ["deterministic", "no-network", "privacy"]
-}

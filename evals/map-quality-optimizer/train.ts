@@ -2,8 +2,7 @@
  * Score map coverage quality for agent-produced maps.
  * Does NOT use a vendor catalog — scores maps passed in or empty baseline.
  */
-import { emptyVendorMap } from '../../libs/domain/commerce.js';
-import type { VendorMap } from '../../libs/domain/types.js';
+import type { VendorMap, VendorMapV1 } from '../../libs/domain/types.js';
 
 export interface MapQualityScore {
   vendor: string;
@@ -31,10 +30,6 @@ export function scoreMap(map: VendorMap): MapQualityScore {
   score += Math.min(30, map.fields.length * 3);
   reasons.push(`fields:${map.fields.length}`);
 
-  const withProcessor = map.fields.filter((f) => f.transform.type === 'processor').length;
-  score += Math.min(15, withProcessor * 3);
-  reasons.push(`processors:${withProcessor}`);
-
   if (map.endpoint && !map.endpoint.path.includes('REPLACE')) {
     score += 5;
     reasons.push('endpoint_set');
@@ -46,7 +41,7 @@ export function scoreMap(map: VendorMap): MapQualityScore {
 function main(): void {
   // Baseline: single empty agent skeleton (not a multi-vendor catalog)
   const maps = [
-    emptyVendorMap({
+    emptyVendorMapFixture({
       vendor: 'example_vendor',
       displayName: 'Example',
       documentation: [{ title: 'Docs', url: 'https://docs.example.com' }],
@@ -58,6 +53,25 @@ function main(): void {
     console.log(`  ${s.vendor}: ${s.score} (${s.reasons.join(', ')})`);
   }
   console.log('Score real maps from customer projectDir after agent research.');
+}
+
+function emptyVendorMapFixture(seed: {
+  vendor: string;
+  displayName: string;
+  documentation?: VendorMapV1['documentation'];
+}): VendorMapV1 {
+  return {
+    vendor: seed.vendor,
+    displayName: seed.displayName,
+    version: '0.0.0-empty',
+    auth: { type: 'custom', notes: 'Agent sets from docs' },
+    endpoint: { method: 'POST', path: '/REPLACE_FROM_DOCS', baseUrl: 'https://REPLACE_FROM_DOCS' },
+    intents: {},
+    fields: [],
+    documentation: seed.documentation ?? [],
+    status: 'skeleton',
+    notes: 'Empty skeleton.',
+  };
 }
 
 main();

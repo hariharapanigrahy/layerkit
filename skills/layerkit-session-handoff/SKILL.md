@@ -27,10 +27,10 @@ layerkit handoff write \
   --vendor <vendor> \
   --goal "<one-sentence outcome>" \
   --done "research: map validated" \
-  --done "author: processor cited" \
+  --done "author: source helper updated" \
   --next "layerkit-privacy-review: confirm consent rules" \
   --next "layerkit agent mark-done --step privacy" \
-  --next "layerkit promote --vendor <vendor>" \
+  --next "run package verification and checker review" \
   --blocked "need live credentials from owner" \
   --out memory
 ```
@@ -57,7 +57,7 @@ Writes `{projectDir}/memory/runbooks/handoff-<vendor|project>.md` and refreshes 
 ## Forbidden
 - do not invent; do not apply without checker; do not open deny-paths
 ## Quality
-- last dry-run result; coverage if any
+- last package verification result; coverage if any
 ```
 
 Manual persist:

@@ -1,5 +1,5 @@
 /**
- * Hallucination / invent-signal detection types.
+ * Placeholder / invent-signal guard types.
  * Fail-closed before store mutation: agents must not invent vendor truth.
  */
 
@@ -24,14 +24,11 @@ export interface HallucinationIssue {
 }
 
 /** Result of scanning a proposal (and VendorMap payload) for invent signals. */
-export interface DetectionResult {
+export interface HallucinationReport {
   issues: HallucinationIssue[];
 }
 
-/** Alias used by detectHallucination / assertNoHallucination. */
-export type HallucinationReport = DetectionResult;
-
-export interface AssertNoHallucinationOpts {
+export interface AssertNoHallucinationIssuesOpts {
   /**
    * When true, warnings (e.g. example.com fixtures) also throw.
    * Default false: only level=error blocks.

@@ -1,5 +1,3 @@
-export type { ConsentContext, DomainEvent } from './event.js';
-
 /** Durable artifact schema versions. Missing or 1 = v1 rules forever on read. */
 export type ArtifactSchemaVersion = 1 | 2;
 
@@ -44,30 +42,7 @@ export interface DocSource {
   excerpt?: string;
 }
 
-export interface ProcessorSpec {
-  id: string;
-  kind: 'builtin' | 'agent' | 'custom';
-  description: string;
-  sources?: DocSource[];
-  implementationHint?: string;
-  status?: 'draft' | 'reviewed' | 'stable';
-  category?:
-    | 'email'
-    | 'phone'
-    | 'timestamp'
-    | 'currency'
-    | 'pii_hash'
-    | 'normalize'
-    | 'geo'
-    | 'custom';
-  inputTypes?: string[];
-  outputType?: string;
-  version?: string;
-  piiAffecting?: boolean;
-}
-
 export type FieldTransform =
-  | { type: 'processor'; processorId: string }
   | { type: 'identity' }
   | { type: 'constant'; value: unknown };
 
@@ -91,41 +66,6 @@ export interface EndpointSpec {
   baseUrl?: string;
 }
 
-/** Error classes for delivery (shared with delivery policy). */
-export type ErrorClass =
-  | 'network'
-  | 'timeout'
-  | 'auth'
-  | 'rate_limit'
-  | 'validation'
-  | 'vendor_4xx'
-  | 'vendor_5xx'
-  | 'unknown';
-
-export interface DeliveryPolicy {
-  idempotency: {
-    keyFrom: string;
-    headerName?: string;
-  };
-  retry: {
-    maxAttempts: number;
-    backoff: 'exponential' | 'fixed';
-    initialMs: number;
-    maxMs: number;
-    retryOn: ErrorClass[];
-  };
-  rateLimit?: {
-    requestsPerSecond: number;
-    burst?: number;
-  };
-  timeoutMs: number;
-  dlq: {
-    enabled: boolean;
-    sink: { type: 'directory'; path: string } | { type: 'stdout_json' };
-  };
-  mode: 'live' | 'dry_run' | 'shadow';
-}
-
 export interface OperationSpec {
   id: string;
   endpoint: EndpointSpec;
@@ -133,7 +73,6 @@ export interface OperationSpec {
   contentType?: string;
   headers?: Record<string, string | { secretRef: SecretRef }>;
   batch?: { maxItems: number; arrayPath: string };
-  delivery?: Partial<DeliveryPolicy>;
 }
 
 export interface IntentBinding {
@@ -174,12 +113,9 @@ export interface VendorMapV2 {
   documentation: DocSource[];
   notes?: string;
   auth: AuthSpecV2;
-  delivery?: DeliveryPolicy;
   operations: Record<string, OperationSpec>;
   intents: Record<string, IntentBinding>;
   fields: FieldMapRow[];
-  flowRef?: string;
-  privacyPolicyId?: string;
   /** Optional legacy mirror for human readability */
   endpoint?: EndpointSpec;
   extensionKeys?: string[];
@@ -222,7 +158,7 @@ export interface GenerateConfig {
    * Example: apps/platform/integrations
    */
   moduleRoot?: string;
-  /** Extra roots for doctor --quality / promote JaCoCo search */
+  /** Optional roots agents may use to find client verification artifacts */
   qualityRoots?: string[];
   /** Override package when style profile is missing */
   package?: string;
@@ -251,24 +187,17 @@ export interface LayerProject {
     allowSelfApprove?: boolean;
     legacyApplyWithoutApprove?: boolean;
   };
-  privacyPolicyId?: string;
   /** Client generation targets (production moduleRoot) */
   generate?: GenerateConfig;
 }
 
 export type ProposalKind =
   | 'vendor_map'
-  | 'processor'
   | 'field_row'
   | 'intent_wire'
   | 'auth'
   | 'java_artifact'
-  | 'flow'
-  | 'privacy_policy'
-  | 'observation_config'
-  | 'delivery_policy'
-  | 'domain_spec'
-  | 'routing_policy';
+  | 'domain_spec';
 
 export type ProposalStatusV1 = 'pending' | 'validated' | 'applied' | 'rejected';
 
@@ -309,7 +238,6 @@ export interface Proposal {
   id: string;
   summary: string;
   vendor?: string;
-  processorId?: string;
   payload: unknown;
   sources: DocSource[];
   authoredBy: 'agent' | 'human';
@@ -324,17 +252,11 @@ export interface Proposal {
 
 export const PROPOSAL_KINDS: readonly ProposalKind[] = [
   'vendor_map',
-  'processor',
   'field_row',
   'intent_wire',
   'auth',
   'java_artifact',
-  'flow',
-  'privacy_policy',
-  'observation_config',
-  'delivery_policy',
   'domain_spec',
-  'routing_policy',
 ] as const;
 
 export const PROPOSAL_STATUS_V1: readonly ProposalStatusV1[] = [

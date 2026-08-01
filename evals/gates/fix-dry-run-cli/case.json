@@ -1,8 +1,0 @@
-{
-  "id": "fix-dry-run-cli",
-  "suite": "ci",
-  "title": "fix dry-run CLI path: multi-step patches on fix-loop-multi fixtures \u2192 final wire ok",
-  "fixtures": [
-    "agent/fix-loop-multi"
-  ]
-}

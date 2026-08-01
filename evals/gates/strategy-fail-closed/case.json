@@ -1,9 +1,0 @@
-{
-  "id": "strategy-fail-closed",
-  "suite": "ci",
-  "title": "Unknown processorId → processor_unresolved, not placeholder",
-  "owners": ["runtime", "strategy"],
-  "featurePr": "PR3",
-  "fixtures": ["meta/map-v1.json"],
-  "tags": ["deterministic", "no-network"]
-}

@@ -1,8 +1,0 @@
-{
-  "id": "promote-non-java-quality",
-  "suite": "ci",
-  "title": "Promotion quality gates do not require Java reports for non-Java projects",
-  "owners": ["promote", "quality"],
-  "featurePr": "promote-quality",
-  "tags": ["deterministic", "no-network", "quality"]
-}

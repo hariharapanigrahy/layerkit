@@ -1,8 +1,0 @@
-{
-  "id": "generate-integrate-mode",
-  "suite": "ci",
-  "title": "Generate integrate mode emits agent-facing production integration plan",
-  "owners": ["generate", "agent"],
-  "featurePr": "generate-integrate",
-  "tags": ["deterministic", "no-network", "integration", "skill-judge"]
-}

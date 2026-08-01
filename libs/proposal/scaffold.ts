@@ -3,24 +3,13 @@
  * Scaffolds never invent vendor truth: missing evidence uses needs-evidence placeholders.
  */
 import type {
-  AuthSpec,
   DocSource,
   EndpointSpec,
   FieldMapRow,
   IntentWire,
   Proposal,
   VendorMapV1,
-  VendorMapV2,
 } from '../domain/types.js';
-import {
-  DEFAULT_DOMAIN_BINDING,
-  resolveIntentsFromOpenApi,
-  type DomainBindingConvention,
-} from '../agent/domain-binding.js';
-import { parseOpenAPI } from '../research/parse-openapi.js';
-import type { ParsedOpenApi } from '../research/types.js';
-import type { BuiltinOp, ExecutableProcessor, ProcessorImpl } from '../strategy/types.js';
-import { isBuiltinOp } from '../strategy/types.js';
 
 /** Placeholder source when evidence is not yet available. */
 export const NEEDS_EVIDENCE_SOURCE: DocSource = {
@@ -36,15 +25,6 @@ export interface ScaffoldVendorMapOpts {
   endpoint?: EndpointSpec;
   intents?: Record<string, IntentWire>;
   fields?: FieldMapRow[];
-}
-
-export interface ScaffoldProcessorOpts {
-  id: string;
-  description: string;
-  agentId?: string;
-  sources?: DocSource[];
-  /** When set, payload gets a builtin (or single-step) executable implementation. */
-  builtinOp?: BuiltinOp | string;
 }
 
 function resolveSources(sources: DocSource[] | undefined): DocSource[] {
@@ -121,65 +101,6 @@ export function scaffoldVendorMapProposal(opts: ScaffoldVendorMapOpts): Proposal
     status: 'draft',
     maker: { type: 'agent', id: agentId },
     changeLog: 'Scaffolded via layerkit proposal write map',
-  };
-}
-
-function builtinImpl(op: string): ProcessorImpl {
-  if (!isBuiltinOp(op)) {
-    throw new Error(
-      `Unknown builtin op "${op}". Use a BuiltinOp id (e.g. email.normalize_basic, hash.sha256_hex)`,
-    );
-  }
-  return { type: 'builtin', op };
-}
-
-/**
- * Build a processor proposal with executable processor payload
- * (matches evals/fixtures/agent/processor-email-sha256.json shape).
- */
-export function scaffoldProcessorProposal(opts: ScaffoldProcessorOpts): Proposal {
-  if (!opts.id?.trim()) {
-    throw new Error('scaffoldProcessorProposal requires id');
-  }
-  const description = opts.description?.trim() || `Processor ${opts.id} — needs-evidence`;
-  const sources = resolveSources(opts.sources);
-  const agentId = opts.agentId?.trim() || 'cli';
-  const now = new Date().toISOString();
-
-  const payload: ExecutableProcessor = {
-    id: opts.id,
-    kind: opts.builtinOp ? 'builtin' : 'agent',
-    description,
-    sources: sources.map((s) => ({ ...s })),
-    status: 'draft',
-    version: '1.0.0',
-    inputTypes: ['string'],
-    outputType: 'string',
-  };
-
-  if (opts.builtinOp) {
-    payload.implementation = builtinImpl(opts.builtinOp);
-    payload.implementationHint = `builtin:${opts.builtinOp}`;
-  } else {
-    payload.implementationHint =
-      'needs-evidence — document pure transform steps (or set builtinOp)';
-  }
-
-  const safeId = opts.id.replace(/[^a-zA-Z0-9._-]+/g, '-');
-
-  return {
-    schemaVersion: 2,
-    kind: 'processor',
-    id: `proc-${safeId}-v1`,
-    processorId: opts.id,
-    summary: description,
-    payload,
-    sources,
-    authoredBy: 'agent',
-    createdAt: now,
-    status: 'draft',
-    maker: { type: 'agent', id: agentId },
-    changeLog: 'Scaffolded via layerkit proposal write processor',
   };
 }
 
@@ -262,206 +183,4 @@ export function parseFieldFlag(raw: string): FieldMapRow {
     vendor,
     transform: { type: 'identity' },
   };
-}
-
-export interface ScaffoldMapFromOpenApiOpts {
-  vendor: string;
-  openapiContent: string;
-  openapiRef: string;
-  agentId?: string;
-  convention?: DomainBindingConvention;
-  /**
-   * Prefer multi-operation v2 map when >1 operation (default true).
-   * Single-op docs stay v1-shaped payload for simplicity.
-   */
-  preferV2?: boolean;
-}
-
-function authFromOpenApi(parsed: ParsedOpenApi): AuthSpec {
-  const s = parsed.securitySchemes[0];
-  if (!s) {
-    return {
-      type: 'custom',
-      notes: 'needs-evidence — OpenAPI has no securitySchemes; set from docs/curl',
-    };
-  }
-  if (s.type === 'http' && s.scheme === 'bearer') {
-    return { type: 'bearer', notes: `from OpenAPI securitySchemes.${s.name}` };
-  }
-  if (s.type === 'http' && s.scheme === 'basic') {
-    return { type: 'basic', notes: `from OpenAPI securitySchemes.${s.name}` };
-  }
-  if (s.type === 'apiKey') {
-    return {
-      type: 'api_key',
-      name: s.paramName,
-      in: s.in === 'query' ? 'query' : 'header',
-      notes: `from OpenAPI securitySchemes.${s.name}`,
-    };
-  }
-  if (s.type === 'oauth2') {
-    return { type: 'oauth2_client_credentials', notes: `from OpenAPI securitySchemes.${s.name}` };
-  }
-  return {
-    type: 'custom',
-    notes: `from OpenAPI securitySchemes.${s.name} type=${s.type}`,
-  };
-}
-
-/**
- * Scaffold a vendor_map proposal from OpenAPI evidence + project domain-binding convention.
- * This is an evidence seed, not a completed map: shallow schema properties and
- * operation ids do not prove domain meaning or production-ready field mapping.
- */
-export function scaffoldVendorMapFromOpenApi(opts: ScaffoldMapFromOpenApiOpts): Proposal {
-  if (!opts.vendor?.trim()) {
-    throw new Error('scaffoldVendorMapFromOpenApi requires vendor');
-  }
-  const parsed = parseOpenAPI(opts.openapiContent);
-  if (!parsed.operations.length) {
-    throw new Error('OpenAPI has no operations — cannot scaffold map from evidence');
-  }
-
-  const convention = opts.convention ?? DEFAULT_DOMAIN_BINDING;
-  const resolved = resolveIntentsFromOpenApi(parsed, convention);
-  const baseUrl = parsed.servers[0];
-  const sources: DocSource[] = [
-    {
-      title: `OpenAPI ${parsed.title ?? opts.vendor}`,
-      url: opts.openapiRef.startsWith('http') ? opts.openapiRef : `file://${opts.openapiRef}`,
-      excerpt: describeScaffoldExcerpt(parsed, resolved),
-    },
-  ];
-
-  const fieldMap = new Map<string, FieldMapRow>();
-  for (const op of parsed.operations) {
-    for (const f of op.bodyFields ?? []) {
-      if (!fieldMap.has(f.name)) {
-        fieldMap.set(f.name, {
-          domain: f.name,
-          vendor: f.name,
-          transform: { type: 'identity' },
-          optional: !f.required,
-          notes: 'from OpenAPI requestBody schema property',
-        });
-      }
-    }
-  }
-  const fields = [...fieldMap.values()];
-
-  const preferV2 = opts.preferV2 !== false && parsed.operations.length > 1;
-  const auth = authFromOpenApi(parsed);
-  const agentId = opts.agentId?.trim() || 'cli';
-  const now = new Date().toISOString();
-
-  if (preferV2) {
-    const operations: VendorMapV2['operations'] = {};
-    const intents: VendorMapV2['intents'] = {};
-    for (let i = 0; i < parsed.operations.length; i++) {
-      const op = parsed.operations[i]!;
-      const r = resolved[i]!;
-      const opId = op.operationId?.trim() || `${op.method.toLowerCase()}_${i}`;
-      operations[opId] = {
-        id: opId,
-        endpoint: {
-          method: op.method as EndpointSpec['method'],
-          path: op.path,
-          ...(baseUrl ? { baseUrl } : {}),
-        },
-      };
-      if (r.intentId) {
-        intents[r.intentId] = {
-          operationId: opId,
-          eventName: r.intentId,
-        };
-      }
-    }
-    const primary = parsed.operations[0]!;
-    const payload: VendorMapV2 = {
-      schemaVersion: 2,
-      vendor: opts.vendor,
-      displayName: displayNameFromVendor(opts.vendor),
-      version: parsed.version ?? '1',
-      status: 'skeleton',
-      documentation: sources,
-      notes: `OpenAPI evidence seed; agent must confirm domain mapping before map_complete. Intent binding source order: ${convention.intentFrom.join('→')}`,
-      auth,
-      operations,
-      intents,
-      fields,
-      endpoint: {
-        method: primary.method as EndpointSpec['method'],
-        path: primary.path,
-        ...(baseUrl ? { baseUrl } : {}),
-      },
-    };
-    return {
-      schemaVersion: 2,
-      kind: 'vendor_map',
-      id: `map-${opts.vendor}-openapi-v1`,
-      vendor: opts.vendor,
-      summary: `Map from OpenAPI evidence for ${opts.vendor}`,
-      payload,
-      sources,
-      authoredBy: 'agent',
-      createdAt: now,
-      status: 'draft',
-      maker: { type: 'agent', id: agentId },
-      changeLog: 'Scaffolded via layerkit proposal write map-from-openapi',
-    };
-  }
-
-  // Single-op v1
-  const op = parsed.operations[0]!;
-  const r = resolved[0]!;
-  const intents: Record<string, IntentWire> = {};
-  if (r.intentId) {
-    intents[r.intentId] = { eventName: r.intentId };
-  }
-  const payload: VendorMapV1 = {
-    schemaVersion: 1,
-    vendor: opts.vendor,
-    displayName: displayNameFromVendor(opts.vendor),
-    version: parsed.version ?? '1',
-    auth,
-    endpoint: {
-      method: op.method as EndpointSpec['method'],
-      path: op.path,
-      ...(baseUrl ? { baseUrl } : {}),
-    },
-    intents,
-    fields,
-    documentation: sources,
-    status: 'skeleton',
-    notes: `OpenAPI evidence seed; agent must confirm domain mapping before map_complete. Intent source=${r.source} (${r.evidence})`,
-  };
-
-  return {
-    schemaVersion: 2,
-    kind: 'vendor_map',
-    id: `map-${opts.vendor}-openapi-v1`,
-    vendor: opts.vendor,
-    summary: `Map from OpenAPI evidence for ${opts.vendor}`,
-    payload,
-    sources,
-    authoredBy: 'agent',
-    createdAt: now,
-    status: 'draft',
-    maker: { type: 'agent', id: agentId },
-    changeLog: 'Scaffolded via layerkit proposal write map-from-openapi',
-  };
-}
-
-function describeScaffoldExcerpt(
-  parsed: ParsedOpenApi,
-  resolved: ReturnType<typeof resolveIntentsFromOpenApi>,
-): string {
-  const ops = parsed.operations
-    .slice(0, 5)
-    .map((o, i) => {
-      const r = resolved[i];
-      return `${o.method} ${o.path} → intent=${r?.intentId || '?'} (${r?.source})`;
-    })
-    .join('; ');
-  return ops;
 }

@@ -1,7 +1,0 @@
-{
-  "field": "endpoint.path",
-  "from": "/v1/wrong/ingest",
-  "to": "/v1/events",
-  "reason": "Doc excerpt specifies POST /v1/events; wrong path was agent error",
-  "evidenceExcerpt": "Correct path: /v1/events — Do not use legacy /v1/wrong/ingest"
-}

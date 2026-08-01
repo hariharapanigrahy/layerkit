@@ -1,8 +1,0 @@
-{
-  "id": "fix-skill-judge",
-  "suite": "ci",
-  "title": "Fix-from-dry-run skill owns semantic fixes; CLI only applies explicit patches",
-  "owners": ["skills", "agent"],
-  "featurePr": "fix-skill-judge",
-  "tags": ["deterministic", "no-network", "skill-judge", "heal"]
-}

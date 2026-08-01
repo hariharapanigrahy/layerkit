@@ -1,7 +1,7 @@
 /**
  * Deterministic integration checklist runner (not an LLM).
- * Order: discover → research → design → author → privacy → deletion-first → generate → handoff
- * mode=heal skips discover when updating from a new contract.
+ * Order: discover → research → design → author → privacy → deletion-first → source-edit → handoff
+ * mode=heal skips discover when the customer domain model is already known.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -28,9 +28,9 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
     id: 'discover',
     skill: 'layerkit-discover-data-layer',
     cliHints: [
-      'layerkit discover scan --root .',
       'layerkit doctor',
       'layerkit memory list --type research',
+      'Agent reads source files directly and writes cited domain notes/proposals',
     ],
     doneWhen:
       'Customer domain events/fields discovered from code with source:code (skip when pipeline mode=heal)',
@@ -39,33 +39,33 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
     id: 'research',
     skill: 'layerkit-research-vendor',
     cliHints: [
-      'layerkit heal run --vendor <v> --openapi <contract.json> --module-root <dir>',
-      'Docs-only: AI skill reads/cites docs, writes <contract.json>, then run heal --openapi <contract.json>',
+      'Agent reads/cites vendor docs or OpenAPI directly',
+      'Agent updates existing map/source/test files from evidence',
       'layerkit map show <vendor>',
-      'Review out/CONTRACT_DRIFT.json',
+      'layerkit proposal validate <file> when an explicit proposal artifact is written',
     ],
     doneWhen:
-      'Contract pinned from OpenAPI or curated docs; map/source files updated; drift reviewed',
+      'Vendor change understood from evidence; map/source files updated or explicit TODOs left for unsupported data-layer gaps',
   },
   {
     id: 'design',
     skill: 'layerkit-design-flow',
     cliHints: [
-      'layerkit design decide --vendor <v> [--sequence] [--oauth] [--shape linear_map|flow|hybrid]',
-      'layerkit process dry-run --vendor <v> --intent <i>',
+      'Agent chooses map vs flow from cited evidence and existing code',
+      'Run the client package tests that cover the chosen path',
     ],
     doneWhen:
-      'Shape still valid under new contract; IntegrationFlow only if multi-step required; prefer flat VendorMap',
+      'Shape still valid under new contract; prefer editing existing mappers/adapters',
   },
   {
     id: 'author',
     skill: 'layerkit-author-processor',
     cliHints: [
-      'layerkit proposal validate ./proc.json',
-      'layerkit proposal apply ./proc.json',
+      'Agent updates existing client transform/helper code directly',
+      'layerkit proposal validate <file> only when an explicit artifact is written',
     ],
     doneWhen:
-      'Processors cited; field rows point at processorId; heal only touches fields affected by drift',
+      'Transforms cited and implemented in client source; heal only touches fields affected by drift',
   },
   {
     id: 'privacy',
@@ -73,7 +73,7 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
     cliHints: ['layerkit doctor', 'layerkit memory list --type privacy'],
     requiresHuman: true,
     doneWhen:
-      'PrivacyPolicy still valid; any NEW PII fields from contract re-reviewed with sources before live',
+      'Client privacy/consent behavior still valid; any new PII fields re-reviewed with sources',
   },
   {
     id: 'deletion-first',
@@ -87,29 +87,27 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
       'Stale code/docs/tests/package surfaces removed or rewritten; new additions justify what they replace',
   },
   {
-    id: 'generate',
+    id: 'source-edit',
     skill: 'layerkit-generate-java',
     cliHints: [
-      'First-time only: layerkit generate --module-root <production-module> [--vendor <v>]',
-      'Heal mode: layerkit heal run records drift/map; agent edits source/tests directly',
-      'Run tests in generate.moduleRoot',
-      'layerkit doctor --quality --strict',
+      'Agent edits existing production source/tests directly from evidence',
+      'Run the package tests/build for the edited module',
+      'layerkit doctor',
     ],
     doneWhen:
-      'Production datalayer updated by the agent; INTEGRATE.md is context only for first-time integrate; quality gate green',
+      'Production datalayer updated by the agent; client package verification green',
   },
   {
     id: 'handoff',
     skill: 'handoff',
     cliHints: [
-      'layerkit promote --vendor <id>',
       'layerkit agent status',
-      'layerkit handoff write --vendor <id> --goal "contract heal" --next "promote when green"',
+      'layerkit handoff write --vendor <id> --goal "contract heal" --next "review when package verification is green"',
       'Use skill layerkit-checker-assist (read-only risk checklist)',
     ],
     requiresHuman: true,
     doneWhen:
-      'Maps promoted when gates green; checker risk checklist complete; PR-ready handoff',
+      'Package verification green; checker risk checklist complete; PR-ready handoff',
   },
 ] as const;
 
