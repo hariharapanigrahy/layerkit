@@ -26,15 +26,15 @@ describe('CLI empty-state output', () => {
     const listResult = runCli(['map', 'list', '--project-dir', projectDir], repoRoot);
     assert.equal(listResult.status, 0);
     assert.match(listResult.stdout, /No vendor maps yet/);
-    assert.match(listResult.stdout, /start from a customer contract/);
-    assert.match(listResult.stdout, /layerkit heal run --vendor <v> --openapi <file>/);
+    assert.match(listResult.stdout, /start with the installed agent skills/);
+    assert.match(listResult.stdout, /edit existing maps\/source\/tests directly from evidence/);
     assert.match(listResult.stdout, /layerkit agent next/);
 
     const doctorResult = runCli(['doctor', '--project-dir', projectDir], repoRoot);
     assert.equal(doctorResult.status, 0);
     assert.match(doctorResult.stdout, /Vendor maps: 0/);
     assert.match(doctorResult.stdout, /No vendor maps yet/);
-    assert.match(doctorResult.stdout, /start from a customer contract/);
+    assert.match(doctorResult.stdout, /start with the installed agent skills/);
   });
 
   it('prompts install first when no project exists', () => {
@@ -45,7 +45,7 @@ describe('CLI empty-state output', () => {
     assert.equal(listResult.status, 0);
     assert.match(listResult.stdout, /No Layerkit project found yet\./);
     assert.match(listResult.stdout, /Next step: run layerkit install/);
-    assert.doesNotMatch(listResult.stdout, /research openapi|proposal write|proposal apply/);
+    assert.doesNotMatch(listResult.stdout, /proposal write|proposal apply/);
 
     const doctorResult = runCli(['doctor', '--project-dir', projectDir], repoRoot);
     assert.equal(doctorResult.status, 1);
@@ -58,7 +58,7 @@ describe('CLI empty-state output', () => {
     const strictResult = runCli(['doctor', '--strict', '--project-dir', projectDir], repoRoot);
     assert.equal(strictResult.status, 1);
     assert.match(strictResult.stdout, /No Layerkit project at/);
-    assert.match(strictResult.stdout, /Note: --strict applies with --quality/);
+    assert.match(strictResult.stdout, /doctor no longer enforces client CI\/coverage/);
     assert.doesNotMatch(strictResult.stdout, /No vendor maps yet/);
   });
 

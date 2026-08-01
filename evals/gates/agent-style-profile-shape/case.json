@@ -1,9 +1,0 @@
-{
-  "id": "agent-style-profile-shape",
-  "suite": "ci",
-  "title": "Style profile helper requires package/di/http/test keys",
-  "owners": ["agent", "memory"],
-  "featurePr": "agent-dev-evals",
-  "fixtures": ["agent/style-profile-good.json"],
-  "tags": ["deterministic", "no-network", "agent-process", "style-match"]
-}

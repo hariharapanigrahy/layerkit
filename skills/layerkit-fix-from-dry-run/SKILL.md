@@ -1,101 +1,56 @@
 ---
 name: layerkit-fix-from-dry-run
-description: Given dry-run failure + docs evidence, revise map/flow/processor proposal; no invention.
+description: Fix failed integration verification from logs, tests, and docs evidence; edit real package files, no invention.
 ---
 
 # layerkit-fix-from-dry-run
 
-Close the loop when dry-run or shadow fails: diagnose from logs + **re-check docs**, then revise proposals.
+Use this skill when an integration change fails verification. The failure may come from a client test, build, typecheck, linter, mocked vendor call, or reviewer finding.
 
 ## Inputs
 
-- Dry-run output (`layerkit process dry-run ...` JSON/stderr)
-- Current map/flow/processor proposals
-- Research memory + original sources
-- Optional: failing test / JaCoCo gaps
+- Failing command output or reviewer finding
+- Edited source files and tests
+- Current maps/proposals if the client uses them
+- Vendor docs/OpenAPI/curl evidence
+- Customer datalayer/interface evidence
 
 ## Protocol
 
-1. Capture failure:
+1. Reproduce or inspect the failure.
+2. Identify the exact source path responsible.
+3. Re-open the vendor/customer evidence for the failing dimension.
+4. Prefer deleting or rewriting stale code over adding another wrapper.
+5. Patch the real package file or test directly.
+6. Validate explicit map/proposal artifacts only when they are part of the change:
 
 ```bash
-layerkit process dry-run --vendor <v> --intent <i> 2>&1 | tee ./dry-run-fail.log
-layerkit memory append --type dry-runs --title "dry-run fail <v>/<i>" --vendor <v> --body-file ./dry-run-fail.log
+layerkit proposal validate ./proposal.json
+layerkit map validate ./map.json
 ```
 
-2. Classify error (examples):
-   - missing/optional field → map row or `optional: true` with evidence
-   - processor unresolved → author or fix `processorId` (citation required)
-   - privacy drop → consent path or policy rule (privacy-review)
-   - empty map skip → research not applied yet
-   - shape mismatch → re-read OpenAPI/curl; do **not** guess wire names
-   - wrong endpoint path → author an explicit `MapPathFixPatch` from cited docs
-3. Re-open cited docs/OpenAPI/curl for the failing dimension; deepen if needed.
-4. Emit a **revised proposal** (new id or `changeLog` + `baseArtifactVersion`) with sources covering the fix.
-5. Validate and re-run dry-run:
+7. Re-run the client package verification command.
+8. If evidence is exhausted and the semantic answer is still unclear, stop with a residual human question.
 
-```bash
-layerkit proposal validate ./fix.json
-layerkit process dry-run --vendor <v> --intent <i>
-```
+## Common Fixes
 
-6. If still failing after evidence exhaustion → residual human question; stop inventing.
-7. Next: re-enter maker-checker; if Java already generated → update adapters/tests.
-
-## Deterministic fix CLI (`libs/agent/fix-loop`)
-
-Use these when you already have a map JSON and agent-authored patches from evidence. Pure local apply — no network, no invent.
-
-Author a patches file yourself after re-reading docs/OpenAPI/curl:
-
-```json
-[
-  {
-    "field": "endpoint.path",
-    "from": "/v1/wrong/ingest",
-    "to": "/v1/events",
-    "reason": "Doc specifies POST /v1/events",
-    "evidenceExcerpt": "Correct path: /v1/events"
-  }
-]
-```
-
-### Apply ordered patches + optional wire checks
-
-```bash
-layerkit fix dry-run \
-  --map ./map.json \
-  --patches ./patches.json \
-  --expect-event Purchase \
-  --require-field event_id \
-  --forbid-field evt_id \
-  --out ./map-fixed.json \
-  [--json]
-```
-
-- Loads map + patches (`MapPathFixPatch[]`: `field`, `from?`, `to`, `reason?`, `evidenceExcerpt?`)
-- Runs sequential `runSequentialMapFixes` / same result as `applyMapPatches`
-- When `--expect-event` / `--require-field` / `--forbid-field` are set, evaluates pure dry-run wire **before** and after each step (`evaluateDryRunWire`)
-- Writes fixed map when `--out` is set
-- Exit code 1 if expectations are set and the **final** wire check fails
-
-Then validate/submit the fixed map as a proposal and re-run:
-
-```bash
-layerkit process dry-run --vendor <v> --intent <i>
-```
+- Vendor field renamed: update the existing mapping to write the new vendor field from the existing client field.
+- Vendor field removed: delete the old mapping and assertions.
+- Vendor added required data already present in the client datalayer: map it directly and add/adjust tests.
+- Vendor added required data missing from the client datalayer: leave a TODO at the integration point and call it out in handoff.
+- Shape changed from scalar to object: update the existing mapper and tests from the new schema, preserving client naming.
 
 ## Forbidden
 
-- Inventing field names or defaults to silence dry-run
-- Applying fixes without new/confirmed sources
-- Asking the CLI to infer a patch from prose docs
-- Skipping privacy when the failure was a privacy drop
-- Live promote while dry-run fails
+- Inventing field names or defaults to silence a test.
+- Adding a parallel adapter when the existing adapter can be changed.
+- Writing `.layerkit/out` artifacts as a substitute for source edits.
+- Asking a deterministic CLI command to infer a semantic fix from prose.
+- Leaving old broken code in place and adding new code around it.
 
-## Success criteria
+## Success Criteria
 
-- [ ] Root cause linked to evidence (or explicit residual gap)
-- [ ] Revised proposal validates
-- [ ] Dry-run passes for the failing intent (or documented skip with reason)
-- [ ] Memory dry-runs note updated
+- [ ] Root cause tied to evidence or an explicit residual gap.
+- [ ] Existing source/tests were updated or stale code was deleted.
+- [ ] New files/functions/exports list what they replace.
+- [ ] Client verification passes, or the remaining blocker is documented for a human.

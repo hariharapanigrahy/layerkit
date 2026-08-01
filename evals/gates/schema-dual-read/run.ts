@@ -4,7 +4,6 @@
  * Also covers validateVendorMap v2 operations/operationId rules.
  */
 import { assertTrue } from '../../harness/assert.js';
-import { COMMERCE_DOMAIN } from '../../../libs/domain/commerce.js';
 import type { Proposal, VendorMapV2 } from '../../../libs/domain/types.js';
 import { validateProposal, validateVendorMap } from '../../../libs/proposal/validate.js';
 
@@ -171,39 +170,27 @@ const baseV1: Proposal = {
   );
 }
 
-// 9) Extended kinds accepted
+// 9) Agent artifact kind accepted
 {
-  const flowKind: Proposal = {
+  const artifactKind: Proposal = {
     schemaVersion: 2,
-    kind: 'privacy_policy',
-    id: 'pp-1',
-    summary: 'privacy policy',
-    payload: { id: 'default', defaultAction: 'deny', rules: [] },
+    kind: 'java_artifact',
+    id: 'java-1',
+    summary: 'client code artifact note',
+    payload: { path: 'README.md', content: 'client-owned integration code' },
     sources: exampleDocs,
     authoredBy: 'human',
     createdAt: '2026-01-01T00:00:00.000Z',
     status: 'draft',
   };
-  const issues = validateProposal(flowKind);
+  const issues = validateProposal(artifactKind);
   assertTrue(
-    'extended kind privacy_policy accepted',
+    'java_artifact kind accepted',
     !issues.some((i) => i.code === 'kind' && i.level === 'error'),
   );
 }
 
-// 10) Commerce domain includes products[] (smoke)
-{
-  assertTrue(
-    'commerce has products field',
-    COMMERCE_DOMAIN.fields.some((f) => f.path === 'products'),
-  );
-  assertTrue(
-    'commerce version 1.1.0',
-    COMMERCE_DOMAIN.version === '1.1.0',
-  );
-}
-
-// 11) validateVendorMap v2: valid map with operationId
+// 10) validateVendorMap v2: valid map with operationId
 {
   const validV2: VendorMapV2 = {
     schemaVersion: 2,

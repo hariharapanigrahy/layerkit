@@ -1,5 +1,5 @@
 /**
- * Gate: proposal write CLI scaffolds — map + processor to temp JSON,
+ * Gate: proposal write CLI scaffolds a map to temp JSON,
  * load, assert kind/sources/vendor, structural validate.
  */
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -12,7 +12,6 @@ import {
   parseFieldFlag,
   parseIntentFlag,
   parseSourceFlag,
-  scaffoldProcessorProposal,
   scaffoldVendorMapProposal,
 } from '../../../libs/proposal/scaffold.js';
 import { validateProposal } from '../../../libs/proposal/validate.js';
@@ -76,51 +75,10 @@ try {
     mapErrors.map((e) => `${e.code}:${e.message}`).join('; '),
   );
 
-  // --- processor scaffold + write ---
-  const procSource = parseSourceFlag(
-    'PII hashing=https://docs.example.com/api/pii|Hash email with SHA256 after normalizing',
-  );
-  const procProposal = scaffoldProcessorProposal({
-    id: 'example.email.sha256_normalized',
-    description: 'Normalize email then SHA-256 hex',
-    agentId: 'eval-agent',
-    sources: [procSource],
-    builtinOp: 'hash.sha256_hex',
-  });
-
-  assertEqual('proc kind', procProposal.kind, 'processor');
-  assertEqual('proc processorId', procProposal.processorId, 'example.email.sha256_normalized');
-  assertTrue('proc has sources', (procProposal.sources?.length ?? 0) >= 1);
-  const procPayload = procProposal.payload as {
-    id?: string;
-    sources?: unknown[];
-    implementation?: { type?: string; op?: string };
-  };
-  assertEqual('proc payload id', procPayload.id, 'example.email.sha256_normalized');
-  assertTrue('proc payload sources', (procPayload.sources?.length ?? 0) >= 1);
-  assertEqual('proc impl type', procPayload.implementation?.type, 'builtin');
-  assertEqual('proc impl op', procPayload.implementation?.op, 'hash.sha256_hex');
-
-  const procPath = join(tmp, 'proc-proposal.json');
-  writeFileSync(procPath, `${JSON.stringify(procProposal, null, 2)}\n`, 'utf8');
-  const procLoaded = JSON.parse(readFileSync(procPath, 'utf8')) as Proposal;
-  assertEqual('loaded proc kind', procLoaded.kind, 'processor');
-  assertTrue('loaded proc sources', (procLoaded.sources?.length ?? 0) >= 1);
-
-  const procIssues = validateProposal(procLoaded);
-  const procErrors = procIssues.filter((i) => i.level === 'error');
-  assertTrue(
-    'processor validates without errors',
-    procErrors.length === 0,
-    procErrors.map((e) => `${e.code}:${e.message}`).join('; '),
-  );
-
   // store.reviewProposal agrees with validateProposal
   const store = createVendorMemoryStore(tmp, join(tmp, '.layerkit'));
   const mapReview = store.reviewProposal(mapLoaded);
   assertTrue('store map review valid', mapReview.valid, mapReview.errors.join('; '));
-  const procReview = store.reviewProposal(procLoaded);
-  assertTrue('store proc review valid', procReview.valid, procReview.errors.join('; '));
 
   // placeholder sources path still produces a proposal with sources[]
   const bare = scaffoldVendorMapProposal({ vendor: 'bare_vendor' });

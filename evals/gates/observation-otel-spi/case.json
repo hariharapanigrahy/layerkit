@@ -1,9 +1,0 @@
-{
-  "id": "observation-otel-spi",
-  "suite": "ci",
-  "title": "observation SPI sink receives audit; file works; otel_otlp_http is no-network",
-  "owners": ["observation"],
-  "featurePr": "observation-otel-spi",
-  "fixtures": [],
-  "tags": ["deterministic", "no-network", "observation"]
-}

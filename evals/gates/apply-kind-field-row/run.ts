@@ -1,6 +1,6 @@
 /**
  * Gate: field_row kind merges (upserts) into map.fields by domain+vendor path.
- * Also smoke-tests intent_wire, auth, and processor apply kinds.
+ * Also smoke-tests intent_wire and auth apply kinds.
  */
 import { assertEqual, assertTrue } from '../../harness/assert.js';
 import { withTempProject } from '../../harness/temp-project.js';
@@ -59,18 +59,14 @@ await withTempProject(async ({ store }) => {
     payload: {
       domain: 'user.email',
       vendor: 'user_data.em',
-      transform: { type: 'processor', processorId: 'acme.email.hash' },
+      transform: { type: 'constant', value: 'redacted@example.com' },
     },
     status: 'pending',
   };
   store.applyProposal(fieldRowUpdate);
   map = store.loadMap('acme')!;
   const email = map.fields.find((f) => f.domain === 'user.email')!;
-  assertTrue(
-    'field_row upserted transform',
-    email.transform.type === 'processor' &&
-      (email.transform as { processorId: string }).processorId === 'acme.email.hash',
-  );
+  assertEqual('field_row upserted transform', email.transform.type, 'constant');
   assertEqual(
     'still one email row',
     map.fields.filter((f) => f.domain === 'user.email').length,
@@ -114,28 +110,6 @@ await withTempProject(async ({ store }) => {
   store.applyProposal(auth);
   map = store.loadMap('acme')!;
   assertEqual('auth type api_key', map.auth.type, 'api_key');
-
-  // processor
-  const proc: Proposal = {
-    schemaVersion: 1,
-    kind: 'processor',
-    id: 'prop-proc-1',
-    processorId: 'acme.email.hash',
-    summary: 'email hash processor',
-    payload: {
-      id: 'acme.email.hash',
-      kind: 'agent',
-      description: 'hash',
-      sources: [{ title: 'docs', url: 'https://example.com/acme' }],
-    },
-    sources: [{ title: 'docs', url: 'https://example.com/acme' }],
-    authoredBy: 'agent',
-    createdAt: new Date().toISOString(),
-    status: 'pending',
-  };
-  const procResult = store.applyProposal(proc);
-  assertEqual('processor kind', procResult.kind, 'processor');
-  assertEqual('processor target', procResult.target, 'acme.email.hash');
 
   console.log('apply-kind-field-row: all checks passed');
 });

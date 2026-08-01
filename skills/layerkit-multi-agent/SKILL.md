@@ -1,37 +1,25 @@
 ---
 name: layerkit-multi-agent
-description: Fan-out multi-agent plan for integrate or contract heal; spawn specialists; brownfield production code.
+description: Coordinate specialist agents for integrate or contract heal; brownfield production code.
 ---
 
 # layerkit-multi-agent
 
-Team of agents on the **same** integration pipeline. CLI builds a deterministic plan; lead spawns specialists.
+Team of agents on the **same** integration pipeline. The lead agent coordinates specialists directly; Layerkit does not generate a deterministic multi-agent plan.
 
 ## Start
 
 ### Contract heal (map already exists — human supplies OpenAPI/docs)
 
-```bash
-layerkit heal run --vendor resend --openapi ./contract-v2.json --module-root <dir>
-layerkit agent multi --vendor resend --mode heal --openapi ./contract-v2.json [--module-root <dir>]
-```
-
 - Discover task **omitted**
-- Researcher = pin + drift + evidence-backed semantic rename decisions when needed
-- If only docs are supplied, researcher/AI must read/cite docs and write a structured contract before heal
-- Heal updates map/proposal evidence; the AI agent edits production source/test files directly
-- Pass `--rename-decisions <json>` only when docs/code evidence supports a removed→added field rename
+- Researcher = evidence-backed semantic rename decisions when needed
+- If only docs are supplied, researcher/AI must read/cite docs before source edits
+- AI agents edit production source/test files directly
+- Record rename decisions in the handoff note only when docs/code evidence supports a removed-to-added field rename
 
 ### First-time / multi-vendor
 
-```bash
-layerkit agent multi --vendor resend --vendor postmark [--module-root <dir>] [--max-parallel 4]
-```
-
-Artifacts:
-
-- `{projectDir}/memory/runbooks/multi-agent-plan.md`
-- `{projectDir}/out/multi-agent-plan.json`
+Use the lead agent to assign vendors/files explicitly. Keep one writer per production file and use handoff notes for state.
 
 ## Roles
 
@@ -43,15 +31,15 @@ Artifacts:
 | researcher | research-vendor | contract pin + drift |
 | designer / author | design / processor | surgical on drift |
 | privacy | privacy-review | human if new PII |
-| integrator | generate-java | first-time planning/context path only |
-| verifier | fix-from-dry-run + doctor | dry-run + quality |
+| integrator | generate-java | direct production source edits |
+| verifier | doctor + project tests | quality |
 | checker | checker-assist | read-only |
 
 ## Concurrency
 
-- Parallel research/integrate per vendor
+- Parallel research/integrate per vendor when files do not overlap
 - Single writer: `integrator:registry`
-- Human: privacy, promote, breaking drift
+- Human: privacy, checker approval, breaking drift
 
 ## Forbidden
 
@@ -59,11 +47,12 @@ Artifacts:
 - Re-running full discover on heal when domain is known
 - Invented fields or guessed renames; self-approve
 - Treating generated plans as production source code
+- Relying on Layerkit runtime/route/strategy code instead of editing the client package
 
 ## Success
 
-- [ ] Plan mode matches intent (heal vs full)
-- [ ] Specialists spawned from plan prompts
+- [ ] Agent assignments match intent (heal vs full)
+- [ ] Specialists have explicit files/responsibilities
 - [ ] Production adapters updated
-- [ ] Dry-run + quality green
-- [ ] Human promote after checker
+- [ ] Project tests + quality green
+- [ ] Human checker handoff complete

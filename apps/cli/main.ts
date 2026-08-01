@@ -5,65 +5,20 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import {
-  evaluatePromoteGates,
-  formatPromoteGateFailures,
-  decideShape,
-  defaultRationale,
   formatNextStepLine,
   formatPipelineStatus,
   INTEGRATION_PIPELINE,
   isPipelineStepId,
-  isScannableRoot,
   markStepDone,
   pipelineStatusPath,
   PIPELINE_STATUS_REL,
-  scanAndWriteDomainDiscovery,
-  scanAndWriteStyleProfile,
-  parseStyleProfileMarkdown,
-  writeDesignDecision,
-  type DesignDecision,
-  type IntegrationShape,
-  runSequentialMapFixes,
-  evaluateDryRunWire,
-  type MapPathFixPatch,
-  type WireExpectation,
   writeHandoffRunbook,
-  STYLE_PROFILE_RUNBOOK_REL,
-  type StyleProfile,
-  loadDomainBinding,
-  writeDomainBinding,
-  DEFAULT_DOMAIN_BINDING,
-  domainBindingPath,
-  resolveIntentsFromOpenApi,
-  buildMultiAgentPlan,
-  writeMultiAgentPlanArtifacts,
-  readyMultiAgentTasks,
-  groupReadyByParallel,
   loadPipelineMode,
-  setPipelineMode,
   effectiveCompletedSteps,
   getNextStepForProject,
-  runHeal,
-  type HealRenameDecision,
 } from '../../libs/agent/index.js';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
-import {
-  buildIntegratePlan,
-  checkJavaQuality,
-  defaultJacocoSearchRoots,
-  hasJavaProjectSignal,
-  JACOCO_MIN_LINE_COVERAGE,
-  writeIntegratePlanArtifacts,
-} from '../../libs/generate/index.js';
-import { track, trackRouted } from '../../libs/runtime/track.js';
-import {
-  evaluateRouting,
-  loadRoutingPolicy,
-  listRoutingPolicies,
-  validateRoutingPolicy,
-  type RoutingPolicy,
-} from '../../libs/routing/index.js';
 import { layerkitHookGuidance } from '../../libs/hooks/guidance.js';
 import { defaultPackageRoot, installLayerkit } from '../../libs/install/install.js';
 import {
@@ -76,35 +31,19 @@ import type {
   Identity,
   IntentWire,
   Proposal,
-  VendorMap,
 } from '../../libs/domain/types.js';
 import {
   parseEndpointFlag,
   parseFieldFlag,
   parseIntentFlag,
   parseSourceFlag,
-  scaffoldProcessorProposal,
   scaffoldVendorMapProposal,
-  scaffoldVendorMapFromOpenApi,
 } from '../../libs/proposal/scaffold.js';
 import { validateProposal } from '../../libs/proposal/validate.js';
 import {
   createMemoryStack,
   type MemoryEntryType,
 } from '../../libs/memory/index.js';
-import { applyVendorMap } from '../../libs/vendor-memory/map-engine.js';
-import {
-  deepenFromHubMarkdown,
-  diffOpenApiAgainstMap,
-  fillAnswerSheetFromEvidence,
-  formatContractUpdateMarkdown,
-  hasInventedEndpoint,
-  parseCurl,
-  parseOpenAPI,
-  pinContractEvidence,
-  residualGaps,
-  type ResearchSeed,
-} from '../../libs/research/index.js';
 import {
   createVendorMemoryStore,
   type CheckerRole,
@@ -179,7 +118,7 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['doctor'],
-    usage: 'doctor [--quality] [--strict] [--project-dir <path>]',
+    usage: 'doctor [--project-dir <path>]',
     handler: runDoctor,
     showInTopLevelHelp: true,
   },
@@ -194,13 +133,6 @@ const cliCommands: CliCommand[] = [
     usage: 'cheat-sheet',
     handler: runCheatsheet,
     showInTopLevelHelp: false,
-  },
-  {
-    path: ['promote'],
-    usage:
-      'promote [--vendor <id>] [--strict|--no-strict] [--no-dry-run-check] [--project-dir <path>]',
-    handler: runPromote,
-    showInTopLevelHelp: true,
   },
   {
     path: ['config'],
@@ -224,79 +156,6 @@ const cliCommands: CliCommand[] = [
     path: ['agent', 'mark-done'],
     usage: 'agent mark-done --step <id> [--project-dir <path>]',
     handler: runAgentMarkDone,
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['agent', 'multi'],
-    usage:
-      'agent multi [--vendor <id>]... [--mode full|heal] [--openapi <file>] [--module-root <dir>] [--root <scan>] [--goal <text>] [--max-parallel <n>] [--json] [--project-dir <path>]',
-    handler: runAgentMulti,
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['research', 'openapi'],
-    usage: 'research openapi <file> [--json]',
-    handler: runResearchOpenapi,
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['research', 'curl'],
-    usage: 'research curl <file-or-inline> [--json]',
-    handler: runResearchCurl,
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['research', 'deepen'],
-    usage: 'research deepen <hub.md> [--json]',
-    handler: runResearchDeepen,
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['research', 'fill'],
-    usage:
-      'research fill --vendor <id> --openapi <file> [--doc <url>]... [--curl <file>]... [--hub <file>]... [--out <sheet.json>] [--module-root <dir>] [--no-pin] [--json]',
-    handler: (args, ctx) => runResearchFill(args, ctx),
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['heal', 'run'],
-    usage:
-      'heal run --vendor <id> --openapi <file> [--doc <url>]... [--rename-decisions <file>] [--module-root <dir>] [--json] [--project-dir <path>]',
-    handler: (args, ctx) => runHealCli(args, ctx),
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['research', 'gaps'],
-    usage: 'research gaps <sheet.json> [--json]',
-    handler: runResearchGaps,
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['style-profile', 'scan'],
-    usage: 'style-profile scan [--root <dir>] [--out memory|path] [--project-dir <path>]',
-    handler: runStyleProfileScan,
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['discover', 'scan'],
-    usage:
-      'discover scan [--root <dir>] [--out memory|path] [--proposal <path>] [--project-dir <path>]',
-    handler: runDiscoverScan,
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['design', 'decide'],
-    usage:
-      'design decide --vendor <v> [--shape linear_map|flow|hybrid] [--sequence] [--branch] [--foreach] [--oauth] [--multi-call] [--intent x]... [--evidence url]... [--out memory|path] [--json] [--project-dir <path>]',
-    handler: runDesignDecide,
-    showInTopLevelHelp: true,
-  },
-
-  {
-    path: ['fix', 'dry-run'],
-    usage:
-      'fix dry-run --map <map.json> --patches <patches.json> [--expect-event <name>] [--require-field <path>]... [--forbid-field <path>]... [--out <fixed-map.json>] [--json]',
-    handler: runFixDryRun,
     showInTopLevelHelp: true,
   },
 {
@@ -484,40 +343,6 @@ const cliCommands: CliCommand[] = [
     },
     showInTopLevelHelp: true,
   },
-  {
-    path: ['proposal', 'write', 'map-from-openapi'],
-    usage:
-      'proposal write map-from-openapi --vendor <v> --openapi <file> --out <file> [--agent <id>] [--validate] [--project-dir <path>]',
-    handler: (args, ctx) => {
-      runProposalWriteMapFromOpenApi(args, ctx);
-    },
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['proposal', 'write', 'processor'],
-    usage:
-      'proposal write processor --id <id> --out <file> --source title=url [...] [--agent <id>] [--description <text>] [--builtin-op <op>] [--validate]',
-    handler: (args) => {
-      runProposalWriteProcessor(args);
-    },
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['domain-binding', 'show'],
-    usage: 'domain-binding show [--project-dir <path>]',
-    handler: (_args, ctx) => {
-      runDomainBindingShow(ctx);
-    },
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['domain-binding', 'init'],
-    usage: 'domain-binding init [--project-dir <path>]',
-    handler: (_args, ctx) => {
-      runDomainBindingInit(ctx);
-    },
-    showInTopLevelHelp: true,
-  },
     {
     path: ['proposal', 'submit'],
     usage: 'proposal submit <file> [--by <actorId>] [--project-dir <path>]',
@@ -629,149 +454,6 @@ const cliCommands: CliCommand[] = [
       console.log('Applied proposal to vendor memory.');
       console.log(`Kind: ${applied.kind}`);
       console.log(`Target: ${applied.target}`);
-    },
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['route', 'plan'],
-    usage:
-      'route plan [--event-file <json>] [--intent <i>] [--policy <id|path>] [--json] [--project-dir <path>]',
-    handler: (args, ctx) => {
-      runRoutePlan(args, ctx);
-    },
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['route', 'show'],
-    usage: 'route show [--policy <id>] [--project-dir <path>]',
-    handler: (args, ctx) => {
-      const store = openStore(ctx);
-      const policyId = flag(args, '--policy');
-      const policy = loadRoutingPolicy(store.projectDir, policyId ?? undefined);
-      if (!policy) {
-        const listed = listRoutingPolicies(store.projectDir);
-        throw new Error(
-          `No routing policy found.` +
-            (listed.length
-              ? ` Known: ${listed.map((l) => l.id).join(', ')}`
-              : ' Apply a routing_policy proposal or write routing.json'),
-        );
-      }
-      console.log(JSON.stringify(policy, null, 2));
-    },
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['route', 'validate'],
-    usage: 'route validate [--policy <id|path>] [--project-dir <path>]',
-    handler: (args, ctx) => {
-      const store = openStore(ctx);
-      const policy = resolveRoutingPolicyArg(args, store.projectDir);
-      const issues = validateRoutingPolicy(policy);
-      console.log(JSON.stringify({ valid: !issues.some((i) => i.level === 'error'), issues }, null, 2));
-      if (issues.some((i) => i.level === 'error')) process.exitCode = 1;
-    },
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['process', 'dry-run'],
-    usage:
-      'process dry-run --vendor <v> --intent <i> [--full] [--route] [--event-file <json>] [--allow-skip] [--project-dir <path>]',
-    handler: async (args, ctx) => {
-      const vendor = flag(args, '--vendor');
-      const intent = flag(args, '--intent') ?? 'purchase';
-      const full = hasFlag(args, '--full');
-      const useRoute = hasFlag(args, '--route');
-      const allowSkip = hasFlag(args, '--allow-skip');
-      const eventFile = flag(args, '--event-file');
-      const store = openStore(ctx);
-      const processorsDir = join(store.projectDir, 'processors');
-
-      const event = loadDryRunEvent(eventFile, intent);
-
-      if (useRoute) {
-        const maps = store.listMaps();
-        const policy = resolveRoutingPolicyArg(args, store.projectDir);
-        const trackResult = await trackRouted(event, maps, {
-          mode: 'dry_run',
-          projectDir: store.projectDir,
-          routing: policy,
-          processorsDir: existsSync(processorsDir) ? processorsDir : undefined,
-          observation: false,
-        });
-        console.log(JSON.stringify(trackResult, null, 2));
-        if (!trackResult.results.length || trackResult.results.every((r) => r.skipped)) {
-          if (!allowSkip) process.exitCode = 1;
-        }
-        return;
-      }
-
-      if (!vendor) {
-        throw new Error(
-          'Usage: layerkit process dry-run --vendor <v> --intent <i> [--full] [--route] [--event-file <json>] [--allow-skip]',
-        );
-      }
-      const map = store.loadMap(vendor);
-      if (!map) {
-        const known = store.listMaps().map((m) => m.vendor);
-        throw new Error(
-          `No map for ${vendor}.` +
-            (known.length ? ` Known: ${known.join(', ')}` : ' No maps in project store.'),
-        );
-      }
-
-      if (full) {
-        const trackResult = await track(event, [map], {
-          mode: 'dry_run',
-          projectDir: store.projectDir,
-          processorsDir: existsSync(processorsDir) ? processorsDir : undefined,
-        });
-        console.log(JSON.stringify(trackResult, null, 2));
-        const r = trackResult.results[0];
-        if (!r || r.outcome !== 'success' || r.skipped) {
-          console.error(
-            `\nFull dry-run not successful: ${r?.reason ?? trackResult.diagnostics?.join('; ') ?? 'no result'}`,
-          );
-          if ((map.status ?? 'skeleton') === 'skeleton') {
-            console.error('Map status is skeleton — author fields/intents then re-apply.');
-          }
-          if (!allowSkip) process.exitCode = 1;
-        }
-        return;
-      }
-
-      const result = applyVendorMap(event, map, {
-        processorsDir: existsSync(processorsDir) ? processorsDir : undefined,
-      });
-      console.log(JSON.stringify(result, null, 2));
-      if (result.missingDomainPaths?.length) {
-        console.error(
-          `\nMissing domain fields on event (under-send risk): ${result.missingDomainPaths.join(', ')}`,
-        );
-      }
-      if (result.skipped) {
-        console.error(`\nDry-run skipped: ${result.reason ?? 'unknown'}`);
-        const intents = Object.keys(map.intents ?? {});
-        if (intents.length && !map.intents?.[intent]) {
-          console.error(`Intent "${intent}" not mapped. Available: ${intents.join(', ')}`);
-        }
-        if ((map.status ?? 'skeleton') === 'skeleton' || result.reason === 'empty_map_awaiting_agent_research') {
-          console.error('Next: skill layerkit-research-vendor → proposal validate/apply (sources[] required).');
-        }
-        if (result.reason === 'processor_unresolved') {
-          console.error('Next: author processor proposal or place processor JSON under processors/.');
-        }
-        if (!allowSkip) process.exitCode = 1;
-      }
-    },
-    showInTopLevelHelp: true,
-  },
-  {
-    path: ['generate'],
-    usage:
-      'generate [--lang java|typescript|ts] [--module-root <dir>] [--root <scan>] [--vendor <id>]... [--project-dir <path>]',
-    handler: (args, ctx) => {
-      runGenerate(args, ctx);
     },
     showInTopLevelHelp: true,
   },
@@ -909,79 +591,14 @@ function printInstallResult(result: Awaited<ReturnType<typeof installLayerkit>>)
   console.log('');
   console.log('Next steps:');
   console.log('- Restart your coding agent if skills/hooks do not appear.');
-  console.log('- Contract heal: layerkit heal run --vendor <v> --openapi <file> --module-root <dir>');
+  console.log('- Use the installed Layerkit skills to read evidence and edit the package directly.');
+  console.log('- Use CLI rails only for explicit artifacts: proposal validate/apply, map validate, dry-run, doctor.');
   console.log('- Do not invent email/phone rules without documentation sources.');
   for (const n of result.notes) console.log(`- ${n}`);
 }
 
 function hasFlag(args: string[], name: string): boolean {
   return args.includes(name);
-}
-
-function loadDryRunEvent(
-  eventFile: string | undefined,
-  intent: string,
-): Record<string, unknown> & { intent: string } {
-  if (eventFile) {
-    const raw = JSON.parse(readFileSync(resolve(eventFile), 'utf8')) as Record<string, unknown>;
-    return {
-      ...raw,
-      intent: typeof raw.intent === 'string' ? raw.intent : intent,
-    };
-  }
-  return {
-    intent,
-    eventId: 'evt_1',
-    user: { email: 'Ada@Example.com' },
-    value: { amount: 10, currency: 'usd' },
-    product: { id: 'sku_demo' },
-    context: { segment: 'default' },
-    consent: { purposes: ['marketing'] },
-  };
-}
-
-function resolveRoutingPolicyArg(args: string[], projectDir: string): RoutingPolicy {
-  const policyFlag = flag(args, '--policy');
-  if (policyFlag && (policyFlag.endsWith('.json') || policyFlag.includes('/') || policyFlag.includes('\\'))) {
-    const path = resolve(policyFlag);
-    const policy = JSON.parse(readFileSync(path, 'utf8')) as RoutingPolicy;
-    const issues = validateRoutingPolicy(policy);
-    if (issues.some((i) => i.level === 'error')) {
-      throw new Error(
-        `Invalid routing policy file:\n${issues
-          .filter((i) => i.level === 'error')
-          .map((i) => `- ${i.code}: ${i.message}`)
-          .join('\n')}`,
-      );
-    }
-    return policy;
-  }
-  const loaded = loadRoutingPolicy(projectDir, policyFlag ?? undefined);
-  if (!loaded) {
-    throw new Error(
-      'No routing policy — apply routing_policy proposal or pass --policy path/id',
-    );
-  }
-  return loaded;
-}
-
-function runRoutePlan(args: string[], ctx: CliContext): void {
-  const store = openStore(ctx);
-  const intent = flag(args, '--intent') ?? 'purchase';
-  const eventFile = flag(args, '--event-file');
-  const asJson = hasFlag(args, '--json') || true; // always structured
-  void asJson;
-  const event = loadDryRunEvent(eventFile, intent);
-  const policy = resolveRoutingPolicyArg(args, store.projectDir);
-  const known = store.listMaps().map((m) => m.vendor);
-  const plan = evaluateRouting(event as import('../../libs/domain/event.js').DomainEvent, policy, {
-    knownVendors: known.length ? known : undefined,
-    filterUnknownVendors: known.length > 0,
-  });
-  console.log(JSON.stringify(plan, null, 2));
-  if (policy.requireRouteMatch && plan.entries.length === 0) {
-    process.exitCode = 1;
-  }
 }
 
 function installGuidanceLines(): string[] {
@@ -993,8 +610,9 @@ function installGuidanceLines(): string[] {
 
 function emptyMapGuidanceLines(): string[] {
   return [
-    'No vendor maps yet — start from a customer contract:',
-    '  - layerkit heal run --vendor <v> --openapi <file> --module-root <dir>',
+    'No vendor maps yet — start with the installed agent skills:',
+    '  - read/cite vendor docs or OpenAPI',
+    '  - edit existing maps/source/tests directly from evidence',
     '  - layerkit agent next',
   ];
 }
@@ -1019,27 +637,11 @@ function runDoctor(args: string[], ctx: CliContext): void {
     console.log(formatNextStepLine(completed, loadPipelineMode(store.projectDir)));
   }
 
-  if (hasFlag(args, '--quality')) {
+  if (hasFlag(args, '--quality') || hasFlag(args, '--strict')) {
     console.log('');
-    console.log('== quality (JaCoCo) ==');
-    const strict = hasFlag(args, '--strict');
-    const project = store.loadProject();
-    const q = checkJavaQuality({
-      searchRoots: defaultJacocoSearchRoots(
-        store.projectDir,
-        ctx.repoRoot,
-        project?.generate,
-      ),
-      strict,
-      minLineCoverage: JACOCO_MIN_LINE_COVERAGE,
-    });
-    for (const line of q.lines) console.log(line);
-    if (project?.generate?.moduleRoot) {
-      console.log(`  moduleRoot: ${project.generate.moduleRoot}`);
-    }
-    if (!q.ok) ok = false;
-  } else if (hasFlag(args, '--strict')) {
-    console.log('Note: --strict applies with --quality (JaCoCo report required).');
+    console.log(
+      'Note: doctor no longer enforces client CI/coverage. Run the client package build/test command directly.',
+    );
   }
 
   if (store.loadProject()) {
@@ -1084,7 +686,7 @@ function runAgentStatus(_args: string[], ctx: CliContext): void {
     }
   } else {
     console.log(`  missing  memory/${PIPELINE_STATUS_REL} (no steps marked done yet)`);
-    console.log('  Tip: heal run --vendor --openapi --module-root … or agent mark-done --step <id>');
+    console.log('  Tip: use the next skill, then layerkit agent mark-done --step <id>');
   }
 }
 
@@ -1097,7 +699,7 @@ function runAgentNext(_args: string[], ctx: CliContext): void {
   const next = getNextStepForProject(ctx.projectDir);
   if (!next) {
     console.log('Pipeline complete — no next agent step.');
-    console.log('Optional: layerkit promote --vendor <id>; layerkit agent status');
+    console.log('Optional: layerkit agent status');
     return;
   }
   console.log(`Next step: ${next.id}`);
@@ -1133,213 +735,6 @@ function runAgentMarkDone(args: string[], ctx: CliContext): void {
   console.log(formatNextStepLine(completed, mode));
 }
 
-/**
- * Build a multi-agent fan-out plan (deterministic) and write runbook + JSON.
- * Coding agents spawn one subagent per task; same parallelGroup may run concurrently.
- * --mode heal: contract update path (skip discover; research = pin + drift + map-from-openapi).
- */
-function runAgentMulti(args: string[], ctx: CliContext): void {
-  const store = openStore(ctx);
-  const project = store.loadProject();
-  if (!project) throw new Error('No project — run layerkit install --poc');
-
-  let vendors = flagsAll(args, '--vendor');
-  if (vendors.length === 0) {
-    vendors = store
-      .listMaps()
-      .filter((m) => m.fields.length || Object.keys(m.intents ?? {}).length)
-      .map((m) => m.vendor);
-  }
-
-  const moduleRoot =
-    flag(args, '--module-root') ?? flag(args, '--moduleRoot') ?? project.generate?.moduleRoot;
-  const root = flag(args, '--root') ?? ctx.repoRoot;
-  const goal = flag(args, '--goal');
-  const modeFlag = flag(args, '--mode');
-  const mode =
-    modeFlag === 'heal' || modeFlag === 'full'
-      ? modeFlag
-      : flag(args, '--openapi')
-        ? 'heal'
-        : 'full';
-  const openapiPath = flag(args, '--openapi');
-  const maxRaw = flag(args, '--max-parallel') ?? flag(args, '--maxParallel');
-  const maxParallel = maxRaw ? Number(maxRaw) : undefined;
-  if (maxRaw && (!Number.isFinite(maxParallel) || (maxParallel ?? 0) < 1)) {
-    throw new Error('--max-parallel must be a positive number');
-  }
-
-  if (mode === 'heal') {
-    setPipelineMode(store.projectDir, 'heal', {
-      vendor: vendors[0],
-      note: openapiPath ? `openapi=${openapiPath}` : 'contract update',
-    });
-  }
-
-  const plan = buildMultiAgentPlan({
-    repoRoot: ctx.repoRoot,
-    projectDir: store.projectDir,
-    vendors,
-    moduleRoot,
-    root,
-    goal,
-    maxParallel,
-    mode,
-    openapiPath: openapiPath ? resolve(openapiPath) : undefined,
-  });
-
-  const { mdPath, jsonPath } = writeMultiAgentPlanArtifacts(store.projectDir, plan);
-
-  if (hasFlag(args, '--json')) {
-    console.log(JSON.stringify(plan, null, 2));
-    return;
-  }
-
-  console.log('Multi-agent plan');
-  console.log(`  ${plan.summary}`);
-  console.log(`  goal: ${plan.goal}`);
-  console.log(`  → ${mdPath}`);
-  console.log(`  → ${jsonPath}`);
-  console.log('');
-  for (const phase of plan.phases) {
-    const human = phase.requiresHuman ? ' (human)' : '';
-    const par = phase.parallel ? 'parallel' : 'serial';
-    console.log(`Phase ${phase.id}${human} [${par}]: ${phase.title}`);
-    for (const id of phase.taskIds) {
-      const t = plan.tasks.find((x) => x.id === id);
-      if (!t) continue;
-      const v = t.vendor ? ` vendor=${t.vendor}` : '';
-      console.log(`  - ${t.id}  skill=${t.skill}${v}`);
-    }
-  }
-
-  const ready = readyMultiAgentTasks(plan, []);
-  const groups = groupReadyByParallel(ready);
-  console.log('');
-  console.log('Spawn first (no deps):');
-  for (const [g, list] of Object.entries(groups)) {
-    console.log(`  parallelGroup=${g} (${list.length})`);
-    for (const t of list) console.log(`    ${t.id}: ${t.label}`);
-  }
-  console.log('');
-  console.log('Lead agent: open multi-agent-plan.md; spawn one subagent per task with its prompt.');
-  console.log('Then: layerkit agent status / mark-done as single-pipeline steps complete.');
-}
-
-/**
- * Promote map_complete → live only after hard gates (fail-closed).
- *
- * Gates (all required unless skipped):
- * 1. map_status — map_complete with fields/intents
- * 2. quality — JaCoCo when --strict (default; --no-strict skips)
- * 3. secret_scan — no doctor secret-scan critical findings
- * 4. privacy_policy — explicit policy under projectDir/privacy
- * 5. dry_run — applyVendorMap wire for purchase or first intent
- *    (default on; --no-dry-run-check break-glass)
- */
-function runPromote(args: string[], ctx: CliContext): void {
-  const store = openStore(ctx);
-  const project = store.loadProject();
-  if (!project) throw new Error('No project — run layerkit install --poc');
-
-  // promote is quality-gated for Java projects; --strict is default unless --no-strict
-  // Node-only projects (no pom.xml / src/main/java under search roots) skip JaCoCo automatically
-  const strictFlag = !hasFlag(args, '--no-strict');
-  const requireDryRun = !hasFlag(args, '--no-dry-run-check');
-  const onlyVendor = flag(args, '--vendor');
-
-  const jacocoRoots = defaultJacocoSearchRoots(
-    store.projectDir,
-    ctx.repoRoot,
-    project.generate,
-  );
-  const javaPresent = hasJavaProjectSignal(jacocoRoots);
-  const skipQuality = !strictFlag || !javaPresent;
-  const q = javaPresent
-    ? checkJavaQuality({
-        searchRoots: jacocoRoots,
-        strict: strictFlag,
-        minLineCoverage: JACOCO_MIN_LINE_COVERAGE,
-      })
-    : {
-        ok: true,
-        lines: [
-          'JaCoCo: skipped (no Java project signal under moduleRoot — Node/TS promote path)',
-        ],
-        reportMissing: true,
-        coverageBelowFloor: false,
-      };
-
-  // Maps to evaluate: specific vendor, or all maps (gates filter eligibility)
-  let maps = store.listMaps();
-  if (onlyVendor) {
-    const m = store.loadMap(onlyVendor);
-    if (!m) throw new Error(`No map for vendor ${onlyVendor}`);
-    maps = [m];
-  }
-
-  if (maps.length === 0) {
-    console.log('No vendor maps to promote.');
-    return;
-  }
-
-  const doctor = store.doctor();
-  const processorsDir = join(store.projectDir, 'processors');
-
-  console.log('== promote hard gates ==');
-  const gateResult = evaluatePromoteGates({
-    maps,
-    secretFindings: doctor.secretFindings ?? [],
-    projectDir: store.projectDir,
-    quality: { ok: q.ok, lines: q.lines },
-    skipQuality,
-    requireDryRun,
-    processorsDir: existsSync(processorsDir) ? processorsDir : undefined,
-  });
-
-  for (const line of gateResult.lines) console.log(line);
-  if (!javaPresent) {
-    console.log('quality: auto-skipped (no Java module detected)');
-  }
-
-  if (!gateResult.ok) {
-    for (const line of formatPromoteGateFailures(gateResult.failures)) {
-      console.log(line);
-    }
-    console.log(
-      'Promote blocked: fix the failed gate(s), then retry. ' +
-        'Break-glass: --no-strict (Java quality), --no-dry-run-check (dry-run only).',
-    );
-    process.exitCode = 1;
-    return;
-  }
-
-  // Only set live for eligible vendors that passed every gate
-  const eligible = new Set(gateResult.eligibleVendors);
-  let promoted = 0;
-  for (const m of maps) {
-    if (m.status === 'live') {
-      console.log(`  skip ${m.vendor}: already live`);
-      continue;
-    }
-    if (!eligible.has(m.vendor)) continue;
-    m.status = 'live';
-    store.saveMap(m);
-    console.log(`  promoted ${m.vendor} → live`);
-    promoted++;
-  }
-
-  if (promoted === 0 && maps.every((m) => m.status === 'live')) {
-    console.log('All targeted maps already live.');
-    return;
-  }
-
-  console.log(`Promote done: ${promoted} map(s) set live.`);
-  if (existsSync(join(store.projectDir, 'out', 'java', 'pom.xml'))) {
-    console.log('Tip: regenerate client if needed: layerkit generate --lang java');
-  }
-}
-
 function runConfig(): void {
   const config = ensureLayerkitConfig();
   console.log('Layerkit config');
@@ -1367,24 +762,6 @@ function runRepoStatus(_args: string[], ctx: CliContext): void {
   console.log(`Skeletons: ${store.listMaps().length - filled.length}`);
 }
 
-function wantJson(args: string[]): boolean {
-  return args.includes('--json');
-}
-
-function emitJsonOrText(args: string[], data: unknown, text: () => void): void {
-  if (wantJson(args)) {
-    console.log(JSON.stringify(data, null, 2));
-    return;
-  }
-  text();
-}
-
-function readTextArg(pathOrInline: string): string {
-  const abs = resolve(pathOrInline);
-  if (existsSync(abs)) return readFileSync(abs, 'utf8');
-  return pathOrInline;
-}
-
 function collectFlags(args: string[], name: string): string[] {
   const out: string[] = [];
   for (let i = 0; i < args.length; i++) {
@@ -1398,446 +775,6 @@ function collectFlags(args: string[], name: string): string[] {
     }
   }
   return out;
-}
-
-function runResearchOpenapi(args: string[]): void {
-  const file = requireArg(args[0], 'research openapi <file> [--json]');
-  const raw = readFileSync(resolve(file), 'utf8');
-  const parsed = parseOpenAPI(raw);
-  emitJsonOrText(args, parsed, () => {
-    console.log(`OpenAPI operations: ${parsed.operations.length}`);
-    const lines = parsed.operations.slice(0, 20).map((o) => `  ${o.method} ${o.path}`);
-    if (parsed.operations.length > 20) lines.push(`  … +${parsed.operations.length - 20} more`);
-    console.log(lines.join('\n') || '  (no operations)');
-  });
-}
-
-function runResearchCurl(args: string[]): void {
-  const input = requireArg(args[0], 'research curl <file-or-inline> [--json]');
-  const raw = readTextArg(input);
-  const parsed = parseCurl(raw);
-  emitJsonOrText(args, parsed, () => {
-    console.log(`${parsed.method} ${parsed.url}`);
-    if (parsed.host) console.log(`host: ${parsed.host}`);
-    if (parsed.path) console.log(`path: ${parsed.path}`);
-    const headers = Object.keys(parsed.headers ?? {});
-    if (headers.length) console.log(`headers: ${headers.join(', ')}`);
-  });
-}
-
-function runResearchDeepen(args: string[]): void {
-  const file = requireArg(args[0], 'research deepen <hub.md> [--json]');
-  const raw = readFileSync(resolve(file), 'utf8');
-  const plan = deepenFromHubMarkdown(raw, file);
-  emitJsonOrText(args, plan, () => {
-    console.log(`enqueue: ${plan.enqueue.length}  needsHuman: ${plan.needsHuman}`);
-    for (const s of plan.enqueue) {
-      console.log(`  ${s.kind}\t${s.ref}`);
-    }
-    for (const e of plan.deepenLog) {
-      console.log(`  log L${e.level} ${e.action}${e.detail ? `: ${e.detail}` : ''}`);
-    }
-  });
-}
-
-/** Heal rails: pin contract → drift/map update → agent-owned source edits. */
-function runHealCli(args: string[], ctx: CliContext): void {
-  const vendor = flag(args, '--vendor');
-  const openapi = flag(args, '--openapi');
-  if (!vendor || !openapi) {
-    throw new Error(
-      'Usage: layerkit heal run --vendor <id> --openapi <file> [--module-root <dir>]',
-    );
-  }
-  const docs = collectFlags(args, '--doc');
-  const moduleRoot = flag(args, '--module-root') ?? flag(args, '--moduleRoot');
-  const applyMap = !hasFlag(args, '--no-apply-map');
-  const semanticRenames = loadHealRenameDecisions(flag(args, '--rename-decisions'));
-
-  const store = openStore(ctx);
-  if (!store.loadProject()) throw new Error('No project — run layerkit install --poc');
-
-  const result = runHeal({
-    repoRoot: ctx.repoRoot,
-    projectDir: store.projectDir,
-    vendor,
-    openapiPath: resolve(openapi),
-    docUrls: docs,
-    moduleRoot,
-    applyMap,
-    semanticRenames,
-    agentId: flag(args, '--agent') ?? 'heal-cli',
-  });
-
-  if (hasFlag(args, '--json')) {
-    console.log(JSON.stringify(result, null, 2));
-    return;
-  }
-
-  console.log(`Heal ${result.mode}: ${result.vendor}`);
-  console.log(`  ${result.summary}`);
-  console.log(`  Drift severity: ${result.drift.severity}`);
-  for (const it of result.drift.items.slice(0, 10)) {
-    console.log(`    [${it.severity}] ${it.kind}${it.path ? ` ${it.path}` : ''}`);
-  }
-  if (result.drift.items.length > 10) console.log(`    … +${result.drift.items.length - 10} more`);
-  console.log(`  Pinned: ${result.pinnedOpenApiPath}`);
-  console.log(`  Proposal: ${result.proposalPath}`);
-  console.log(`  Map applied: ${result.mapApplied}`);
-  console.log(`  Source edit: ${result.sourceEditRequired ? 'agent required' : 'not needed'}`);
-  console.log(`  Reason: ${result.sourceEditReason}`);
-  console.log('');
-  console.log('Next:');
-  for (const step of result.agentNextSteps) console.log(`  - ${step}`);
-}
-
-function loadHealRenameDecisions(file: string | undefined): HealRenameDecision[] {
-  if (!file) return [];
-  const raw = JSON.parse(readFileSync(resolve(file), 'utf8')) as unknown;
-  const decisions = Array.isArray(raw)
-    ? raw
-    : raw && typeof raw === 'object' && Array.isArray((raw as { renames?: unknown }).renames)
-      ? (raw as { renames: unknown[] }).renames
-      : undefined;
-  if (!decisions) {
-    throw new Error('--rename-decisions must be a JSON array or an object with a renames array');
-  }
-  return decisions.map((decision, idx) => {
-    if (!decision || typeof decision !== 'object') {
-      throw new Error(`--rename-decisions[${idx}] must be an object`);
-    }
-    const value = decision as Partial<HealRenameDecision>;
-    if (
-      typeof value.fromVendor !== 'string' ||
-      typeof value.toVendor !== 'string' ||
-      !Array.isArray(value.evidence)
-    ) {
-      throw new Error(
-        `--rename-decisions[${idx}] requires fromVendor, toVendor, confidence, evidence[]`,
-      );
-    }
-    return {
-      fromVendor: value.fromVendor,
-      toVendor: value.toVendor,
-      domain: typeof value.domain === 'string' ? value.domain : undefined,
-      confidence: value.confidence ?? 'low',
-      evidence: value.evidence.filter((e): e is string => typeof e === 'string'),
-    };
-  });
-}
-
-/** Pin contract evidence, fill answer sheet, diff against applied map when present. */
-function runResearchFill(args: string[], ctx: CliContext): void {
-  const openapis = collectFlags(args, '--openapi');
-  const curls = collectFlags(args, '--curl');
-  const hubs = collectFlags(args, '--hub');
-  const docs = collectFlags(args, '--doc');
-  const vendor = flag(args, '--vendor');
-  const out = flag(args, '--out');
-  const moduleRoot = flag(args, '--module-root') ?? flag(args, '--moduleRoot');
-  const noPin = hasFlag(args, '--no-pin');
-
-  if (!openapis.length && !curls.length && !hubs.length) {
-    throw new Error(
-      'Usage: layerkit research fill --vendor <id> --openapi <file> [--doc <url>]... [--curl ...] [--hub ...] [--out sheet.json]',
-    );
-  }
-
-  const store = openStore(ctx);
-  store.ensureDirs();
-
-  let pinnedOpenApiPath: string | undefined;
-  let openapiRawForDiff: string | undefined;
-  let primaryOpenApi = openapis[0] ? resolve(openapis[0]) : undefined;
-
-  if (vendor && primaryOpenApi && !noPin) {
-    const pin = pinContractEvidence({
-      projectDir: store.projectDir,
-      vendor,
-      openapiPath: primaryOpenApi,
-      docUrls: docs,
-    });
-    pinnedOpenApiPath = pin.pinnedOpenApiPath;
-    openapiRawForDiff = readFileSync(pin.pinnedOpenApiPath, 'utf8');
-    primaryOpenApi = pin.pinnedOpenApiPath;
-  } else if (primaryOpenApi) {
-    openapiRawForDiff = readFileSync(primaryOpenApi, 'utf8');
-  }
-
-  const seeds: ResearchSeed[] = [];
-  const openapiList = pinnedOpenApiPath ? [pinnedOpenApiPath] : openapis.map((f) => resolve(f));
-  for (const f of openapiList) {
-    seeds.push({
-      kind: 'openapi',
-      urlOrPath: f,
-      content: readFileSync(f, 'utf8'),
-    });
-  }
-  for (const f of curls) {
-    seeds.push({ kind: 'curl', command: readTextArg(f) });
-  }
-  for (const f of hubs) {
-    seeds.push({
-      kind: 'hub_md',
-      path: resolve(f),
-      content: readFileSync(resolve(f), 'utf8'),
-    });
-  }
-  for (const url of docs) {
-    seeds.push({
-      kind: 'url',
-      url,
-      note: 'customer-supplied doc for contract update',
-    });
-  }
-
-  const sheet = fillAnswerSheetFromEvidence(seeds, { vendor });
-  const gaps = residualGaps(sheet);
-  const invented = hasInventedEndpoint(sheet);
-
-  const sheetPath = out
-    ? resolve(out)
-    : vendor
-      ? join(store.projectDir, 'out', 'contracts', vendor, 'sheet.json')
-      : undefined;
-  if (sheetPath) {
-    mkdirSync(join(sheetPath, '..'), { recursive: true });
-    writeFileSync(sheetPath, JSON.stringify(sheet, null, 2) + '\n', 'utf8');
-  }
-
-  let drift = null as ReturnType<typeof diffOpenApiAgainstMap> | null;
-  let updateMdPath: string | undefined;
-  let driftPath: string | undefined;
-  if (vendor && openapiRawForDiff) {
-    const map = store.loadMap(vendor);
-    drift = diffOpenApiAgainstMap(vendor, openapiRawForDiff, map);
-    const mode = map ? 'heal' : 'first_time';
-    if (mode === 'heal') {
-      setPipelineMode(store.projectDir, 'heal', {
-        vendor,
-        note: `digest=${drift.contractDigest}`,
-      });
-    } else {
-      setPipelineMode(store.projectDir, 'full', { vendor });
-    }
-    driftPath = join(store.projectDir, 'out', 'CONTRACT_DRIFT.json');
-    writeFileSync(driftPath, JSON.stringify(drift, null, 2) + '\n', 'utf8');
-    updateMdPath = join(store.projectDir, 'out', 'CONTRACT_UPDATE.md');
-    writeFileSync(
-      updateMdPath,
-      formatContractUpdateMarkdown({
-        vendor,
-        drift,
-        pinnedOpenApiPath: pinnedOpenApiPath ?? primaryOpenApi ?? '',
-        sheetPath,
-        moduleRoot,
-        mode,
-      }),
-      'utf8',
-    );
-  }
-
-  const payload = {
-    sheet,
-    residualGaps: gaps,
-    inventedEndpoint: invented,
-    vendor: vendor ?? null,
-    pinnedOpenApiPath: pinnedOpenApiPath ?? null,
-    drift,
-    contractUpdateMd: updateMdPath ?? null,
-    pipelineMode: vendor ? loadPipelineMode(store.projectDir) : null,
-  };
-
-  emitJsonOrText(args, payload, () => {
-    if (sheetPath) console.log(`Wrote answer sheet → ${sheetPath}`);
-    if (pinnedOpenApiPath) console.log(`Pinned contract → ${pinnedOpenApiPath}`);
-    if (drift) {
-      console.log(drift.summary);
-      console.log(`Drift severity: ${drift.severity} (${drift.items.length} items)`);
-      for (const it of drift.items.slice(0, 12)) {
-        console.log(`  [${it.severity}] ${it.kind}${it.path ? ` ${it.path}` : ''}: ${it.detail}`);
-      }
-      if (drift.items.length > 12) console.log(`  … +${drift.items.length - 12} more`);
-      if (driftPath) console.log(`Wrote drift → ${driftPath}`);
-      if (updateMdPath) console.log(`Wrote runbook → ${updateMdPath}`);
-      console.log(`Pipeline mode: ${loadPipelineMode(store.projectDir)}`);
-    }
-    const dimCount = Object.keys(sheet.dimensions).length;
-    console.log(`dimensions answered: ${countAnswered(sheet)} / ${dimCount}`);
-    console.log(`residual gaps: ${gaps.length}`);
-    if (invented) console.log('warning: possible invented endpoint signals in sheet');
-    for (const g of gaps.slice(0, 8)) {
-      console.log(`  gap ${g.id}: ${g.topic} (${g.reason})`);
-    }
-    if (vendor && primaryOpenApi) {
-      console.log('');
-      console.log('Next (same pipeline):');
-      console.log(
-        `  layerkit proposal write map-from-openapi --vendor ${vendor} --openapi ${primaryOpenApi} --out ./proposal.json --validate`,
-      );
-      console.log(`  layerkit agent multi --vendor ${vendor} --mode ${drift?.hasExistingMap ? 'heal' : 'full'} --openapi ${primaryOpenApi}`);
-      console.log('  layerkit agent next');
-    }
-  });
-}
-
-function countAnswered(sheet: {
-  dimensions: Record<string, { answer?: string; source?: string }>;
-}): number {
-  return Object.values(sheet.dimensions).filter(
-    (a) => a.answer && a.answer.trim().length > 0 && a.source !== 'needs-evidence' && a.source !== 'unanswered',
-  ).length;
-}
-
-function runResearchGaps(args: string[]): void {
-  const file = requireArg(args[0], 'research gaps <sheet.json> [--json]');
-  const sheet = JSON.parse(readFileSync(resolve(file), 'utf8'));
-  const gaps = residualGaps(sheet);
-  const invented = hasInventedEndpoint(sheet);
-  emitJsonOrText(args, { residualGaps: gaps, inventedEndpoint: invented }, () => {
-    console.log(`residual gaps: ${gaps.length}`);
-    if (invented) console.log('warning: possible invented endpoint signals');
-    for (const g of gaps) {
-      console.log(`  ${g.id}\t${g.topic}\t${g.reason}`);
-    }
-  });
-}
-
-/**
- * Heuristic scan of customer Java → memory/runbooks/java-style-profile.md
- * (or --out <path>). No AST; greps package/DI/HTTP/test signals.
- */
-function runStyleProfileScan(args: string[], ctx: CliContext): void {
-  const rootFlag = flag(args, '--root');
-  const root = resolve(rootFlag ?? ctx.repoRoot);
-  if (!isScannableRoot(root)) {
-    throw new Error(`style-profile scan: --root is not a directory: ${root}`);
-  }
-  const out = flag(args, '--out') ?? 'memory';
-  const { result, outPath } = scanAndWriteStyleProfile({
-    root,
-    projectDir: ctx.projectDir,
-    out: out === 'memory' ? 'memory' : resolve(out),
-  });
-  const p = result.profile;
-  console.log(`Scanned: ${root}`);
-  console.log(`Java files: ${result.evidence.javaFiles.length}`);
-  console.log(`Build files: ${result.evidence.buildFiles.join(', ') || '(none)'}`);
-  console.log(`package: ${p.package}`);
-  console.log(`di: ${p.di}`);
-  console.log(`http: ${p.http}`);
-  console.log(`test: ${p.test}`);
-  console.log(`Wrote style profile → ${outPath}`);
-}
-
-/**
- * Heuristic domain discovery (TS/JS/Java/Kotlin) → memory/runbooks/domain-discovery.md
- * Optional --proposal writes a draft domain_spec proposal JSON (file:// sources only).
- */
-function runDiscoverScan(args: string[], ctx: CliContext): void {
-  const rootFlag = flag(args, '--root');
-  const root = resolve(rootFlag ?? ctx.repoRoot);
-  if (!isScannableRoot(root)) {
-    throw new Error(`discover scan: --root is not a directory: ${root}`);
-  }
-  const out = flag(args, '--out') ?? 'memory';
-  const proposalFlag = flag(args, '--proposal');
-  const { result, outPath, proposalPath } = scanAndWriteDomainDiscovery({
-    root,
-    projectDir: ctx.projectDir,
-    out: out === 'memory' ? 'memory' : resolve(out),
-    proposal: proposalFlag ? resolve(proposalFlag) : undefined,
-  });
-  console.log(`Scanned: ${root}`);
-  console.log(`Files: ${result.scannedFiles.length}`);
-  console.log(
-    `Intents (${result.intents.length}): ${result.intents.map((i: { id: string }) => i.id).join(', ') || '(none)'}`,
-  );
-  console.log(
-    `Fields (${result.fields.length}): ${result.fields.map((f: { path: string }) => f.path).join(', ') || '(none)'}`,
-  );
-  console.log(`Sources: ${result.sources.length}`);
-  console.log(`Wrote domain discovery → ${outPath}`);
-  if (proposalPath) {
-    console.log(`Wrote domain_spec proposal → ${proposalPath}`);
-  }
-}
-
-const DESIGN_SHAPES = new Set<string>(['linear_map', 'flow', 'hybrid']);
-
-/**
- * Emit map-vs-flow design decision artifact under memory/runbooks/design-<vendor>.md
- */
-function runDesignDecide(args: string[], ctx: CliContext): void {
-  const vendor = flag(args, '--vendor');
-  if (!vendor?.trim()) {
-    throw new Error(
-      'Usage: layerkit design decide --vendor <v> [--shape linear_map|flow|hybrid] [--sequence] [--branch] [--foreach] [--oauth] [--multi-call] [--intent x]... [--evidence url]... [--out memory|path] [--json]',
-    );
-  }
-
-  const shapeFlag = flag(args, '--shape');
-  if (shapeFlag && !DESIGN_SHAPES.has(shapeFlag)) {
-    throw new Error(
-      `design decide: invalid --shape "${shapeFlag}" (expected linear_map|flow|hybrid)`,
-    );
-  }
-
-  const input = {
-    hasSequence: hasFlag(args, '--sequence'),
-    hasBranch: hasFlag(args, '--branch'),
-    hasForeach: hasFlag(args, '--foreach'),
-    hasOauthThenPost: hasFlag(args, '--oauth'),
-    multiCall: hasFlag(args, '--multi-call'),
-  };
-
-  const shape: IntegrationShape = shapeFlag
-    ? (shapeFlag as IntegrationShape)
-    : decideShape(input);
-
-  const intents = collectFlags(args, '--intent');
-  const evidence = collectFlags(args, '--evidence');
-  const outRaw = flag(args, '--out') ?? 'memory';
-  const out = outRaw === 'memory' ? 'memory' : resolve(outRaw);
-  const alsoJson = wantJson(args);
-
-  let authSteps: DesignDecision['authSteps'] = 'none';
-  if (input.hasOauthThenPost) authSteps = 'token_then_post';
-
-  let batch: DesignDecision['batch'] = 'none';
-  if (input.hasForeach) batch = 'foreach';
-
-  const decision: DesignDecision = {
-    schemaVersion: 1,
-    vendor: vendor.trim(),
-    shape,
-    intents,
-    operations: [],
-    batch,
-    authSteps,
-    privacyRequired: false,
-    evidence,
-    openQuestions: [],
-    rationale: defaultRationale(shape, input),
-    decidedAt: new Date().toISOString(),
-  };
-
-  const { mdPath, jsonPath } = writeDesignDecision({
-    projectDir: ctx.projectDir,
-    decision,
-    out,
-    alsoJson,
-  });
-
-  emitJsonOrText(args, { decision, mdPath, jsonPath }, () => {
-    console.log(`shape: ${decision.shape}`);
-    console.log(`vendor: ${decision.vendor}`);
-    console.log(`authSteps: ${decision.authSteps}`);
-    console.log(`batch: ${decision.batch}`);
-    console.log(`rationale: ${decision.rationale}`);
-    console.log(`Wrote design decision → ${mdPath}`);
-    if (jsonPath) console.log(`Wrote design decision JSON → ${jsonPath}`);
-  });
 }
 
 function writeProposalFile(out: string, proposal: Proposal): void {
@@ -1909,242 +846,6 @@ function runProposalWriteMap(args: string[]): void {
   maybeValidateWrittenProposal(proposal, out, doValidate);
 }
 
-/**
- * Scaffold map from OpenAPI evidence + project domain-binding convention.
- * No vendor hardcoding — intent ids from convention (x-*-domain-op / operationId / path).
- */
-function runProposalWriteMapFromOpenApi(args: string[], ctx: CliContext): void {
-  const vendor = flag(args, '--vendor');
-  const openapi = flag(args, '--openapi');
-  const out = flag(args, '--out');
-  const agent = flag(args, '--agent');
-  const doValidate = args.includes('--validate');
-
-  if (!vendor || !openapi || !out) {
-    throw new Error(
-      'Usage: layerkit proposal write map-from-openapi --vendor <v> --openapi <file> --out <file> [--agent <id>] [--validate]',
-    );
-  }
-  const abs = resolve(openapi);
-  if (!existsSync(abs)) {
-    throw new Error(`OpenAPI file not found: ${abs}`);
-  }
-  const content = readFileSync(abs, 'utf8');
-  const convention = loadDomainBinding(ctx.projectDir);
-  const proposal = scaffoldVendorMapFromOpenApi({
-    vendor,
-    openapiContent: content,
-    openapiRef: abs,
-    agentId: agent,
-    convention,
-  });
-  writeProposalFile(out, proposal);
-
-  const parsed = parseOpenAPI(content);
-  const resolved = resolveIntentsFromOpenApi(parsed, convention);
-  console.log(`Wrote vendor_map proposal ${proposal.id} → ${resolve(out)}`);
-  console.log(`Operations: ${parsed.operations.length}`);
-  for (const r of resolved) {
-    console.log(`  ${r.operation.method} ${r.operation.path} → intent=${r.intentId || '(unresolved)'} [${r.source}]`);
-  }
-  console.log(`Domain binding: ${domainBindingPath(ctx.projectDir)}`);
-  console.log('(Convention is customer-owned; use domain-binding init/show to configure.)');
-  maybeValidateWrittenProposal(proposal, out, doValidate);
-}
-
-function runDomainBindingShow(ctx: CliContext): void {
-  const c = loadDomainBinding(ctx.projectDir);
-  const path = domainBindingPath(ctx.projectDir);
-  console.log(`Path: ${path}${existsSync(path) ? '' : ' (defaults — file not written yet)'}`);
-  console.log(JSON.stringify(c, null, 2));
-}
-
-function runDomainBindingInit(ctx: CliContext): void {
-  const path = writeDomainBinding(ctx.projectDir, { ...DEFAULT_DOMAIN_BINDING });
-  console.log(`Wrote domain-binding convention → ${path}`);
-  console.log('Edit openapiExtensionKeys if your org uses a fixed x-* key.');
-  console.log('acceptXStarDomainOp=true matches any x-*-domain-op without per-company code.');
-}
-
-function runProposalWriteProcessor(args: string[]): void {
-  const id = flag(args, '--id');
-  const out = flag(args, '--out');
-  const agent = flag(args, '--agent');
-  const description = flag(args, '--description');
-  const builtinOp = flag(args, '--builtin-op');
-  const sourceRaws = collectFlags(args, '--source');
-  const doValidate = args.includes('--validate');
-
-  if (!id || !out) {
-    throw new Error(
-      'Usage: layerkit proposal write processor --id <id> --out <file> --source title=url [...] [--agent <id>] [--description <text>] [--builtin-op <op>] [--validate]',
-    );
-  }
-  if (!sourceRaws.length) {
-    throw new Error(
-      'proposal write processor requires at least one --source title=url (citation is mandatory)',
-    );
-  }
-
-  const sources = sourceRaws.map(parseSourceFlag);
-  const proposal = scaffoldProcessorProposal({
-    id,
-    description: description ?? `Processor ${id}`,
-    agentId: agent,
-    sources,
-    builtinOp: builtinOp,
-  });
-
-  writeProposalFile(out, proposal);
-  console.log(`Wrote processor proposal ${proposal.id} → ${resolve(out)}`);
-  console.log(`Sources: ${proposal.sources.length}`);
-  maybeValidateWrittenProposal(proposal, out, doValidate);
-}
-
-
-
-const FIX_DRY_RUN_SAMPLE = {
-  intent: 'purchase',
-  eventId: 'evt_1',
-  user: { email: 'Ada@Example.com' },
-  value: { amount: 10, currency: 'usd' },
-};
-
-function buildWireExpectation(args: string[]): WireExpectation | null {
-  const expectEvent = flag(args, '--expect-event');
-  const requireFields = collectFlags(args, '--require-field');
-  const forbidFields = collectFlags(args, '--forbid-field');
-  if (!expectEvent && requireFields.length === 0 && forbidFields.length === 0) {
-    return null;
-  }
-  const expectation: WireExpectation = { notSkipped: true };
-  if (expectEvent) expectation.eventName = expectEvent;
-  if (requireFields.length) expectation.requiredKeys = requireFields;
-  if (forbidFields.length) expectation.forbiddenKeys = forbidFields;
-  return expectation;
-}
-
-function runFixDryRun(args: string[]): void {
-  const mapPath = flag(args, '--map');
-  const patchesPath = flag(args, '--patches');
-  if (!mapPath || !patchesPath) {
-    throw new Error(
-      'Usage: layerkit fix dry-run --map <map.json> --patches <patches.json> [--expect-event <name>] [--require-field <path>]... [--forbid-field <path>]... [--out <fixed-map.json>] [--json]',
-    );
-  }
-
-  const map = JSON.parse(readFileSync(resolve(mapPath), 'utf8')) as VendorMap;
-  const patchesRaw = JSON.parse(readFileSync(resolve(patchesPath), 'utf8'));
-  const patches: MapPathFixPatch[] = Array.isArray(patchesRaw)
-    ? (patchesRaw as MapPathFixPatch[])
-    : [patchesRaw as MapPathFixPatch];
-
-  if (!patches.length) {
-    throw new Error('fix dry-run: --patches must be a non-empty array of MapPathFixPatch');
-  }
-  for (const [i, p] of patches.entries()) {
-    if (!p || typeof p !== 'object' || typeof p.field !== 'string' || typeof p.to !== 'string') {
-      throw new Error(
-        `fix dry-run: patch[${i}] must have string field and to (got ${JSON.stringify(p)})`,
-      );
-    }
-  }
-
-  const expectation = buildWireExpectation(args);
-  const out = flag(args, '--out');
-
-  const beforeApply = applyVendorMap(FIX_DRY_RUN_SAMPLE, map);
-  const beforeCheck = expectation ? evaluateDryRunWire(beforeApply, expectation) : null;
-
-  const { steps, final } = runSequentialMapFixes(map, patches);
-
-  type StepReport = {
-    index: number;
-    patch: MapPathFixPatch;
-    dryRun: ReturnType<typeof applyVendorMap>;
-    check: ReturnType<typeof evaluateDryRunWire> | null;
-  };
-
-  const stepReports: StepReport[] = steps.map((s) => {
-    const dryRun = applyVendorMap(FIX_DRY_RUN_SAMPLE, s.map);
-    return {
-      index: s.index,
-      patch: s.patch,
-      dryRun,
-      check: expectation ? evaluateDryRunWire(dryRun, expectation) : null,
-    };
-  });
-
-  const finalApply = applyVendorMap(FIX_DRY_RUN_SAMPLE, final);
-  const finalCheck = expectation ? evaluateDryRunWire(finalApply, expectation) : null;
-
-  if (out) {
-    writeFileSync(resolve(out), JSON.stringify(final, null, 2) + '\n', 'utf8');
-  }
-
-  const payload = {
-    patchesApplied: patches.length,
-    before: {
-      dryRun: beforeApply,
-      check: beforeCheck,
-    },
-    steps: stepReports.map((r) => ({
-      index: r.index,
-      patch: r.patch,
-      dryRun: r.dryRun,
-      check: r.check,
-      ok: r.check ? r.check.ok : true,
-    })),
-    final: {
-      map: final,
-      dryRun: finalApply,
-      check: finalCheck,
-      ok: finalCheck ? finalCheck.ok : true,
-    },
-    out: out ? resolve(out) : undefined,
-  };
-
-  if (expectation && finalCheck && !finalCheck.ok) {
-    process.exitCode = 1;
-  }
-
-  emitJsonOrText(args, payload, () => {
-    console.log(`fix dry-run: applying ${patches.length} patch(es)`);
-    if (beforeCheck) {
-      console.log(
-        `  before: ${beforeCheck.ok ? 'OK' : 'FAIL'} ${beforeCheck.failures.length ? `(${beforeCheck.failures.join('; ')})` : ''}`,
-      );
-    } else {
-      console.log(
-        `  before: skipped=${beforeApply.skipped}${beforeApply.reason ? ` (${beforeApply.reason})` : ''}`,
-      );
-    }
-    for (const r of stepReports) {
-      const patchLabel = `${r.patch.field}: ${JSON.stringify(r.patch.from ?? '?')} → ${JSON.stringify(r.patch.to)}`;
-      if (r.check) {
-        console.log(
-          `  step ${r.index}: ${r.check.ok ? 'OK' : 'FAIL'}  ${patchLabel}${r.check.failures.length ? `  — ${r.check.failures.join('; ')}` : ''}`,
-        );
-      } else {
-        console.log(`  step ${r.index}: applied  ${patchLabel}`);
-      }
-    }
-    if (finalCheck) {
-      console.log(
-        `  final: ${finalCheck.ok ? 'OK' : 'FAIL'}${finalCheck.failures.length ? `  — ${finalCheck.failures.join('; ')}` : ''}`,
-      );
-    } else {
-      console.log(
-        `  final: skipped=${finalApply.skipped}${finalApply.reason ? ` (${finalApply.reason})` : ''}`,
-      );
-      if (finalApply.wire) {
-        console.log(`  wire: ${JSON.stringify(finalApply.wire)}`);
-      }
-    }
-    if (out) console.log(`Wrote fixed map → ${resolve(out)}`);
-  });
-}
-
 function runHandoffWrite(args: string[], ctx: CliContext): void {
   const vendor = flag(args, '--vendor');
   const goal = flag(args, '--goal');
@@ -2176,111 +877,6 @@ function runHandoffWrite(args: string[], ctx: CliContext): void {
     console.log('Next actions:');
     for (const a of nextActions) console.log(`  - ${a}`);
   }
-}
-
-/** Write INTEGRATE.md plan against production module topology. */
-function runGenerate(args: string[], ctx: CliContext): void {
-  const lang = flag(args, '--lang') ?? 'java';
-  if (lang !== 'java' && lang !== 'typescript' && lang !== 'ts') {
-    throw new Error('Supported --lang: java | typescript | ts');
-  }
-  const store = openStore(ctx);
-  const project = store.loadProject();
-  const domain = store.loadDomain();
-  if (!project || !domain) throw new Error('No project — run layerkit install --poc');
-  const maps = store.listMaps();
-
-  const modeRaw = (flag(args, '--mode') ?? project.generate?.mode ?? 'integrate').toString().toLowerCase();
-  if (modeRaw !== 'integrate') {
-    throw new Error(
-      'generate targets production modules only. Omit --mode or use --mode integrate.\n' +
-        '  Pass --module-root <path> when entrypoints are not auto-detected.',
-    );
-  }
-
-  const moduleRootFlag = flag(args, '--module-root') ?? flag(args, '--moduleRoot');
-  const scanRoot = flag(args, '--root') ?? ctx.repoRoot;
-  const vendors = flagsAll(args, '--vendor');
-
-  const generateCfg = {
-    ...project.generate,
-    ...(moduleRootFlag ? { moduleRoot: moduleRootFlag } : {}),
-    mode: 'integrate' as const,
-  };
-
-  let style: Partial<StyleProfile> | undefined;
-  const stylePath = join(store.projectDir, STYLE_PROFILE_RUNBOOK_REL);
-  if (existsSync(stylePath)) {
-    style = parseStyleProfileMarkdown(readFileSync(stylePath, 'utf8'));
-  }
-
-  const { resolution, plan } = buildIntegratePlan({
-    repoRoot: ctx.repoRoot,
-    scanRoot,
-    projectGenerate: generateCfg,
-    maps,
-    vendors: vendors.length ? vendors : undefined,
-    style,
-    mode: 'integrate',
-  });
-
-  console.log(`Generate: integrate (from ${resolution.resolvedFrom})`);
-  console.log(`  ${resolution.reason}`);
-
-  if (!resolution.ok || !plan) {
-    console.error('');
-    console.error('No production integration entrypoints found.');
-    console.error('  layerkit generate --module-root path/to/integrations');
-    process.exitCode = 1;
-    return;
-  }
-
-  const { jsonPath, mdPath } = writeIntegratePlanArtifacts(store.projectDir, plan);
-  console.log(`Integrate plan → ${mdPath}`);
-  console.log(`               → ${jsonPath}`);
-  console.log(`  ${plan.summary}`);
-  console.log(
-    `  Topology: ${plan.topology.entrypoints.length} entrypoint(s), package=${plan.topology.package ?? '?'}`,
-  );
-  console.log(`  Pattern: ${plan.topology.addVendorPattern}`);
-  for (const a of plan.actions.slice(0, 12)) {
-    console.log(`  - ${a.kind}: ${a.path}${a.vendor ? ` (${a.vendor})` : ''}`);
-  }
-  if (plan.actions.length > 12) console.log(`  … ${plan.actions.length - 12} more`);
-
-  console.log('Plan only: the agent must inspect existing code and edit production files directly.');
-
-  if (!project.generate?.moduleRoot && plan.topology.moduleRoot) {
-    const rel = plan.topology.moduleRoot.startsWith(ctx.repoRoot)
-      ? plan.topology.moduleRoot.slice(ctx.repoRoot.length).replace(/^\//, '') || '.'
-      : plan.topology.moduleRoot;
-    project.generate = {
-      ...project.generate,
-      mode: 'integrate',
-      moduleRoot: moduleRootFlag ?? rel,
-    };
-    store.saveProject(project);
-    console.log(`Recorded project.generate.moduleRoot=${project.generate.moduleRoot}`);
-  }
-
-  console.log('Next: skill layerkit-generate-java — edit production files from INTEGRATE.md');
-  console.log('      then tests in moduleRoot && layerkit doctor --quality --strict');
-}
-
-/** All values for repeated `--name v` or `--name=v` flags. */
-function flagsAll(args: string[], name: string): string[] {
-  const out: string[] = [];
-  for (let i = 0; i < args.length; i++) {
-    const a = args[i]!;
-    if (a === name && args[i + 1]) {
-      out.push(args[++i]!);
-      continue;
-    }
-    if (a.startsWith(`${name}=`)) {
-      out.push(a.slice(name.length + 1));
-    }
-  }
-  return out;
 }
 
 function flag(args: string[], name: string): string | undefined {

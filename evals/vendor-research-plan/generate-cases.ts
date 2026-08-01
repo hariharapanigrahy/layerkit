@@ -4,8 +4,34 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { COMMERCE_DOMAIN } from '../../libs/domain/commerce.js';
 import type { DomainSpec, DocSource } from '../../libs/domain/types.js';
+
+const EVAL_DOMAIN: DomainSpec = {
+  id: 'eval-commerce',
+  version: '1.0.0',
+  description: 'Eval-only commerce-like domain for research prompt generation.',
+  intents: [
+    { id: 'page_view', description: 'Page view' },
+    { id: 'view_item', description: 'PDP' },
+    { id: 'add_to_cart', description: 'Add to cart' },
+    { id: 'begin_checkout', description: 'Begin checkout' },
+    { id: 'purchase', description: 'Purchase' },
+    { id: 'lead', description: 'Lead' },
+    { id: 'search', description: 'Search' },
+  ],
+  fields: [
+    { path: 'eventId', type: 'string', description: 'Idempotency id', required: true },
+    { path: 'occurredAt', type: 'datetime', description: 'Event time' },
+    { path: 'user.email', type: 'string', description: 'Raw email' },
+    { path: 'user.phone', type: 'string', description: 'Raw phone' },
+    { path: 'user.externalId', type: 'string', description: 'User id' },
+    { path: 'product.id', type: 'string', description: 'SKU' },
+    { path: 'products', type: 'array<object>', description: 'Line items' },
+    { path: 'value.amount', type: 'number', description: 'Value' },
+    { path: 'value.currency', type: 'string', description: 'Currency' },
+    { path: 'context.url', type: 'string', description: 'URL' },
+  ],
+};
 
 export interface ResearchScenario {
   id: string;
@@ -105,7 +131,7 @@ export interface GeneratePlanCasesOptions {
 }
 
 export function generatePlanCases(opts: GeneratePlanCasesOptions = {}): PlanCase[] {
-  const domain = opts.domain ?? COMMERCE_DOMAIN;
+  const domain = opts.domain ?? EVAL_DOMAIN;
   let scenarios = [...(opts.scenarios ?? loadScenarios())];
   if (opts.vendor) {
     scenarios = scenarios.filter((s) => s.vendor === opts.vendor);

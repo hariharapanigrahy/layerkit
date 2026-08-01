@@ -1,8 +1,0 @@
-{
-  "id": "routing-evaluate-plan",
-  "suite": "ci",
-  "title": "Routing runtime evaluates explicit policy into deterministic vendor plan",
-  "owners": ["routing"],
-  "featurePr": "routing",
-  "tags": ["deterministic", "no-network", "routing"]
-}

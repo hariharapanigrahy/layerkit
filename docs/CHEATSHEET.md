@@ -1,124 +1,78 @@
-# Layerkit cheat sheet
+# Layerkit Cheat Sheet
 
-One-page operator card. Details: [AGENT_GOLDEN_PATH.md](./AGENT_GOLDEN_PATH.md) · skills `layerkit-*`.
+Layerkit is agent tooling for changing a client package. It is not the runtime integration layer.
 
-```bash
-# print this from CLI
-layerkit cheatsheet
-```
-
----
-
-## Install / doctor
+## Install / Doctor
 
 ```bash
-npm i -g layerkit   # or: npx layerkit …
-layerkit install --platform claude|cursor|codex|copilot|opencode|openhands|factory-droid|antigravity \
-  --hooks enabled --poc
+npm i -g layerkit
+layerkit install --platform codex|claude|cursor|copilot|opencode|openhands|factory-droid|antigravity \
+  --hooks enabled
 layerkit doctor
-layerkit doctor --quality --strict   # JaCoCo when Java module present
 ```
 
-Store: `--project-dir` → `LAYERKIT_PROJECT_DIR` → `layerkit.path.json` → `.layerkit`
+Store resolution: `--project-dir` -> `LAYERKIT_PROJECT_DIR` -> `layerkit.path.json` -> `.layerkit`.
 
----
-
-## Pipeline (lead agent)
+## Agent Pipeline
 
 ```bash
-layerkit agent status          # shows mode: full|heal
+layerkit agent status
 layerkit agent next
-layerkit agent mark-done --step discover|research|design|author|privacy|generate|handoff
+layerkit agent mark-done --step discover|research|design|author|privacy|deletion-first|source-edit|handoff
 ```
 
-Order: **discover → research → design → author → privacy → generate → handoff**
-Heal: discover auto-done (`mode: heal`).
+Order:
+
+```text
+discover -> research -> design -> author -> privacy -> deletion-first -> source-edit -> handoff
+```
+
+Heal uses the same pipeline. The agent reads the updated vendor docs/OpenAPI, identifies drift from evidence, and edits production package files directly.
+
+## Deterministic CLI Rails
 
 ```bash
-layerkit agent multi --vendor <v> [--mode heal] [--openapi <f>] [--module-root <dir>]
-# skill: layerkit-multi-agent
+layerkit repo status
+layerkit map list
+layerkit map show <vendor>
+layerkit map validate <file>
+layerkit proposal validate <file>
+layerkit proposal submit <file>
+layerkit proposal approve <id>
+layerkit proposal apply <file-or-id>
+layerkit memory list
+layerkit memory append --type research --title "<title>" --body-file <file>
 ```
 
----
+These commands validate explicit artifacts and project health. They do not infer semantic mappings, generate production source, or route vendor traffic.
 
-## Contract heal (update integration)
+## Deletion-First Rule
 
-Human supplies new OpenAPI or docs:
+- Before adding code, identify existing code/docs/tests that can be removed or rewritten.
+- Prefer modifying or deleting existing code over adding files.
+- Do not add a new abstraction until existing code cannot be changed.
+- For every new file/function/export, list what it replaces.
+- Keep LOC net-negative or near-neutral unless functionality truly expands.
 
-```bash
-layerkit heal run --vendor <v> --openapi <spec.json> \
-  --module-root <production-module>
-# → pin contract, apply map, update adapter/test bodies directly
+## Skills
 
-# Optional when an agent has evidence that a removed field was renamed:
-layerkit heal run --vendor <v> --openapi <spec.json> \
-  --module-root <production-module> \
-  --rename-decisions ./rename-decisions.json
-
-layerkit process dry-run --vendor <v> --intent <i>
-```
-
-Docs-link-only heal is skill/AI work: read/cite docs, write a structured contract file, then run `heal --openapi <contract>`.
-
-Evidence only · map fields from structured contract only.
-
----
-
-## Generate (production module)
-
-```bash
-layerkit style-profile scan --root .
-layerkit generate --module-root <dir> [--vendor <v>]
-# → out/INTEGRATE.md  (context; agent edits production module)
-```
-
-`project.json`:
-
-```json
-{ "generate": { "moduleRoot": "path/to/module" } }
-```
-
----
-
-## Dry-run / promote
-
-```bash
-layerkit process dry-run --vendor <v> --intent <i>
-layerkit fix dry-run --map … --patches …     # evidence-only fixes, loop ≤3
-layerkit promote --vendor <v>                # quality + privacy + dry-run gates
-```
-
----
-
-## Human-only gates
-
-| Step | Who |
-|------|-----|
-| `proposal approve` (strict) | checker ≠ maker |
-| Privacy / legal basis gaps | human |
-| `promote` to live | human / CI after gates |
-| Checker skill | **read-only** — never approve/apply |
-
----
+| Role | Skill |
+|------|-------|
+| Lead | `layerkit-orchestrate-integration` |
+| Multi-agent coordination | `layerkit-multi-agent` |
+| Discover customer code | `layerkit-discover-data-layer` |
+| Research vendor evidence | `layerkit-research-vendor` |
+| Author/update maps | `layerkit-author-map` |
+| Transform/helper code | `layerkit-author-processor` |
+| Source edits | `layerkit-generate-java` |
+| Privacy review | `layerkit-privacy-review` |
+| Checker assist | `layerkit-checker-assist` |
+| Handoff | `layerkit-session-handoff` |
 
 ## Forbidden
 
-- Invent map fields/endpoints without docs/OpenAPI/curl
-- Self-approve in STRICT maker-checker
-- LLM on `track()` / adapter hot path
-- Two agents patching the same registry (use `integrator:registry` only)
-- Scaffold side-project merge when integrate mode applies
-
----
-
-## Skills (by role)
-
-| Role | Skill |
-|------|--------|
-| Lead | `layerkit-orchestrate-integration` · `layerkit-multi-agent` |
-| Discover | `layerkit-discover-data-layer` |
-| Research | `layerkit-research-vendor` |
-| Map / processor | `layerkit-author-map` · `layerkit-author-processor` |
-| Style / code | `layerkit-align-client-style` · `layerkit-generate-java` |
-| Privacy / check | `layerkit-privacy-review` · `layerkit-checker-assist` |
-| Resume | `layerkit-session-handoff` |
+- Invent vendor fields/endpoints without docs/OpenAPI/curl/code evidence.
+- Use `.layerkit/out` as production code.
+- Generate PR metadata instead of editing the client package.
+- Self-approve in strict maker-checker mode.
+- Add wrappers or abstractions when existing code can be updated.

@@ -1,8 +1,0 @@
-{
-  "id": "promote-hard-gates",
-  "suite": "ci",
-  "title": "promote map_complete→live only after hard gates (status, secrets, dry-run, privacy)",
-  "owners": ["agent", "promote", "doctor"],
-  "featurePr": "promote-hard-gates",
-  "tags": ["deterministic", "no-network", "promote"]
-}

@@ -3,6 +3,6 @@
   "suite": "ci",
   "title": "detect + block invent (REPLACE endpoint) on apply; real docs path applies",
   "owners": ["hallucination"],
-  "featurePr": "hallucination-handling",
+  "featurePr": "hallucination",
   "tags": ["deterministic", "no-network", "hallucination", "apply"]
 }

@@ -1,9 +1,0 @@
-{
-  "id": "agent-evidence-before-human",
-  "suite": "ci",
-  "title": "OpenAPI-answered dims must not appear in residual human gaps",
-  "owners": ["agent", "research"],
-  "featurePr": "agent-dev-evals",
-  "fixtures": ["openapi/mini-events.json"],
-  "tags": ["deterministic", "no-network", "agent-process", "evidence-first"]
-}

@@ -52,7 +52,7 @@ try {
   const noPtr = writePathPointer(root, join(root, DEFAULT_PROJECT_DIR_NAME));
   assertTrue('no pointer write for default path', noPtr === null);
 
-  // 7) Store uses resolved projectDir and ensureDirs creates memory/privacy/flows
+  // 7) Store uses resolved projectDir and ensureDirs creates agent-tooling dirs
   const storeRoot = mkdtempSync(join(tmpdir(), 'layerkit-store-pd-'));
   try {
     const resolved = resolveProjectDir(storeRoot, { cliProjectDir: 'my-layerkit' });
@@ -61,8 +61,7 @@ try {
     store.initProject({ name: 'pd-eval', poc: false });
     assertTrue('maps dir', existsSync(join(store.projectDir, 'maps')));
     assertTrue('memory dir', existsSync(join(store.projectDir, 'memory')));
-    assertTrue('privacy dir', existsSync(join(store.projectDir, 'privacy')));
-    assertTrue('flows dir', existsSync(join(store.projectDir, 'flows')));
+    assertTrue('proposals dir', existsSync(join(store.projectDir, 'proposals')));
     assertTrue('memory INDEX', existsSync(join(store.projectDir, 'memory', 'INDEX.md')));
 
     // Doctor prints projectDir

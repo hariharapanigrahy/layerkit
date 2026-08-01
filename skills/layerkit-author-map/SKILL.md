@@ -10,29 +10,9 @@ Author a **vendor_map** proposal only from cited evidence (research notes, OpenA
 ## Protocol
 
 1. Prerequisites: `layerkit-research-vendor` answer sheet + `layerkit-design-integration` shape = linear or hybrid.
-2. **Scaffold from OpenAPI evidence** (preferred when a contract exists) — uses **project domain-binding convention**, not vendor-specific code:
+2. Read OpenAPI/docs/curl evidence directly. Do not derive a map from operation names or schema property names alone; map only when vendor meaning and customer domain meaning are both evidenced.
 
-```bash
-layerkit domain-binding show   # defaults: accept any x-*-domain-op, then operationId, then path_method
-# optional once per org:
-layerkit domain-binding init
-# edit memory/runbooks/domain-binding.json if you use a fixed extension key
-
-layerkit proposal write map-from-openapi \
-  --vendor <vendor> \
-  --openapi ./openapi.json \
-  --out ./map-proposal.json \
-  --agent <agentId> \
-  --validate
-```
-
-- Intents: convention order (openapi extension → operationId → path_method). Extensions are opaque; org config chooses keys.
-- Fields: requestBody schema property names only as evidence candidates; the agent must map to the client domain with citations before `map_complete`.
-- Auth: only from `securitySchemes` — else `custom` + needs-evidence notes (do not invent Bearer).
-- Multi-op OpenAPI → schemaVersion 2 operations map.
-- OpenAPI scaffolds are `skeleton` evidence seeds. Do not apply/promote them as complete until the agent has confirmed domain fields, transforms, and required processors from repo/docs evidence.
-
-3. **Manual scaffold** when no OpenAPI:
+3. **Explicit scaffold** when you already know the mapping from evidence:
 
 ```bash
 layerkit proposal write map \

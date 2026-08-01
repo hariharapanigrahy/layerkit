@@ -95,8 +95,8 @@ console.log('my-gate: all checks passed');
 | Id | Asserts |
 |----|---------|
 | `proposal-sources-required` | empty `sources[]` → error `sources` |
-| `processor-citation-required` | processor without sources fails |
-| `empty-map-skipped` | empty map → `empty_map_awaiting_agent_research` |
-| `sample-agent-map-apply` | Agent fixture apply + Purchase wire |
+| `hallucination-block-apply` | unsupported or unsourced proposal content is blocked |
+| `deletion-first-skill` | source-edit skills require deletion-first behavior |
+| `skill-hybrid-heal-judge` | heal skills reject deterministic source editing and require real package edits |
+| `skill-judge-coverage` | shipped skills have judge coverage |
 | `install-platforms` | 8 platforms registered with installers |
-| `observation-otel-spi` | SPI audit sink receives events; file works; `otel_otlp_http` is no-network placeholder (real OTLP via customer SPI) |

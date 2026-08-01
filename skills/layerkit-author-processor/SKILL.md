@@ -1,92 +1,45 @@
 ---
 name: layerkit-author-processor
-description: Author email/phone/time processors from vendor docs with mandatory citations; pure functions only.
+description: Author or update client-side transform/helper code from vendor docs with mandatory citations.
 ---
 
 # layerkit-author-processor
 
-Processors are agent-authored **pure transforms**. Proposal `sources[]` is mandatory on both the proposal and the processor payload.
+Use this skill when a vendor contract requires normalization, hashing, formatting, date conversion, object shaping, or other deterministic helper logic in the client package.
+
+These helpers are client-owned source code. They are not Layerkit runtime processors.
 
 ## Protocol
 
-1. Identify transform need from map field rows (`transform.processorId`) and vendor docs (hash, normalize, E.164, epoch ms, etc.).
-2. **Scaffold with CLI** (preferred) — dual sources (proposal + payload) and optional builtin op:
+1. Identify the transform requirement from vendor docs/OpenAPI/curl and existing client mapper code.
+2. Search for an existing helper before adding one.
+3. Prefer updating an existing helper or mapper method.
+4. Add a new helper only when no existing function can be changed cleanly.
+5. For any new helper, state what it replaces. If it replaces nothing, justify why it must exist.
+6. Add or update tests that prove the transform against cited examples.
+7. Validate any map/proposal artifact only if the client uses one:
 
 ```bash
-layerkit proposal write processor \
-  --id example.email.sha256_normalized \
-  --out ./proc.json \
-  --source "PII hashing=https://docs.example.com/api/pii|Hash email with SHA256 after normalizing" \
-  --description "Normalize email then SHA-256 hex" \
-  --builtin-op hash.sha256_hex \
-  --agent <agentId> \
-  --validate
+layerkit proposal validate ./proposal.json
+layerkit map validate ./map.json
 ```
 
-- `--source title=url` is **required** (repeatable). Optional `|excerpt` after the URL.
-- `--builtin-op` wires an executable `{ type: "builtin", op }` implementation when a BuiltinOp matches.
-- Does **not** auto-submit. Next tip: `layerkit proposal validate <file>`.
+## Citation Rules
 
-3. Or draft `processor` proposal by hand:
-
-```json
-{
-  "schemaVersion": 2,
-  "kind": "processor",
-  "id": "proc-<id>-v1",
-  "processorId": "<id>",
-  "summary": "<what it does>",
-  "authoredBy": "agent",
-  "status": "draft",
-  "createdAt": "<ISO>",
-  "sources": [
-    { "title": "Vendor hashing docs", "url": "https://...", "excerpt": "..." }
-  ],
-  "payload": {
-    "id": "<id>",
-    "kind": "agent",
-    "description": "...",
-    "category": "email|phone|timestamp|pii_hash|normalize|custom",
-    "sources": [
-      { "title": "...", "url": "https://...", "excerpt": "..." }
-    ],
-    "implementationHint": "lowercase + trim + sha256 hex",
-    "piiAffecting": true,
-    "inputTypes": ["string"],
-    "outputType": "string"
-  },
-  "maker": { "type": "agent", "id": "<agent>" },
-  "requiresPrivacyReview": true
-}
-```
-
-4. Validate + memory:
-
-```bash
-layerkit proposal validate ./proc.json
-layerkit memory append --type proposals --title "processor <id>" --vendor <vendor> --body-file ./proc-note.md
-```
-
-5. Point vendor map field rows at `processorId`. Java implementation via `layerkit-generate-java` (pure methods in `StrategyRegistry` — no I/O, no LLM).
-6. Prefer builtins when semantics match; only author custom when docs require a distinct rule.
-
-## Citation rules (hard)
-
-- **Proposal-level** `sources[]` required (validate gate).
-- **Payload-level** `sources[]` required for processor kind (citation gate).
-- Excerpts must quote the hashing/normalization rule — not marketing blurb.
-- If docs are silent → `needs-evidence`; do not invent SHA/normalization variants.
+- Cite the vendor/customer rule for every non-obvious transform.
+- Excerpts must cover the rule, such as hashing order, casing, phone format, timestamp unit, or nested object shape.
+- If docs are silent, do not invent SHA variants, phone formats, timezone assumptions, or fallback defaults.
 
 ## Forbidden
 
-- Inventing hash algorithms or phone formats without cited vendor/customer rule
-- Network or LLM inside processor implementation
-- Double-hashing already-hashed fields without evidence
-- Applying privacy-affecting processors without privacy review when required
+- Network, credentials, or AI calls inside transform helpers.
+- Double-hashing or re-normalizing without evidence.
+- Adding a parallel helper when an existing mapper/helper should be changed.
+- Creating Layerkit processor proposal artifacts as a substitute for editing source.
 
-## Success criteria
+## Success Criteria
 
-- [ ] Dual sources (proposal + payload) with real excerpts
-- [ ] `layerkit proposal validate` clean
-- [ ] `processor-citation-required` eval posture satisfied
-- [ ] Pure function semantics documented for Java/tests
+- [ ] Transform source code lives in the client package path.
+- [ ] Existing code was updated or stale code was removed before adding a helper.
+- [ ] Tests cover vendor examples or cited schema rules.
+- [ ] Any remaining datalayer gap is a precise TODO in source and handoff.

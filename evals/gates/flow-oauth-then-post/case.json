@@ -1,9 +1,0 @@
-{
-  "id": "flow-oauth-then-post",
-  "suite": "ci",
-  "title": "assign → call(token) responseInto → call(post) with bearer from vars",
-  "owners": ["flow"],
-  "featurePr": "W3/PR7",
-  "fixtures": ["flow/oauth-then-post.json"],
-  "tags": ["deterministic", "no-network", "flow"]
-}

@@ -1,8 +1,0 @@
-{
-  "id": "track-observation-emit",
-  "suite": "ci",
-  "title": "Track emits observation audit events through configured sinks",
-  "owners": ["runtime", "observation"],
-  "featurePr": "observation",
-  "tags": ["deterministic", "no-network", "runtime", "observation"]
-}

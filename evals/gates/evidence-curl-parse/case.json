@@ -1,9 +1,0 @@
-{
-  "id": "evidence-curl-parse",
-  "suite": "ci",
-  "title": "parse meta-purchase.curl.txt → POST host path Authorization class",
-  "owners": ["research"],
-  "featurePr": "W4",
-  "fixtures": ["curl/meta-purchase.curl.txt"],
-  "tags": ["deterministic", "no-network", "evidence"]
-}

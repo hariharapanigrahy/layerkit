@@ -1,6 +1,0 @@
-{
-  "id": "style-profile-cli",
-  "suite": "ci",
-  "title": "style-profile scan of fake-client fixture validates and writes runbook",
-  "fixtures": ["agent/fake-client"]
-}

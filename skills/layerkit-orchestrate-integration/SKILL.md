@@ -5,53 +5,45 @@ description: Master skill — same pipeline for first integrate and contract hea
 
 # layerkit-orchestrate-integration
 
-Master loop: full-stack integration developer. Skills author knowledge and source edits; CLI gates/store; **no LLM on track()**.
+Master loop: full-stack integration developer. Skills author knowledge and source edits; CLI gates/store.
 
-**One pipeline** for first-time integrate and **contract heal** (Dependabot-for-APIs wedge), but contract heal uses `layerkit heal run` only for contract pinning, drift, and map proposal/application. The AI agent edits production source files directly after reading docs and code.
+**One pipeline** for first-time integrate and **contract heal**. Semantic work is agent-owned: the AI agent reads docs/OpenAPI/code, decides mappings from evidence, and edits production source files directly.
 
 `discover → research → design → author → privacy → deletion-first → source-edit → verify → handoff`
 
-Heal = human supplies updated OpenAPI/docs → AI-curated structured contract → `heal run` pins + diffs + updates map/proposal (discover skipped via `mode: heal`) → AI edits source/tests in the package. The CLI does not understand arbitrary docs or semantic mappings; the skill/agent reads, cites, curates contract/rename decisions, and performs source changes. `layerkit generate` is a separate optional planning/context command, not part of the heal path.
+Heal = human supplies updated OpenAPI/docs → AI agent reads and cites evidence → AI updates existing maps/source/tests in the package → deterministic CLI validates explicit artifacts and package health. The CLI does not understand arbitrary docs, semantic mappings, rename intent, or production source edits.
 
 ## Primary commands
 
 ```bash
 layerkit cheatsheet
 
-# Contract update (preferred when map already exists)
-layerkit heal run --vendor <v> --openapi <contract.json> --module-root <dir> [--doc <url>]
-layerkit heal run --vendor <v> --openapi <contract.json> --module-root <dir> --rename-decisions <json>
-layerkit agent multi --vendor <v> --mode heal --openapi <contract.json> [--module-root <dir>]
-
-# First-time / multi-vendor
-layerkit agent multi --vendor <v> [--vendor <v2>] [--module-root <dir>]
-
 layerkit agent status
 layerkit agent next
 layerkit agent mark-done --step <id>
+layerkit proposal validate <file>
+layerkit doctor
 ```
 
 | Command | Purpose |
 |---------|---------|
-| `heal run --vendor --openapi --module-root` | Pin contract, drift vs map, update map/proposal; source edit remains agent-owned |
-| `heal run --rename-decisions <json>` | Carry explicit evidence-backed field renames into the map/proposal |
-| `agent multi --mode heal` | Coordinate direct heal work without discover |
 | `agent status` / `next` / `mark-done` | Same step ids always |
+| `proposal validate` / `map validate` / `doctor` | Validate explicit artifacts and package health; no semantic inference |
 
-Step ids: `discover` | `research` | `design` | `author` | `privacy` | `generate` | `handoff`.
+Step ids: `discover` | `research` | `design` | `author` | `privacy` | `deletion-first` | `source-edit` | `handoff`.
 
 ## Ordered pipeline
 
 | id | Skill | Contract heal focus |
 |----|-------|---------------------|
 | `discover` | `layerkit-discover-data-layer` | **Skipped** when `mode: heal` |
-| `research` | `layerkit-research-vendor` | Read docs/OpenAPI → curate structured contract → heal drift |
+| `research` | `layerkit-research-vendor` | Read docs/OpenAPI → evidence-backed map/source update |
 | `design` | `layerkit-design-flow` | Re-validate shape under new contract |
 | `author` | `layerkit-author-processor` | Only processors affected by drift |
 | `privacy` | `layerkit-privacy-review` | Human if new PII fields |
 | `deletion-first` | `layerkit-deletion-first` | Remove stale docs/tests/shims before adding code |
-| `source-edit` | `layerkit-generate-java` or direct agent edit | Agent edits existing source/tests; generate is optional context, not codegen |
-| `handoff` | checker + promote | Human; breaking severity never silent |
+| `source-edit` | `layerkit-generate-java` or direct agent edit | Agent edits existing source/tests |
+| `handoff` | checker + review | Human; breaking severity never silent |
 
 ## Stop conditions
 
@@ -60,17 +52,17 @@ Step ids: `discover` | `research` | `design` | `author` | `privacy` | `generate`
 | research | no contract/evidence → residual human; do not invent |
 | research docs | docs are prose-heavy/ambiguous → AI curates structured contract with citations; CLI-only heal is insufficient |
 | research heal | removed/added fields look like a rename but evidence is weak → leave unresolved/TODO, do not guess |
-| research heal | severity=breaking → flag human/checker before promote |
+| research heal | severity=breaking → flag human/checker before handoff |
 | privacy | new PII without policy |
-| dry-run | fail → fix-from-dry-run ≤3 then human |
-| generate | quality fail |
-| promote | any gate red |
+| verify | package build/test fails → fix-from-dry-run loop, then human if evidence exhausted |
+| source-edit | client package verification fails |
+| handoff | any gate red |
 
 ## When to ask a human
 
 - Residual gaps after deepen
 - Breaking drift / legal / privacy
-- Checker approval and promote
+- Checker approval and release decision
 - Live credentials
 
 ## Forbidden
@@ -78,13 +70,13 @@ Step ids: `discover` | `research` | `design` | `author` | `privacy` | `generate`
 - Parallel “heal product” checklist separate from this pipeline
 - Inventing map fields without OpenAPI/docs
 - Self-approve in STRICT
-- LLM on `track()`
+- Treating Layerkit as the runtime integration SDK
 - Treating generated plans, stubs, or `.layerkit/out` as production source
 
 ## Success criteria
 
 - [ ] `mode: heal` or `full` recorded in pipeline-status
-- [ ] Drift artifact when updating existing map
-- [ ] Applied maps/proposals have sources[] from supplied contract
+- [ ] Evidence note when updating existing map/source
+- [ ] Applied maps/proposals have sources[] from supplied docs/OpenAPI/code
 - [ ] Production source/test edits were made by the agent in real package files
-- [ ] Dry-run + quality green before promote
+- [ ] Package tests/build/coverage command green before handoff

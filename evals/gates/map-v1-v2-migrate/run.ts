@@ -2,15 +2,21 @@
  * Gate: migrateMapV1toV2 / asV2 in-memory migration (generic example map).
  */
 import { assertEqual, assertTrue } from '../../harness/assert.js';
-import { emptyVendorMap } from '../../../libs/domain/commerce.js';
 import type { VendorMapV1 } from '../../../libs/domain/types.js';
 import { asV2, mapSchemaVersion, migrateMapV1toV2 } from '../../../libs/vendor-memory/migrate.js';
 
-const skeleton = emptyVendorMap({
+const skeleton: VendorMapV1 = {
   vendor: 'example_vendor',
   displayName: 'Example',
+  version: '0.0.0-empty',
+  auth: { type: 'custom', notes: 'Agent sets from docs' },
+  endpoint: { method: 'POST', path: '/REPLACE_FROM_DOCS', baseUrl: 'https://REPLACE_FROM_DOCS' },
+  intents: {},
+  fields: [],
   documentation: [{ title: 'Docs', url: 'https://docs.example.com/api' }],
-});
+  status: 'skeleton',
+  notes: 'Empty skeleton.',
+};
 
 assertEqual('empty skeleton is v1', mapSchemaVersion(skeleton), 1);
 assertTrue('skeleton has docs', (skeleton.documentation?.length ?? 0) > 0);

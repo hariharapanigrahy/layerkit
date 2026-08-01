@@ -1,23 +1,24 @@
 ---
 name: layerkit-align-client-style
-description: Analyze existing Java/TS client patterns; write style profile to memory for generate-java.
+description: Analyze existing client package patterns from source evidence; write style notes before source edits.
 ---
 
 # layerkit-align-client-style
 
-Before codegen, match the **customer's** package layout, DI, HTTP client, and test stack. Avoid orphan trees.
+Before source edits, match the **customer's** package layout, DI, HTTP client, and test stack. Avoid orphan trees.
 
 ## Protocol
 
 1. Scan customer repo (read-only) for existing integration clients:
-   - Java: `**/src/main/java/**`, Spring/`@Service`, package roots, OkHttp/WebClient/HttpClient usage
-   - TS: existing track/SDK clients, fetch/axios patterns (secondary)
+   - Java/TS/Python/etc.: package roots, DI/framework style, HTTP client, test stack, naming, error handling
+   - existing vendor clients, mappers, adapters, SDK wrappers, fetch/axios/WebClient/HttpClient usage
 2. **Deny-paths**: same as discover (no `.env`, secrets, keys, pem).
 3. Build a **style profile** markdown:
 
 ```text
-# java-style-profile
-- basePackage: com.example.integrations
+# client-style-profile
+- language: java | typescript | python | other
+- basePackageOrModule: com.example.integrations | src/integrations
 - moduleLayout: single-module | multi-module path
 - di: spring | guice | plain ctor
 - httpClient: OkHttp | WebClient | java.net.http
@@ -31,22 +32,15 @@ Before codegen, match the **customer's** package layout, DI, HTTP client, and te
 
 4. Write profile to memory (and optional file under projectDir).
 
-**CLI (preferred — deterministic heuristic scan):**
-
-```bash
-# Scan customer repo (or fixture) and write memory/runbooks/java-style-profile.md
-layerkit style-profile scan --root <customer-repo> [--project-dir <path>]
-# Or write to an explicit path:
-layerkit style-profile scan --root <customer-repo> --out ./java-style-profile.md
-```
+Do this by reading representative source files directly. Deterministic rails may list files, but they must not infer the style profile for you.
 
 Optional research note:
 
 ```bash
-layerkit memory append --type research --title "java style profile" --vendor general --body-file ./java-style-profile.md
+layerkit memory append --type research --title "client style profile" --vendor general --body-file ./client-style-profile.md
 ```
 
-5. Next: `layerkit generate --module-root …` consumes this profile and a topology scan of production entrypoints (facade/adapters/registry).
+5. Next: source-edit skill edits production entrypoints directly using this profile as evidence.
 
 ## Forbidden
 
@@ -58,4 +52,4 @@ layerkit memory append --type research --title "java style profile" --vendor gen
 
 - [ ] Profile lists package, DI, HTTP, test stack with file:// evidence
 - [ ] Memory entry present
-- [ ] Generate-java can name concrete extension points from the profile
+- [ ] Source-edit agent can name concrete extension points from the profile
