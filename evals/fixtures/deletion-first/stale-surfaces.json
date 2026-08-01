@@ -1,0 +1,43 @@
+{
+  "id": "deletion-first-stale-surfaces",
+  "currentProductPath": [
+    "API spec/doc",
+    "contract drift",
+    "map/proposal update",
+    "privacy/checker",
+    "production datalayer integration",
+    "dry-run/quality"
+  ],
+  "surfaces": [
+    {
+      "path": "docs/demo/",
+      "kind": "demo-docs",
+      "servesHealPath": false,
+      "expectedAction": "delete"
+    },
+    {
+      "path": "docs/designs/",
+      "kind": "historical-design-docs",
+      "servesHealPath": false,
+      "expectedAction": "delete"
+    },
+    {
+      "path": "evals/cases/*",
+      "kind": "legacy-eval-wrapper",
+      "servesHealPath": false,
+      "expectedAction": "delete-or-repoint"
+    },
+    {
+      "path": "evals/fixtures/openapi/contract-heal/email-v2.openapi.json",
+      "kind": "contract-fixture",
+      "servesHealPath": true,
+      "expectedAction": "keep-as-fixture"
+    },
+    {
+      "path": "libs/agent/heal.ts",
+      "kind": "heal-runtime",
+      "servesHealPath": true,
+      "expectedAction": "keep"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 /**
  * Deterministic integration checklist runner (not an LLM).
- * Ordered skill pipeline for agent-driven vendor integration work.
+ * Order: discover → research → design → author → privacy → deletion-first → generate → handoff
+ * mode=heal skips discover when updating from a new contract.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -18,10 +19,10 @@ export interface PipelineStep {
   doneWhen: string;
 }
 
-/**
- * Canonical integration order:
- * discover → research → design → author → privacy → generate → handoff
- */
+/** full = first map; heal = contract update (discover treated complete) */
+export type PipelineMode = 'full' | 'heal';
+
+/** Canonical order (unchanged ids so markers stay valid). */
 export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
   {
     id: 'discover',
@@ -30,32 +31,31 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
       'layerkit discover scan --root .',
       'layerkit doctor',
       'layerkit memory list --type research',
-      'layerkit memory append --type research --title "domain discovery" --body "..."',
     ],
     doneWhen:
-      'Customer domain events/fields discovered from code; questionnaire Q3–Q4 seeded with sources',
+      'Customer domain events/fields discovered from code with source:code (skip when pipeline mode=heal)',
   },
   {
     id: 'research',
     skill: 'layerkit-research-vendor',
     cliHints: [
+      'layerkit heal run --vendor <v> --openapi <contract.json> --module-root <dir>',
+      'Docs-only: AI skill reads/cites docs, writes <contract.json>, then run heal --openapi <contract.json>',
       'layerkit map show <vendor>',
-      'layerkit map list',
-      'layerkit proposal validate ./proposal.json',
-      'layerkit proposal apply ./proposal.json',
+      'Review out/CONTRACT_DRIFT.json',
     ],
-    doneWhen: 'vendor_map proposal validated and applied with sources[] (evidence-first)',
+    doneWhen:
+      'Contract pinned from OpenAPI or curated docs; map/source files updated; drift reviewed',
   },
   {
     id: 'design',
     skill: 'layerkit-design-flow',
     cliHints: [
       'layerkit design decide --vendor <v> [--sequence] [--oauth] [--shape linear_map|flow|hybrid]',
-      'layerkit proposal validate ./flow.json',
       'layerkit process dry-run --vendor <v> --intent <i>',
     ],
     doneWhen:
-      'Design decision recorded (map vs flow); IntegrationFlow when sequence/branching required; flat VendorMap preferred first',
+      'Shape still valid under new contract; IntegrationFlow only if multi-step required; prefer flat VendorMap',
   },
   {
     id: 'author',
@@ -64,24 +64,39 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
       'layerkit proposal validate ./proc.json',
       'layerkit proposal apply ./proc.json',
     ],
-    doneWhen: 'Processors authored with citations; map field rows point at processorId',
+    doneWhen:
+      'Processors cited; field rows point at processorId; heal only touches fields affected by drift',
   },
   {
     id: 'privacy',
     skill: 'layerkit-privacy-review',
     cliHints: ['layerkit doctor', 'layerkit memory list --type privacy'],
     requiresHuman: true,
-    doneWhen: 'PrivacyPolicy reviewed; consent/hash/redact rules with sources before live egress',
+    doneWhen:
+      'PrivacyPolicy still valid; any NEW PII fields from contract re-reviewed with sources before live',
+  },
+  {
+    id: 'deletion-first',
+    skill: 'layerkit-deletion-first',
+    cliHints: [
+      'Review stale generated docs/tests/package surfaces before adding code',
+      'Prefer modifying or deleting existing code; list what each new file/function/export replaces',
+      'Keep LOC net-negative or near-neutral unless the contract truly expands behavior',
+    ],
+    doneWhen:
+      'Stale code/docs/tests/package surfaces removed or rewritten; new additions justify what they replace',
   },
   {
     id: 'generate',
     skill: 'layerkit-generate-java',
     cliHints: [
-      'layerkit generate --lang java',
-      'cd <projectDir>/out/java && mvn test',
+      'First-time only: layerkit generate --module-root <production-module> [--vendor <v>]',
+      'Heal mode: layerkit heal run records drift/map; agent edits source/tests directly',
+      'Run tests in generate.moduleRoot',
       'layerkit doctor --quality --strict',
     ],
-    doneWhen: 'Java client scaffold filled; JaCoCo line ≥ 0.95; quality gate green',
+    doneWhen:
+      'Production datalayer updated by the agent; INTEGRATE.md is context only for first-time integrate; quality gate green',
   },
   {
     id: 'handoff',
@@ -89,13 +104,12 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
     cliHints: [
       'layerkit promote --vendor <id>',
       'layerkit agent status',
-      'layerkit handoff write --vendor <id> --goal "<outcome>" --next "<skill-named action>"',
+      'layerkit handoff write --vendor <id> --goal "contract heal" --next "promote when green"',
       'Use skill layerkit-checker-assist (read-only risk checklist)',
-      'Use skill layerkit-session-handoff',
     ],
     requiresHuman: true,
     doneWhen:
-      'Maps promoted live; checker risk checklist complete; handoff to runtime owners',
+      'Maps promoted when gates green; checker risk checklist complete; PR-ready handoff',
   },
 ] as const;
 
@@ -105,6 +119,92 @@ export const PIPELINE_STATUS_REL = 'runbooks/pipeline-status.md';
 /** Absolute path to the pipeline status marker file. */
 export function pipelineStatusPath(projectDir: string): string {
   return join(projectDir, 'memory', PIPELINE_STATUS_REL);
+}
+
+/**
+ * Read pipeline mode from status file header (`mode: heal` / `mode: full`).
+ * Default full when unset.
+ */
+export function loadPipelineMode(projectDir: string): PipelineMode {
+  const path = pipelineStatusPath(projectDir);
+  if (!existsSync(path)) return 'full';
+  const text = readFileSync(path, 'utf8');
+  const m = text.match(/^\s*mode:\s*(heal|full)\b/im);
+  if (m?.[1] === 'heal') return 'heal';
+  return 'full';
+}
+
+/**
+ * Ensure status file exists and set mode line (heal | full).
+ * Heal marks discover complete so agent next starts at research.
+ */
+export function setPipelineMode(
+  projectDir: string,
+  mode: PipelineMode,
+  meta?: { vendor?: string; note?: string },
+): string {
+  const path = pipelineStatusPath(projectDir);
+  mkdirSync(dirname(path), { recursive: true });
+
+  const iso = new Date().toISOString();
+  const vendorLine = meta?.vendor ? `vendor: ${meta.vendor}` : '';
+  const noteLine = meta?.note ? `note: ${meta.note}` : '';
+
+  if (!existsSync(path)) {
+    const header = [
+      '# Integration pipeline status',
+      '',
+      `mode: ${mode}`,
+      vendorLine,
+      noteLine,
+      '',
+      'Agent orchestration markers.',
+      'Mark steps complete with `layerkit agent mark-done --step <id>`.',
+      '',
+      '## Completed',
+      '',
+      mode === 'heal' ? `- [x] discover — ${iso} (heal: domain already known)` : '',
+      '',
+    ]
+      .filter((l) => l !== undefined)
+      .join('\n');
+    writeFileSync(path, header.replace(/\n{3,}/g, '\n\n'), 'utf8');
+    return path;
+  }
+
+  let prev = readFileSync(path, 'utf8');
+  if (/^\s*mode:\s*/im.test(prev)) {
+    prev = prev.replace(/^\s*mode:\s*(heal|full)\b.*$/im, `mode: ${mode}`);
+  } else {
+    prev = prev.replace(
+      /^(# Integration pipeline status\s*\n)/m,
+      `$1\nmode: ${mode}\n`,
+    );
+  }
+  if (meta?.vendor) {
+    if (/^\s*vendor:\s*/im.test(prev)) {
+      prev = prev.replace(/^\s*vendor:\s*.*$/im, `vendor: ${meta.vendor}`);
+    } else {
+      prev = prev.replace(/^\s*mode:\s*.*$/im, (line) => `${line}\nvendor: ${meta.vendor}`);
+    }
+  }
+  writeFileSync(path, prev, 'utf8');
+
+  if (mode === 'heal') {
+    markStepDone(projectDir, 'discover');
+  }
+  return path;
+}
+
+/**
+ * Steps treated as complete: explicit markers plus heal-mode discover skip.
+ */
+export function effectiveCompletedSteps(projectDir: string, completed?: string[]): string[] {
+  const done = [...(completed ?? loadCompletedSteps(projectDir))];
+  if (loadPipelineMode(projectDir) === 'heal' && !done.includes('discover')) {
+    done.unshift('discover');
+  }
+  return done;
 }
 
 /**
@@ -120,12 +220,23 @@ export function getNextStep(completed: string[]): PipelineStep | null {
 }
 
 /**
+ * Next step using project heal mode (discover auto-done when mode=heal).
+ */
+export function getNextStepForProject(projectDir: string): PipelineStep | null {
+  return getNextStep(effectiveCompletedSteps(projectDir));
+}
+
+/**
  * Multi-line status for CLI / doctor: checkbox list + next step summary.
  */
-export function formatPipelineStatus(completed: string[]): string {
+export function formatPipelineStatus(completed: string[], mode: PipelineMode = 'full'): string {
   const done = new Set(completed.map((c) => c.trim()).filter(Boolean));
-  const next = getNextStep(completed);
-  const lines: string[] = ['Integration pipeline:'];
+  if (mode === 'heal') done.add('discover');
+  const next = getNextStep([...done]);
+  const lines: string[] = [
+    'Integration pipeline:',
+    `  mode: ${mode}`,
+  ];
 
   for (const step of INTEGRATION_PIPELINE) {
     const mark = done.has(step.id) ? 'x' : ' ';
@@ -151,10 +262,13 @@ export function formatPipelineStatus(completed: string[]): string {
 }
 
 /** One-line summary for doctor. */
-export function formatNextStepLine(completed: string[]): string {
-  const next = getNextStep(completed);
+export function formatNextStepLine(completed: string[], mode: PipelineMode = 'full'): string {
+  const done = mode === 'heal' && !completed.includes('discover')
+    ? ['discover', ...completed]
+    : completed;
+  const next = getNextStep(done);
   if (!next) return 'Next agent step: (pipeline complete)';
-  return `Next agent step: ${next.id} (skill ${next.skill})`;
+  return `Next agent step: ${next.id} (skill ${next.skill})${mode === 'heal' ? ' [heal]' : ''}`;
 }
 
 /**
@@ -208,6 +322,8 @@ export function markStepDone(projectDir: string, stepId: string): string {
     const header = [
       '# Integration pipeline status',
       '',
+      'mode: full',
+      '',
       'Agent orchestration markers (deterministic checklist — not an LLM).',
       'Mark steps complete with `layerkit agent mark-done --step <id>`.',
       '',
@@ -222,7 +338,6 @@ export function markStepDone(projectDir: string, stepId: string): string {
 
   const prev = readFileSync(path, 'utf8');
   const trimmed = prev.trimEnd();
-  // Ensure a Completed section exists for readability
   if (!/^##\s+Completed\b/m.test(trimmed)) {
     writeFileSync(path, `${trimmed}\n\n## Completed\n\n${markerLine}\n`, 'utf8');
   } else {

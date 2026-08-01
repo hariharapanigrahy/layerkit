@@ -1,0 +1,8 @@
+{
+  "id": "track-flowref-resolve",
+  "suite": "ci",
+  "title": "Track resolves flow references from project store",
+  "owners": ["runtime", "flow"],
+  "featurePr": "flowref",
+  "tags": ["deterministic", "no-network", "runtime", "flow"]
+}

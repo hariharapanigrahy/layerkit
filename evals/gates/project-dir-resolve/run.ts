@@ -88,16 +88,19 @@ try {
   const installRoot = mkdtempSync(join(tmpdir(), 'layerkit-install-pd-'));
   try {
     const customPd = join(installRoot, 'custom-pd');
+    const configPath = join(installRoot, 'home', '.layerkit', 'config.json');
     const result = await installLayerkit({
       repoRoot: installRoot,
-      platform: 'codex',
+      platform: 'openhands',
       hooksEnabled: false,
       autoMapUpdates: false,
       poc: false,
       name: 'pd-install-eval',
       projectDir: customPd,
+      configPath,
     });
     assertEqual('install result.projectDir', result.projectDir, customPd);
+    assertEqual('install result.configFile', result.configFile, configPath);
     assertTrue(
       'install wrote project.json under custom-pd',
       existsSync(join(customPd, 'project.json')),

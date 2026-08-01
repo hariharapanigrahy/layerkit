@@ -32,9 +32,6 @@ const ERROR_HOST_FRAGMENTS = [
   'example-vendor.com',
 ] as const;
 
-/** Known production hosts that require a matching documentation source host. */
-const SOURCE_MATCH_REQUIRED_HOSTS = ['graph.facebook.com'] as const;
-
 function push(
   issues: HallucinationIssue[],
   issue: HallucinationIssue,
@@ -72,35 +69,6 @@ function isErrorPlaceholderHost(host: string): boolean {
   // Bare multi-label invent host used in LLM fakes (not under .example.com)
   if (h === 'api.example') return true;
   return false;
-}
-
-/** Registrable-ish domain: last two labels (facebook.com from graph.facebook.com). */
-function apexDomain(host: string): string {
-  const parts = host.toLowerCase().split('.').filter(Boolean);
-  if (parts.length <= 2) return parts.join('.');
-  return parts.slice(-2).join('.');
-}
-
-function sourceHostnames(sources: DocSource[]): string[] {
-  const out: string[] = [];
-  for (const s of sources) {
-    const h = tryHostname(s.url ?? '');
-    if (h) out.push(h);
-  }
-  return out;
-}
-
-function hostMatchesSources(host: string, sources: DocSource[]): boolean {
-  const sourceHosts = sourceHostnames(sources);
-  if (!sourceHosts.length) return false;
-  const h = host.toLowerCase();
-  const apex = apexDomain(h);
-  return sourceHosts.some((sh) => {
-    if (sh === h) return true;
-    if (sh.endsWith(`.${h}`) || h.endsWith(`.${sh}`)) return true;
-    if (apexDomain(sh) === apex) return true;
-    return false;
-  });
 }
 
 function isEmptyMap(map: VendorMap): boolean {
@@ -177,20 +145,7 @@ function scanEndpoint(
     });
   }
 
-  for (const required of SOURCE_MATCH_REQUIRED_HOSTS) {
-    if (host === required || host.endsWith(`.${required}`)) {
-      if (!hostMatchesSources(host, sources)) {
-        push(issues, {
-          level: 'error',
-          code: 'host_source_mismatch',
-          message:
-            `baseUrl host ${host} requires a matching documentation source host ` +
-            `(none of sources[] match ${apexDomain(host)})`,
-          path: `${pathPrefix}.baseUrl`,
-        });
-      }
-    }
-  }
+  void sources;
 }
 
 function scanFieldRows(fields: FieldMapRow[] | undefined, pathPrefix: string, issues: HallucinationIssue[]): void {

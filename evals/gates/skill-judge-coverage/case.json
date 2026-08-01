@@ -1,0 +1,8 @@
+{
+  "id": "skill-judge-coverage",
+  "suite": "ci",
+  "title": "Skill judge coverage manifest covers every Layerkit skill with CI gates",
+  "owners": ["skills", "evals"],
+  "featurePr": "skill-judge-coverage",
+  "tags": ["deterministic", "no-network", "skill-judge", "coverage"]
+}

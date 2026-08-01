@@ -1,0 +1,53 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Contract Heal Email Fixture v2",
+    "version": "2.0.0",
+    "description": "Updated generic contract: new required field reply_to; same /emails path."
+  },
+  "servers": [{ "url": "https://api.email-fixture.test" }],
+  "paths": {
+    "/emails": {
+      "post": {
+        "operationId": "sendEmail",
+        "summary": "Send email",
+        "x-ikg-domain-op": "notify.sendEmail",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["from", "to", "subject", "reply_to"],
+                "properties": {
+                  "from": { "type": "string" },
+                  "to": { "type": "array", "items": { "type": "string" } },
+                  "subject": { "type": "string" },
+                  "text": { "type": "string" },
+                  "html": { "type": "string" },
+                  "reply_to": {
+                    "type": "string",
+                    "description": "Required in v2 — heal must pick up this field"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "id": { "type": "string" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "id": "hybrid-heal-skill-rubric",
+  "scenarios": [
+    {
+      "id": "docs_link_heal",
+      "userInput": "Update the existing Resend integration from this vendor docs link; no OpenAPI file was provided.",
+      "expectedSkillBehavior": [
+        "AI agent reads and cites official docs",
+        "AI agent writes a structured OpenAPI-compatible contract artifact",
+        "heal is run with --openapi pointing at the structured contract",
+        "CLI is not described as understanding arbitrary docs",
+        "AI agent edits the real package source/map/test files before raising a PR"
+      ],
+      "forbiddenSkillBehavior": [
+        "layerkit heal run --doc",
+        "layerkit research contract-from-doc",
+        "route docs-only heal through INTEGRATE.md",
+        "write PR metadata"
+      ]
+    },
+    {
+      "id": "semantic_rename",
+      "userInput": "The vendor removed email and added email_id; the client still exposes getEmail().",
+      "expectedSkillBehavior": [
+        "AI agent decides rename only from docs/code evidence",
+        "rename decision includes fromVendor and toVendor",
+        "rename decision includes confidence and evidence",
+        "heal carries explicit rename decisions into map/proposal evidence",
+        "AI agent performs the production source edit after inspecting client interface and datalayer"
+      ],
+      "forbiddenSkillBehavior": [
+        "guess renames from names alone",
+        "replace supported mapping with TODO",
+        "invent fields missing from the structured contract",
+        "deterministically rewrite production mapper code"
+      ]
+    },
+    {
+      "id": "update_not_add",
+      "userInput": "Update an existing integration for contract drift.",
+      "expectedSkillBehavior": [
+        "identify removable or rewriteable surfaces before adding code",
+        "prefer modifying or deleting existing code",
+        "do not add abstractions unless existing ones cannot change",
+        "target net-negative or near-neutral LOC",
+        "raise the final PR from real source changes, not generated patch packages"
+      ],
+      "forbiddenSkillBehavior": [
+        "create parallel facade",
+        "emit PR packages",
+        "emit INTEGRATE.md in heal path"
+      ]
+    }
+  ]
+}

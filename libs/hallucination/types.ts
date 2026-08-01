@@ -14,7 +14,6 @@ export type HallucinationIssueCode =
   | 'invent_field_path'
   | 'empty_documentation'
   | 'processor_sources'
-  | 'host_source_mismatch'
   | 'example_host';
 
 export interface HallucinationIssue {
@@ -48,6 +47,5 @@ export const HALLUCINATION_ISSUE_CODES: readonly HallucinationIssueCode[] = [
   'invent_field_path',
   'empty_documentation',
   'processor_sources',
-  'host_source_mismatch',
   'example_host',
 ] as const;

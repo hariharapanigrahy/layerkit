@@ -1,0 +1,8 @@
+{
+  "id": "map-missing-fields",
+  "suite": "ci",
+  "title": "Map execution reports required missing domain fields",
+  "owners": ["runtime", "map-engine"],
+  "featurePr": "map-missing-fields",
+  "tags": ["deterministic", "no-network", "runtime"]
+}

@@ -1,0 +1,9 @@
+{
+  "id": "deletion-first-skill",
+  "suite": "ci",
+  "title": "Deletion-first skill is packaged, required before generate, and fixture-backed",
+  "owners": ["agent"],
+  "featurePr": "deletion-first-skill",
+  "fixtures": ["deletion-first/stale-surfaces.json"],
+  "tags": ["deterministic", "no-network", "agent-process", "deletion-first"]
+}

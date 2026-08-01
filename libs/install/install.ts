@@ -24,6 +24,8 @@ export interface InstallOptions {
    * When omitted, store uses resolveProjectDir(repoRoot) (env → pointer → default).
    */
   projectDir?: string;
+  /** Optional config path for hermetic tests/evals. Defaults to ~/.layerkit/config.json. */
+  configPath?: string;
 }
 
 export interface InstallResult {
@@ -47,11 +49,12 @@ export function defaultPackageRoot(): string {
 
 export async function installLayerkit(opts: InstallOptions): Promise<InstallResult> {
   const packageRoot = defaultPackageRoot();
-  const config = ensureLayerkitConfig();
+  const configPath = opts.configPath ?? layerkitConfigPath();
+  const config = ensureLayerkitConfig(configPath);
   config.defaultPlatform = opts.platform;
   config.hooksEnabledDefault = opts.hooksEnabled;
   config.autoMapUpdatesDefault = opts.autoMapUpdates;
-  writeFileSync(layerkitConfigPath(), JSON.stringify(config, null, 2) + '\n');
+  writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
 
   const installer = platformInstaller(opts.platform);
   const platformResult = installer.install({
@@ -99,7 +102,7 @@ export async function installLayerkit(opts: InstallOptions): Promise<InstallResu
         ? { configFiles: platformResult.ruleFiles }
         : undefined,
     autoMapUpdates: opts.hooksEnabled && opts.autoMapUpdates,
-    configFile: layerkitConfigPath(),
+    configFile: configPath,
     projectDir: store.projectDir,
     notes,
   };

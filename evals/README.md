@@ -24,6 +24,8 @@ node dist/evals/harness/runner.js --suite ci --json   # JSON on stdout; logs on 
 
 **Agent transcript judge (nightly only):** `evals/agent-judge/` scores recorded fixture transcripts (`evals/fixtures/agent/sample-transcript*.json`) for citations present, no invent markers, and deepen-before-human. Run via `npm run eval:agent-judge`. **Not** part of `eval:ci` / merge bar.
 
+**Skill judge coverage:** `evals/fixtures/skills/skill-judge-coverage.json` maps every `skills/layerkit-*/SKILL.md` to judged dimensions and CI gate ids. Gate `skill-judge-coverage` fails when a skill is missing coverage, points at a missing gate, or points at a gate outside `suite ci`.
+
 **Timeouts:** each gate defaults to 60s; override with `EVAL_GATE_TIMEOUT_MS`.
 
 ## Layout
@@ -47,13 +49,14 @@ evals/
    - `case.json` — `id`, `suite` (`ci` for merge bar), `title`, `owners`, `tags`
    - `run.ts` — deterministic checks only (no network, no LLM keys)
 2. **Register** the id in `evals/suites.json` under `ci` (and `all` if release-relevant).
-3. **Use harness helpers**:
+3. **If it judges skill behavior**, add it to `evals/fixtures/skills/skill-judge-coverage.json` under the covered skill and dimension.
+4. **Use harness helpers**:
    - `assertTrue` / `assertEqual` / `fail` from `evals/harness/assert.js`
    - `withTempProject` from `evals/harness/temp-project.js` for store isolation
    - `loadFixture` / `loadFixtureText` from `evals/harness/load-fixture.js` for `evals/fixtures/**`
-4. **Keep the gate under ~5s** (except install / java-ref).
-5. **Land the gate in the same PR** as the feature it protects (eval-with-feature).
-6. Verify: `npm run build && npm run eval:ci`
+5. **Keep the gate under ~5s** (except install / java-ref).
+6. **Land the gate in the same PR** as the feature it protects (eval-with-feature).
+7. Verify: `npm run build && npm run eval:ci`
 
 ### Minimal `run.ts` template
 

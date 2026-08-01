@@ -1,0 +1,8 @@
+{
+  "id": "routing-track-routed",
+  "suite": "ci",
+  "title": "trackRouted applies explicit routing policy before map execution",
+  "owners": ["routing", "runtime"],
+  "featurePr": "routing",
+  "tags": ["deterministic", "no-network", "routing", "runtime"]
+}

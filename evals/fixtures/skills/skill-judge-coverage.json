@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "description": "Skill judge coverage manifest. Every Layerkit skill must list at least one CI gate that checks its contract, output shape, or agent-process posture.",
+  "skills": {
+    "layerkit-align-client-style": {
+      "dimensions": ["style-profile-shape", "cli-writes-profile"],
+      "ciCases": ["agent-style-profile-shape", "style-profile-cli"]
+    },
+    "layerkit-author-map": {
+      "dimensions": ["citation-required", "proposal-source-gate", "openapi-is-skeleton-seed"],
+      "ciCases": ["agent-citation-required-on-map", "proposal-sources-required", "domain-binding-openapi", "sample-agent-map-apply"]
+    },
+    "layerkit-author-processor": {
+      "dimensions": ["processor-citation-required", "no-uncited-processor"],
+      "ciCases": ["processor-citation-required"]
+    },
+    "layerkit-bootstrap": {
+      "dimensions": ["install-platforms", "project-dir-resolution", "secret-scan"],
+      "ciCases": ["install-platforms", "project-dir-resolve", "doctor-secret-scan"]
+    },
+    "layerkit-checker-assist": {
+      "dimensions": ["read-only-checker", "citation-risk-review"],
+      "ciCases": ["agent-citation-required-on-map", "maker-checker-strict-path"]
+    },
+    "layerkit-deletion-first": {
+      "dimensions": ["delete-before-add", "new-code-replacement-justification"],
+      "ciCases": ["deletion-first-skill", "skill-hybrid-heal-judge"]
+    },
+    "layerkit-design-flow": {
+      "dimensions": ["explicit-flow-shape", "oauth-then-post-runtime"],
+      "ciCases": ["flow-oauth-then-post", "design-decision-artifact"]
+    },
+    "layerkit-design-integration": {
+      "dimensions": ["shape-decision-artifact", "evidence-backed-flow-vs-map"],
+      "ciCases": ["design-decision-artifact"]
+    },
+    "layerkit-design-routing": {
+      "dimensions": ["skill-owned-routing-meaning", "runtime-executes-explicit-policy"],
+      "ciCases": ["routing-skill-judge", "routing-evaluate-plan", "routing-policy-apply", "routing-track-routed"]
+    },
+    "layerkit-discover-data-layer": {
+      "dimensions": ["deny-secret-paths", "domain-spec-draft-from-code-evidence"],
+      "ciCases": ["discover-domain-scan", "doctor-secret-scan"]
+    },
+    "layerkit-fix-from-dry-run": {
+      "dimensions": ["agent-authored-explicit-patch", "cli-applies-not-infers"],
+      "ciCases": ["fix-skill-judge", "agent-fix-loop-dry-run", "fix-dry-run-cli"]
+    },
+    "layerkit-generate-java": {
+      "dimensions": ["production-source-edits", "no-generated-patch-plan", "deletion-first-update-mode"],
+      "ciCases": ["generate-integrate-mode", "skill-hybrid-heal-judge", "deletion-first-skill"]
+    },
+    "layerkit-multi-agent": {
+      "dimensions": ["specialist-plan", "heal-skips-discover", "agent-owned-source-edits"],
+      "ciCases": ["agent-multi-plan", "skill-hybrid-heal-judge"]
+    },
+    "layerkit-orchestrate-integration": {
+      "dimensions": ["pipeline-order", "docs-to-contract-skill-flow", "heal-source-edits-by-agent"],
+      "ciCases": ["agent-orchestrate-checklist", "agent-pipeline-order", "skill-hybrid-heal-judge"]
+    },
+    "layerkit-privacy-review": {
+      "dimensions": ["explicit-policy-required", "citation-required-for-privacy-rules"],
+      "ciCases": ["privacy-dry-run-warn", "privacy-live-require", "promote-hard-gates"]
+    },
+    "layerkit-research-vendor": {
+      "dimensions": ["evidence-before-human", "docs-link-contract-curation", "no-invent-endpoint"],
+      "ciCases": ["agent-evidence-before-human", "evidence-no-invent", "research-cli-fill", "skill-hybrid-heal-judge"]
+    },
+    "layerkit-session-handoff": {
+      "dimensions": ["runbook-written", "resume-safe-state"],
+      "ciCases": ["handoff-runbook-cli"]
+    }
+  }
+}

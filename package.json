@@ -87,22 +87,46 @@
   },
   "typesVersions": {
     "*": {
-      "map-engine": ["dist/libs/vendor-memory/map-engine.d.ts"],
-      "store": ["dist/libs/vendor-memory/store.d.ts"],
-      "delivery": ["dist/libs/delivery/index.d.ts"],
-      "privacy": ["dist/libs/privacy/index.d.ts"],
-      "observation": ["dist/libs/observation/index.d.ts"],
-      "strategy": ["dist/libs/strategy/index.d.ts"],
-      "flow": ["dist/libs/flow/index.d.ts"],
-      "hallucination": ["dist/libs/hallucination/index.d.ts"],
-      "routing": ["dist/libs/routing/index.d.ts"]
+      "map-engine": [
+        "dist/libs/vendor-memory/map-engine.d.ts"
+      ],
+      "store": [
+        "dist/libs/vendor-memory/store.d.ts"
+      ],
+      "delivery": [
+        "dist/libs/delivery/index.d.ts"
+      ],
+      "privacy": [
+        "dist/libs/privacy/index.d.ts"
+      ],
+      "observation": [
+        "dist/libs/observation/index.d.ts"
+      ],
+      "strategy": [
+        "dist/libs/strategy/index.d.ts"
+      ],
+      "flow": [
+        "dist/libs/flow/index.d.ts"
+      ],
+      "hallucination": [
+        "dist/libs/hallucination/index.d.ts"
+      ],
+      "routing": [
+        "dist/libs/routing/index.d.ts"
+      ]
     }
   },
   "files": [
-    "dist/apps",
+    "dist/apps/cli/main.js",
+    "dist/apps/cli/main.js.map",
+    "dist/apps/cli/main.d.ts",
+    "dist/apps/cli/main.d.ts.map",
     "dist/libs",
     "skills",
-    "docs",
+    "docs/AGENT_FIRST.md",
+    "docs/AGENT_GOLDEN_PATH.md",
+    "docs/CHEATSHEET.md",
+    "docs/agent-install-prompt.md",
     "README.md",
     "LICENSE",
     "CONTRIBUTING.md"
@@ -115,12 +139,13 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "clean": "node scripts/clean-dist.mjs",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "prepublishOnly": "npm run build",
+    "pack:check": "npm pack --dry-run",
     "test:unit": "vitest run",
     "test": "npm run build && node scripts/check-install-options.js && node scripts/check-proposal-validate.js && node scripts/check-empty-map-skip.js && node --test dist/apps/cli/empty-state.test.js dist/evals/vendor-research-plan/generate-cases.test.js && npm run test:unit",
-    "check:java-scaffold": "npm run build && node scripts/check-java-scaffold.mjs",
     "smoke:codex": "npm run build && node scripts/smoke-codex.mjs",
     "smoke:claude": "npm run build && node scripts/smoke-claude.mjs",
     "smoke:cursor": "npm run build && node scripts/smoke-cursor.mjs",
@@ -129,15 +154,14 @@
     "smoke:openhands": "npm run build && node scripts/smoke-openhands.mjs",
     "eval:ci": "npm run build && node dist/evals/harness/runner.js --suite ci",
     "eval:all": "npm run build && node dist/evals/harness/runner.js --suite all",
-    "eval:proposal-sources": "npm run build && node dist/evals/cases/proposal-sources-required/run.js",
-    "eval:empty-map": "npm run build && node dist/evals/cases/empty-map-skipped/run.js",
-    "eval:install-platforms": "npm run build && node dist/evals/cases/install-platforms/run.js",
-    "eval:sample-agent-map": "npm run build && node dist/evals/cases/sample-agent-map-apply/run.js",
-    "eval:processor-citation": "npm run build && node dist/evals/cases/processor-citation-required/run.js",
+    "eval:proposal-sources": "npm run build && node dist/evals/harness/runner.js --case proposal-sources-required",
+    "eval:empty-map": "npm run build && node dist/evals/harness/runner.js --case empty-map-skipped",
+    "eval:install-platforms": "npm run build && node dist/evals/harness/runner.js --case install-platforms",
+    "eval:sample-agent-map": "npm run build && node dist/evals/harness/runner.js --case sample-agent-map-apply",
+    "eval:processor-citation": "npm run build && node dist/evals/harness/runner.js --case processor-citation-required",
     "eval:map-quality": "npm run build && node dist/evals/map-quality-optimizer/train.js",
     "eval:vendor-research-plan": "npm run build && node dist/evals/vendor-research-plan/run.js",
     "eval:agent-judge": "npm run build && node scripts/run-agent-judge.mjs",
-
     "layerkit": "node dist/apps/cli/main.js",
     "prepare": "npm run build"
   },

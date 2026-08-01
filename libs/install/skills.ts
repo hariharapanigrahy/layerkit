@@ -10,12 +10,14 @@ export const SKILL_NAMES = [
   'layerkit-author-processor',
   'layerkit-design-flow',
   'layerkit-privacy-review',
+  'layerkit-deletion-first',
   'layerkit-align-client-style',
   'layerkit-generate-java',
   'layerkit-fix-from-dry-run',
   'layerkit-checker-assist',
   'layerkit-session-handoff',
   'layerkit-orchestrate-integration',
+  'layerkit-multi-agent',
 ] as const;
 
 export function listPackagedSkills(packageRoot: string): string[] {

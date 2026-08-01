@@ -1,0 +1,8 @@
+{
+  "id": "agent-multi-plan",
+  "suite": "ci",
+  "title": "Multi-agent plan is ordered, mode-aware, and heal-safe",
+  "owners": ["agent", "skills"],
+  "featurePr": "multi-agent",
+  "tags": ["deterministic", "no-network", "agent-process", "skill-judge"]
+}

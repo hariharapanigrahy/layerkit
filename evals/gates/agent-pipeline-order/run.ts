@@ -1,5 +1,6 @@
 /**
- * Gate: INTEGRATION_PIPELINE has discover → research → design → author → privacy → generate → handoff
+ * Gate: INTEGRATION_PIPELINE has discover → research → design → author → privacy
+ * → deletion-first → generate → handoff
  * (key skill names present in order). Also covers getNextStep / formatPipelineStatus / mark-done markers.
  */
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -24,6 +25,7 @@ const REQUIRED_ORDER = [
   'design',
   'author',
   'privacy',
+  'deletion-first',
   'generate',
   'handoff',
 ] as const;
@@ -86,13 +88,26 @@ assertEqual(
   'privacy',
 );
 assertEqual(
-  'after privacy → generate',
+  'after privacy → deletion-first',
   getNextStep(['discover', 'research', 'design', 'author', 'privacy'])?.id,
+  'deletion-first',
+);
+assertEqual(
+  'after deletion-first → generate',
+  getNextStep(['discover', 'research', 'design', 'author', 'privacy', 'deletion-first'])?.id,
   'generate',
 );
 assertEqual(
   'after generate → handoff',
-  getNextStep(['discover', 'research', 'design', 'author', 'privacy', 'generate'])?.id,
+  getNextStep([
+    'discover',
+    'research',
+    'design',
+    'author',
+    'privacy',
+    'deletion-first',
+    'generate',
+  ])?.id,
   'handoff',
 );
 assertEqual(

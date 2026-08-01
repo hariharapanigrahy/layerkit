@@ -9,7 +9,7 @@ body:
         Layerkit **does not** maintain a vendor catalog or official connector list.
         Use this template to track **primary-doc research**, skill improvements, or **eval fixtures**.
         Maps you author stay customer-owned (under `{projectDir}`) or land under `evals/fixtures/` for tests — never as package truth for Meta/Google/etc.
-        Design: [agent-as-developer-no-catalog](https://github.com/hariharapanigrahy/layerkit/blob/main/docs/designs/agent-as-developer-no-catalog.md)
+        Design principle: Layerkit does not maintain a vendor catalog. See the README for the current integration workflow.
   - type: input
     id: vendor
     attributes:

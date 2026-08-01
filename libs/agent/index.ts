@@ -49,18 +49,14 @@ export {
 } from './discover-domain.js';
 
 export {
-  extractPathFromDocExcerpt,
-  detectPathMismatch,
   applyMapPathFix,
   applyMapPatches,
   runSequentialMapFixes,
   evaluateDryRunWire,
   applyProposalMapFix,
   applyProposalMapFixes,
-  pathFixFromDoc,
   asV1Map,
   type MapPathFixPatch,
-  type PathMismatch,
   type FixLoopStepResult,
   type WireExpectation,
   type DryRunCheckResult,
@@ -72,11 +68,16 @@ export {
   formatNextStepLine,
   formatPipelineStatus,
   getNextStep,
+  getNextStepForProject,
   isPipelineStepId,
   loadCompletedSteps,
+  loadPipelineMode,
+  effectiveCompletedSteps,
   markStepDone,
+  setPipelineMode,
   pipelineStatusPath,
   type PipelineStep,
+  type PipelineMode,
 } from './pipeline.js';
 
 export {
@@ -88,7 +89,6 @@ export {
   formatPromoteGateFailures,
   hasPrivacyPolicyForVendor,
   listPrivacyPolicyIds,
-  mapHasPiiLookingFields,
   type PromoteGateFailure,
   type PromoteGateId,
   type PromoteGatesInput,
@@ -135,3 +135,27 @@ export {
   type DomainIntentSource,
   type ResolvedDomainIntent,
 } from './domain-binding.js';
+
+export {
+  buildMultiAgentPlan,
+  formatMultiAgentPlanMarkdown,
+  writeMultiAgentPlanArtifacts,
+  multiAgentPlanPaths,
+  readyMultiAgentTasks,
+  groupReadyByParallel,
+  isMultiAgentPlanPath,
+  type MultiAgentRole,
+  type MultiAgentPhaseId,
+  type MultiAgentTask,
+  type MultiAgentPhase,
+  type MultiAgentPlan,
+  type BuildMultiAgentPlanOptions,
+  type AgentCapability,
+} from './multi-agent.js';
+
+export {
+  runHeal,
+  type HealRenameDecision,
+  type HealRunOptions,
+  type HealRunResult,
+} from './heal.js';

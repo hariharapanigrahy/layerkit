@@ -1,9 +1,0 @@
-{
-  "name": "proposal-sources-required",
-  "goal": "Agent proposals must cite primary vendor documentation",
-  "checks": [
-    "Empty sources[] is an error",
-    "HTTP(S) source URLs required",
-    "Valid sources allow structural map validation to proceed"
-  ]
-}

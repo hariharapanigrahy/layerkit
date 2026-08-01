@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import type { InstallPlatform } from '../install/paths.js';
 
 export interface MakerCheckerConfig {
@@ -71,9 +71,8 @@ export function layerkitConfigPath(): string {
   return join(layerkitHome(), 'config.json');
 }
 
-export function ensureLayerkitConfig(): LayerkitConfig {
-  const path = layerkitConfigPath();
-  mkdirSync(layerkitHome(), { recursive: true });
+export function ensureLayerkitConfig(path = layerkitConfigPath()): LayerkitConfig {
+  mkdirSync(dirname(path), { recursive: true });
   if (!existsSync(path)) {
     writeFileSync(path, JSON.stringify(DEFAULT_CONFIG, null, 2) + '\n');
     return {

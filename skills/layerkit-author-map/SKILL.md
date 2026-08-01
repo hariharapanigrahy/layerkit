@@ -27,9 +27,10 @@ layerkit proposal write map-from-openapi \
 ```
 
 - Intents: convention order (openapi extension → operationId → path_method). Extensions are opaque; org config chooses keys.
-- Fields: requestBody schema property names only (identity map until skill renames with citations).
+- Fields: requestBody schema property names only as evidence candidates; the agent must map to the client domain with citations before `map_complete`.
 - Auth: only from `securitySchemes` — else `custom` + needs-evidence notes (do not invent Bearer).
 - Multi-op OpenAPI → schemaVersion 2 operations map.
+- OpenAPI scaffolds are `skeleton` evidence seeds. Do not apply/promote them as complete until the agent has confirmed domain fields, transforms, and required processors from repo/docs evidence.
 
 3. **Manual scaffold** when no OpenAPI:
 

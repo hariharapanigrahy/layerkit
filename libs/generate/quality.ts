@@ -17,10 +17,7 @@ export interface JacocoReportSummary {
 }
 
 export interface QualityCheckOptions {
-  /**
-   * Roots to search for JaCoCo reports.
-   * Typical: `{projectDir}/out/java`, `{projectDir}/out/java/target`, repo root.
-   */
+  /** Roots to search for JaCoCo reports (moduleRoot, qualityRoots, repo). */
   searchRoots: string[];
   /** Require report file to exist (doctor --quality --strict / promote). */
   strict?: boolean;
@@ -234,10 +231,43 @@ export function checkJavaQuality(opts: QualityCheckOptions): QualityCheckResult 
   };
 }
 
-/** Default search roots for a Layerkit project store. */
-export function defaultJacocoSearchRoots(projectDir: string, repoRoot?: string): string[] {
-  const outJava = join(projectDir, 'out', 'java');
-  const roots = [outJava, join(outJava, 'target'), projectDir];
+/**
+ * Default search roots for JaCoCo / Java quality.
+/** Search moduleRoot, qualityRoots, then project/repo roots. */
+export function defaultJacocoSearchRoots(
+  projectDir: string,
+  repoRoot?: string,
+  generate?: {
+    moduleRoot?: string;
+    qualityRoots?: string[];
+  },
+): string[] {
+  const roots: string[] = [];
+
+  const base = repoRoot ?? projectDir;
+  if (generate?.moduleRoot?.trim()) {
+    const mod = isAbsolutePath(generate.moduleRoot)
+      ? generate.moduleRoot.trim()
+      : join(base, generate.moduleRoot.trim());
+    roots.push(mod, join(mod, 'target'));
+  }
+  for (const q of generate?.qualityRoots ?? []) {
+    if (!q?.trim()) continue;
+    roots.push(isAbsolutePath(q) ? q.trim() : join(base, q.trim()));
+  }
+
+  roots.push(projectDir);
   if (repoRoot) roots.push(repoRoot);
-  return roots;
+
+  // de-dupe preserving order
+  const seen = new Set<string>();
+  return roots.filter((r) => {
+    if (!r || seen.has(r)) return false;
+    seen.add(r);
+    return true;
+  });
+}
+
+function isAbsolutePath(p: string): boolean {
+  return p.startsWith('/') || /^[A-Za-z]:[\\/]/.test(p);
 }

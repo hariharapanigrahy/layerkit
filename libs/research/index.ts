@@ -22,7 +22,6 @@ export {
   describeEndpointsFromOpenApi,
   describeIntentCandidatesFromOpenApi,
   describeFieldsFromOpenApi,
-  describePiiFieldHintsFromOpenApi,
 } from './parse-openapi.js';
 
 export { parseCurl } from './parse-curl.js';
@@ -35,3 +34,14 @@ export {
   residualGaps,
   hasInventedEndpoint,
 } from './answer-sheet.js';
+
+export {
+  diffOpenApiAgainstMap,
+  pinContractEvidence,
+  formatContractUpdateMarkdown,
+  type ContractDriftItem,
+  type ContractDriftReport,
+  type DriftSeverity,
+  type DriftItemKind,
+  type PinContractResult,
+} from './contract-diff.js';
