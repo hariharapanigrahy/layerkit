@@ -22,6 +22,7 @@ export {
   loadCompletedSteps,
   loadPipelineMode,
   effectiveCompletedSteps,
+  assertCanMarkStep,
   markStepDone,
   setPipelineMode,
   pipelineStatusPath,

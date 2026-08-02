@@ -201,6 +201,15 @@ try {
     threw = true;
   }
   assertTrue('unknown step throws', threw);
+
+  // Strict order: cannot skip ahead to source-edit
+  let outOfOrder = false;
+  try {
+    markStepDone(projectDir, 'source-edit', [evidence]);
+  } catch (e) {
+    outOfOrder = String(e).includes('step_out_of_order');
+  }
+  assertTrue('out-of-order source-edit throws step_out_of_order', outOfOrder);
 } finally {
   rmSync(root, { recursive: true, force: true });
 }

@@ -298,8 +298,36 @@ export function isPipelineStepId(id: string): boolean {
 }
 
 /**
+ * Fail closed unless `stepId` is the current next pipeline step.
+ * Prevents freelancing later steps (source-edit/handoff) before research/map.
+ */
+export function assertCanMarkStep(projectDir: string, stepId: string): void {
+  if (!isPipelineStepId(stepId)) {
+    const known = INTEGRATION_PIPELINE.map((s) => s.id).join(', ');
+    throw new Error(`Unknown pipeline step "${stepId}". Known: ${known}`);
+  }
+  const already = effectiveCompletedSteps(projectDir);
+  if (already.includes(stepId)) {
+    return; // idempotent re-mark
+  }
+  const next = getNextStepForProject(projectDir);
+  if (!next) {
+    throw new Error(
+      `pipeline_complete: no steps left to mark-done (attempted "${stepId}")`,
+    );
+  }
+  if (next.id !== stepId) {
+    throw new Error(
+      `step_out_of_order: expected next step "${next.id}" (skill ${next.skill}); got "${stepId}". ` +
+        `Load that skill, complete it, then: layerkit agent mark-done --step ${next.id} --evidence <path>`,
+    );
+  }
+}
+
+/**
  * Append a completed marker for `stepId` under memory/runbooks/pipeline-status.md.
  * Evidence paths are required so the checklist cannot be completed by self-attestation.
+ * Only the current next step may be marked (strict order).
  * Returns absolute path of the marker file.
  */
 export function markStepDone(projectDir: string, stepId: string, evidencePaths: string[] = []): string {
@@ -319,6 +347,8 @@ export function markStepDone(projectDir: string, stepId: string, evidencePaths: 
   if (already.includes(stepId)) {
     return path;
   }
+
+  assertCanMarkStep(projectDir, stepId);
 
   const iso = new Date().toISOString();
   const markerLine = `- [x] ${stepId} — ${iso} (evidence: ${evidence.join(', ')})`;
