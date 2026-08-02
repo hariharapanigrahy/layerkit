@@ -17,9 +17,13 @@ import {
   loadPipelineMode,
   effectiveCompletedSteps,
   getNextStepForProject,
+  writeSkillPacket,
+  assertEvidenceForStep,
+  readEvidenceFile,
+  requirePipelineStarted,
+  SKILL_PACKET_REL,
   type PipelineMode,
-} from '../../libs/agent/index.js';
-import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
+} from '../../libs/agent/index.js';import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
 import { layerkitHookGuidance } from '../../libs/hooks/guidance.js';
 import { defaultPackageRoot, installLayerkit } from '../../libs/install/install.js';
@@ -789,10 +793,11 @@ function runAgentStart(args: string[], ctx: CliContext): void {
 }
 
 /**
- * Print next skill + exact CLI commands from INTEGRATION_PIPELINE.cliHints.
- * Agents should run these, then `layerkit agent mark-done --step <id> --evidence <path>`.
+ * Print next skill + exact CLI commands; always write a skill packet under memory/.
+ * Agents must follow the packet skill — freestyle without pipeline is blocked at mark-done.
  */
 function runAgentNext(_args: string[], ctx: CliContext): void {
+  requirePipelineStarted(ctx.projectDir);
   const mode = loadPipelineMode(ctx.projectDir);
   const next = getNextStepForProject(ctx.projectDir);
   if (!next) {
@@ -800,6 +805,7 @@ function runAgentNext(_args: string[], ctx: CliContext): void {
     console.log('Optional: layerkit agent status');
     return;
   }
+  const packetPath = writeSkillPacket(ctx.projectDir);
   console.log(`Next step: ${next.id}`);
   console.log(`Skill: ${next.skill}`);
   console.log(`Mode: ${mode}`);
@@ -808,12 +814,19 @@ function runAgentNext(_args: string[], ctx: CliContext): void {
   console.log('CLI commands:');
   for (const h of next.cliHints) console.log(`  ${h}`);
   console.log('');
+  console.log('FORBIDDEN: freestyle production edits or pin-only "full integrate" outside this skill.');
+  if (packetPath) {
+    console.log(`Skill packet written: ${packetPath}`);
+    console.log(`(relative: memory/${SKILL_PACKET_REL})`);
+  }
+  console.log('');
   console.log(`Mark complete: layerkit agent mark-done --step ${next.id} --evidence <path>`);
   console.log('Then: layerkit agent next');
 }
 
 /** Append a completed step marker under memory/runbooks/pipeline-status.md. */
 function runAgentMarkDone(args: string[], ctx: CliContext): void {
+  requirePipelineStarted(ctx.projectDir);
   const step = flag(args, '--step');
   const evidence = collectFlags(args, '--evidence');
   if (!step) {
@@ -826,29 +839,15 @@ function runAgentMarkDone(args: string[], ctx: CliContext): void {
       `Unknown step "${step}". Known: ${INTEGRATION_PIPELINE.map((s) => s.id).join(', ')}`,
     );
   }
-  const verifiedEvidence = verifyEvidencePaths(evidence, ctx);
-  const path = markStepDone(ctx.projectDir, step, verifiedEvidence);
+  const clean = evidence.map((p) => p.trim()).filter(Boolean);
+  assertEvidenceForStep(step, clean, (p) => readEvidenceFile(p, ctx.repoRoot, ctx.projectDir));
+  const path = markStepDone(ctx.projectDir, step, clean);
   const mode = loadPipelineMode(ctx.projectDir);
   const completed = effectiveCompletedSteps(ctx.projectDir);
   console.log(`Marked done: ${step}`);
   console.log(`Marker file: ${path}`);
   console.log(formatNextStepLine(completed, mode));
-}
-
-function verifyEvidencePaths(evidence: string[], ctx: CliContext): string[] {
-  const clean = evidence.map((p) => p.trim()).filter(Boolean);
-  if (clean.length === 0) {
-    throw new Error('mark_done_requires_evidence: pass --evidence <path>');
-  }
-  for (const p of clean) {
-    const repoPath = resolve(ctx.repoRoot, p);
-    const projectPath = resolve(ctx.projectDir, p);
-    const absolutePath = resolve(p);
-    if (!existsSync(repoPath) && !existsSync(projectPath) && !existsSync(absolutePath)) {
-      throw new Error(`evidence_not_found: ${p}`);
-    }
-  }
-  return clean;
+  console.log('Next: layerkit agent next  (loads the next skill packet)');
 }
 
 function runConfig(): void {

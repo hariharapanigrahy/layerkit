@@ -59,13 +59,14 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
   },
   {
     id: 'author',
-    skill: 'layerkit-author-processor',
+    skill: 'layerkit-author-map',
     cliHints: [
-      'Agent updates existing client transform/helper code directly',
-      'layerkit proposal validate <file> only when an explicit artifact is written',
+      'layerkit proposal write map --vendor <v> --out ./map.json --source title=url ... --field domain:vendor --validate',
+      'layerkit proposal validate / submit / apply map proposal with sources[]',
+      'If transforms needed: skill layerkit-author-processor on client helpers only',
     ],
     doneWhen:
-      'Transforms cited and implemented in client source; heal only touches fields affected by drift',
+      'Vendor map (and processors if needed) cited from evidence; heal only touches fields affected by drift',
   },
   {
     id: 'privacy',

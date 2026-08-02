@@ -35,10 +35,13 @@ layerkit cheatsheet
 layerkit agent start [--mode full|heal] [--vendor <v>] [--note <text>]   # default full
 layerkit agent status
 layerkit agent next
+layerkit agent next                 # writes memory/runbooks/current-skill-packet.md
 layerkit agent mark-done --step <id> --evidence <path>
 layerkit proposal validate <file>   # read-only structural check
 layerkit doctor
 ```
+
+**Fail-closed:** freestyle without `agent start` is blocked at `next`/`mark-done`. Evidence must be non-empty and match the step content pattern. Prefer `agent next` so the skill packet lists the only allowed skill for this step.
 
 | Command | Purpose |
 |---------|---------|
@@ -55,7 +58,7 @@ Step ids: `discover` | `research` | `design` | `author` | `privacy` | `deletion-
 | `discover` | `layerkit-discover-data-layer` | **Skipped** when `mode: heal` |
 | `research` | `layerkit-research-vendor` | Read docs/OpenAPI → evidence-backed map/source update |
 | `design` | `layerkit-design-flow` | Re-validate shape under new contract |
-| `author` | `layerkit-author-processor` | Only processors affected by drift |
+| `author` | `layerkit-author-map` (processors via `layerkit-author-processor` when needed) | Map fields from evidence; processors only if transforms required |
 | `privacy` | `layerkit-privacy-review` | Human if new PII fields |
 | `deletion-first` | `layerkit-deletion-first` | Remove stale docs/tests/shims before adding code |
 | `source-edit` | `layerkit-source-edit-client` or direct agent edit | Agent edits existing source/tests |

@@ -30,6 +30,17 @@ export {
 } from './pipeline.js';
 
 export {
+  SKILL_PACKET_REL,
+  MIN_EVIDENCE_BYTES,
+  skillPacketPath,
+  buildSkillPacket,
+  writeSkillPacket,
+  assertEvidenceForStep,
+  readEvidenceFile,
+  requirePipelineStarted,
+} from './skill-packet.js';
+
+export {
   HANDOFF_REQUIRED_HEADINGS,
   HANDOFF_TEMPLATE,
   type HandoffRunbookInput,
