@@ -220,8 +220,21 @@ try {
   assertTrue('heal marks discover complete', loadCompletedSteps(healProjectDir).includes('discover'));
   assertEqual('heal next step is research', getNextStepForProject(healProjectDir)?.id, 'research');
 
-  setPipelineMode(healProjectDir, 'full');
-  assertEqual('full mode is loaded after reset', loadPipelineMode(healProjectDir), 'full');
+  let reenterBlocked = false;
+  try {
+    setPipelineMode(healProjectDir, 'full');
+  } catch (e) {
+    reenterBlocked = String(e).includes('pipeline_already_started');
+  }
+  assertTrue('second start without force-reset throws', reenterBlocked);
+
+  setPipelineMode(healProjectDir, 'full', { forceReset: true });
+  assertEqual('full mode is loaded after force-reset', loadPipelineMode(healProjectDir), 'full');
+  assertEqual(
+    'force-reset clears heal discover marker',
+    loadCompletedSteps(healProjectDir).includes('discover'),
+    false,
+  );
 } finally {
   rmSync(healRoot, { recursive: true, force: true });
 }

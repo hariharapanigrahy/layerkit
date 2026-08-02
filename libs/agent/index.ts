@@ -24,6 +24,8 @@ export {
   effectiveCompletedSteps,
   markStepDone,
   setPipelineMode,
+  pipelineAlreadyStarted,
+  resetPipelineStatus,
   pipelineStatusPath,
   type PipelineStep,
   type PipelineMode,

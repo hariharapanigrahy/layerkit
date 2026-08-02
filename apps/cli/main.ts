@@ -164,13 +164,14 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['agent', 'start'],
-    usage: 'agent start [--mode full|heal] [--vendor <v>] [--note <text>] [--project-dir <path>]',
+    usage:
+      'agent start [--mode full|heal] [--vendor <v>] [--note <text>] [--force-reset] [--project-dir <path>]',
     handler: runAgentStart,
     showInTopLevelHelp: true,
   },
   {
     path: ['agent', 'next'],
-    usage: 'agent next [--project-dir <path>]',
+    usage: 'agent next [--packet] [--project-dir <path>]',
     handler: runAgentNext,
     showInTopLevelHelp: true,
   },
@@ -771,18 +772,24 @@ function runAgentStart(args: string[], ctx: CliContext): void {
   const modeRaw = flag(args, '--mode');
   // Default full so users need not learn heal vs full; heal is opt-in when domain is already known.
   if (modeRaw != null && modeRaw !== 'full' && modeRaw !== 'heal') {
-    throw new Error('Usage: layerkit agent start [--mode full|heal] [--vendor <v>] [--note <text>]');
+    throw new Error(
+      'Usage: layerkit agent start [--mode full|heal] [--vendor <v>] [--note <text>] [--force-reset]',
+    );
   }
   const mode: PipelineMode = modeRaw === 'heal' ? 'heal' : 'full';
+  const forceReset = hasFlag(args, '--force-reset');
   const path = setPipelineMode(ctx.projectDir, mode, {
     vendor: flag(args, '--vendor'),
     note: flag(args, '--note'),
+    forceReset,
   });
   const completed = effectiveCompletedSteps(ctx.projectDir);
 
-  console.log(`Started agent pipeline: ${mode}`);
+  console.log(`Started agent pipeline: ${mode}${forceReset ? ' (force-reset)' : ''}`);
   console.log(`Marker file: ${path}`);
   console.log(formatNextStepLine(completed, mode));
+  console.log('Forbidden until mark-done advances: freestyle production edits outside current skill.');
+  console.log('Next: layerkit agent next --packet');
   if (mode === 'heal') {
     console.log('Semantic contract drift and source edits remain agent-owned.');
   }
