@@ -25,6 +25,11 @@ Layerkit must not:
 - treat vendor fixture data as official package truth
 - write production integration source from deterministic CLI inference
 - apply paths outside the intended project/module root
-- silently overwrite customized installed skills or user config
+- silently overwrite **user-authored** (non-packaged) skill directories or user config without explicit flags
+
+Packaged skill refresh (intentional):
+
+- `layerkit install` **always replaces** packaged `layerkit-*` skill directories from the npm package contents. Those skills are package source of truth; do not customize them in place (contribute upstream instead).
+- Reinstall is not silent about this: install output reports skills written/refreshed.
 
 Security gates include secret redaction in memory, doctor secret scans, package hygiene checks, and hallucination/placeholders blocking during proposal apply.
