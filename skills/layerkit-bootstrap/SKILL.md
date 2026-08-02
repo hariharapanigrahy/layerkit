@@ -19,6 +19,8 @@ layerkit repo status
 layerkit memory index
 ```
 
+`layerkit install` refreshes packaged `layerkit-*` skills from the installed package (fixes stale skill text after upgrade). Non-packaged skill dirs are left alone. No separate skills-update command.
+
 3. Confirm project store path (`--project-dir` / `LAYERKIT_PROJECT_DIR` / default `.layerkit`).
 4. Confirm memory dirs under `{projectDir}/memory/` (INDEX.md present).
 6. Next: `layerkit-orchestrate-integration` (or `layerkit-discover-data-layer`).

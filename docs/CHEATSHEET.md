@@ -11,6 +11,8 @@ layerkit install --platform codex|claude|cursor|copilot|opencode|openhands|devin
 layerkit doctor
 ```
 
+Install refreshes packaged `layerkit-*` skills from the local npm package (no separate update command; no network skill fetch).
+
 Store resolution: `--project-dir` -> `LAYERKIT_PROJECT_DIR` -> `layerkit.path.json` -> `.layerkit`.
 
 ## Agent Pipeline

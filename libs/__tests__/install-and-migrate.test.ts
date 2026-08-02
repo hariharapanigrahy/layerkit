@@ -80,9 +80,9 @@ describe('install paths and skills', () => {
     );
   });
 
-  it('lists and copies packaged skills without overwriting custom skills', () => {
-      const root = mkdtempSync(join(tmpdir(), 'layerkit-skills-unit-'));
-      try {
+  it('lists packaged skills and refreshes them from the package; leaves non-packaged dirs alone', () => {
+    const root = mkdtempSync(join(tmpdir(), 'layerkit-skills-unit-'));
+    try {
       expect(listPackagedSkills(join(root, 'missing'))).toEqual([]);
       const skillsRoot = join(root, 'skills');
       mkdirSync(join(skillsRoot, 'layerkit-bootstrap'), { recursive: true });
@@ -96,11 +96,17 @@ describe('install paths and skills', () => {
 
       const dest = join(root, 'dest');
       mkdirSync(join(dest, 'layerkit-bootstrap'), { recursive: true });
-      writeFileSync(join(dest, 'layerkit-bootstrap', 'SKILL.md'), 'custom');
+      writeFileSync(join(dest, 'layerkit-bootstrap', 'SKILL.md'), 'stale');
+      mkdirSync(join(dest, 'my-custom-skill'), { recursive: true });
+      writeFileSync(join(dest, 'my-custom-skill', 'SKILL.md'), 'keep-me');
+
       const copied = copySkillsTo(root, dest);
       expect(copied).toHaveLength(2);
-      expect(readFileSync(join(dest, 'layerkit-bootstrap', 'SKILL.md'), 'utf8')).toBe('custom');
-      expect(existsSync(join(dest, 'layerkit-source-edit-client', 'SKILL.md'))).toBe(true);
+      // Packaged skills always refreshed from package (fixes stale install).
+      expect(readFileSync(join(dest, 'layerkit-bootstrap', 'SKILL.md'), 'utf8')).toBe('bootstrap');
+      expect(readFileSync(join(dest, 'layerkit-source-edit-client', 'SKILL.md'), 'utf8')).toBe('source');
+      // Non-packaged skill dirs are not package-managed — leave alone.
+      expect(readFileSync(join(dest, 'my-custom-skill', 'SKILL.md'), 'utf8')).toBe('keep-me');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
