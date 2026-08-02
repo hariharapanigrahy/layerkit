@@ -41,6 +41,13 @@ export {
 } from './skill-packet.js';
 
 export {
+  LAYERKIT_INTENT_PREFIXES,
+  looksLikeLayerkitIntent,
+  formatLayerkitHelp,
+  layerkitIntentHookLine,
+} from './intent-help.js';
+
+export {
   HANDOFF_REQUIRED_HEADINGS,
   HANDOFF_TEMPLATE,
   type HandoffRunbookInput,

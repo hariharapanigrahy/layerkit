@@ -64,6 +64,10 @@ export function buildSkillPacket(projectDir: string): { step: PipelineStep; mark
   const lines = [
     '# Current skill packet (Layerkit — fail-closed process)',
     '',
+    '## Intent (why rails are on)',
+    'This packet exists because the user opted into Layerkit integrate/heal',
+    '(layerkit: … / agent start). It does not govern unrelated app work.',
+    '',
     `mode: ${mode}`,
     `step: ${next.id}`,
     `skill: ${next.skill}`,
@@ -75,7 +79,7 @@ export function buildSkillPacket(projectDir: string): { step: PipelineStep; mark
     '3. Write evidence files that satisfy mark-done content checks.',
     `4. \`layerkit agent mark-done --step ${next.id} --evidence <path>\``,
     '',
-    '## Forbidden (this step)',
+    '## Forbidden (this step — integration purpose only)',
     ...forbidden.map((f) => `- ${f}`),
     '',
     '## CLI hints',
@@ -164,8 +168,10 @@ export function readEvidenceFile(
 export function requirePipelineStarted(projectDir: string): void {
   if (!existsSync(pipelineStatusPath(projectDir))) {
     throw new Error(
-      'pipeline_not_started: run `layerkit agent start --mode full|heal [--vendor <v>]` before agent next/mark-done. ' +
-        'Skills are not optional — freestyle without a session is blocked.',
+      'pipeline_not_started: intentional Layerkit session required. ' +
+        'User should opt in with `layerkit: …` (or integrate/heal via Layerkit), then: ' +
+        '`layerkit help` → `layerkit agent start --mode full|heal --vendor <v>` → `layerkit agent next`. ' +
+        'Do not freestyle contract PRs without a session. Unrelated coding does not need Layerkit.',
     );
   }
 }

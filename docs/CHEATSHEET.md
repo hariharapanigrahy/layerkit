@@ -13,13 +13,21 @@ layerkit doctor
 
 Store resolution: `--project-dir` -> `LAYERKIT_PROJECT_DIR` -> `layerkit.path.json` -> `.layerkit`.
 
-## Agent Pipeline
+## Intentional entry (integrate / heal only)
+
+Rails apply when the user opts in — not for unrelated coding.
 
 ```bash
+# User message examples:
+#   layerkit: heal stripe to latest API
+#   /layerkit integrate vendor X
+
+layerkit help                 # BMAD-style: when rails apply + how to start
+layerkit agent help
 layerkit agent start [--mode full|heal] [--vendor <v>] [--note <text>]   # default: full
-layerkit agent status
-layerkit agent next
+layerkit agent next           # writes skill packet; follow that skill only
 layerkit agent mark-done --step discover|research|design|author|privacy|deletion-first|source-edit|handoff --evidence <path>
+layerkit agent status
 ```
 
 Order:

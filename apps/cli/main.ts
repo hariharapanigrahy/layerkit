@@ -22,8 +22,10 @@ import {
   readEvidenceFile,
   requirePipelineStarted,
   SKILL_PACKET_REL,
+  formatLayerkitHelp,
   type PipelineMode,
-} from '../../libs/agent/index.js';import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
+} from '../../libs/agent/index.js';
+import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
 import { resolveProjectDir } from '../../libs/config/project-dir.js';
 import { layerkitHookGuidance } from '../../libs/hooks/guidance.js';
 import { defaultPackageRoot, installLayerkit } from '../../libs/install/install.js';
@@ -143,6 +145,12 @@ const cliCommands: CliCommand[] = [
     showInTopLevelHelp: true,
   },
   {
+    path: ['help'],
+    usage: 'help',
+    handler: runLayerkitHelp,
+    showInTopLevelHelp: true,
+  },
+  {
     path: ['cheatsheet'],
     usage: 'cheatsheet',
     handler: runCheatsheet,
@@ -159,6 +167,12 @@ const cliCommands: CliCommand[] = [
     usage: 'config',
     handler: runConfig,
     showInTopLevelHelp: false,
+  },
+  {
+    path: ['agent', 'help'],
+    usage: 'agent help [--project-dir <path>]',
+    handler: runLayerkitHelp,
+    showInTopLevelHelp: true,
   },
   {
     path: ['agent', 'status'],
@@ -785,8 +799,12 @@ function runAgentStart(args: string[], ctx: CliContext): void {
   const completed = effectiveCompletedSteps(ctx.projectDir);
 
   console.log(`Started agent pipeline: ${mode}`);
+  console.log(`projectDir: ${ctx.projectDir}`);
   console.log(`Marker file: ${path}`);
   console.log(formatNextStepLine(completed, mode));
+  console.log('Intentional session OPEN — skill rails apply until handoff.');
+  console.log('Unrelated non-integration work is out of scope for these rails.');
+  console.log('Next: layerkit agent next   (or layerkit help)');
   if (mode === 'heal') {
     console.log('Semantic contract drift and source edits remain agent-owned.');
   }
@@ -1054,33 +1072,63 @@ function matchCommand(argv: string[]): CliCommand | undefined {
   return sorted.find((c) => c.path.every((p, i) => argv[i] === p));
 }
 
-function printHelp(): void {
-  console.log('layerkit — agent-first multi-vendor data-layer toolkit\n');
-  console.log('Usage:');
+function printCommandList(): void {
+  console.log('Commands:');
   for (const c of cliCommands.filter((x) => x.showInTopLevelHelp)) {
     console.log(`  layerkit ${c.usage}`);
   }
   console.log('\nGlobal flags: --project-dir <path>  (store root; default .layerkit)');
   console.log('Platforms: ' + installPlatformUsage);
+}
+
+/** BMAD-style orientation: when rails apply + how to opt in. */
+function runLayerkitHelp(_args: string[], ctx: CliContext): void {
+  const sessionOpen = existsSync(pipelineStatusPath(ctx.projectDir));
+  const completed = sessionOpen ? effectiveCompletedSteps(ctx.projectDir) : [];
+  const mode = sessionOpen ? loadPipelineMode(ctx.projectDir) : 'full';
+  const nextStepLine = sessionOpen ? formatNextStepLine(completed, mode) : undefined;
+  console.log(
+    formatLayerkitHelp({
+      projectDir: ctx.projectDir,
+      sessionOpen,
+      nextStepLine,
+    }),
+  );
+  console.log('');
+  printCommandList();
+}
+
+function printHelp(ctx?: CliContext): void {
+  if (ctx) {
+    runLayerkitHelp([], ctx);
+    return;
+  }
+  console.log('layerkit — agent-first multi-vendor data-layer toolkit\n');
+  console.log(
+    formatLayerkitHelp({
+      sessionOpen: false,
+    }),
+  );
+  console.log('');
+  printCommandList();
   console.log('Cheat sheet: layerkit cheatsheet  (docs/CHEATSHEET.md)');
   console.log('Agent install: docs/agent-install-prompt.md');
-  console.log('Advanced rails for skills/agents are documented in the cheat sheet.');
 }
 
 async function main(argv: string[]): Promise<void> {
-  if (!argv.length || argv[0] === '-h' || argv[0] === '--help' || argv[0] === 'help') {
-    printHelp();
-    return;
-  }
-
   const { rest, projectDir: projectDirFlag } = extractGlobalFlags(argv);
   const repoRoot = detectRepoRoot();
   const projectDir = resolveProjectDir(repoRoot, { cliProjectDir: projectDirFlag });
   const ctx: CliContext = { repoRoot, projectDirFlag, projectDir };
 
+  if (!rest.length || rest[0] === '-h' || rest[0] === '--help') {
+    printHelp(ctx);
+    return;
+  }
+
   const cmd = matchCommand(rest);
   if (!cmd) {
-    printHelp();
+    printHelp(ctx);
     process.exitCode = 1;
     return;
   }

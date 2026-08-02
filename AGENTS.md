@@ -4,6 +4,12 @@
 
 Layerkit: evidence-first (OpenAPI, docs, curl, code); residual human only; no LLM on track().
 
+**Intentional entry only.** Rails apply when the user opts into integrate/heal — not for unrelated coding.
+
+- User prefix: `layerkit: …` (or `/layerkit` / `@layerkit`) for vendor integrate / contract heal.
+- Then: `layerkit help` → `layerkit agent start --mode full|heal --vendor …` → `layerkit agent next` (skill packet) → mark-done with real evidence.
+- Do **not** freestyle pin-only “full integrate” PRs. Do **not** force Layerkit on non-integration tasks.
+
 Master skill: `layerkit-orchestrate-integration`. Multi-agent coordination lives in the `layerkit-multi-agent` skill; there is no deterministic `agent multi` CLI.
 
 Contract update: use `layerkit agent start --mode heal --vendor …`, research evidence, then edit client source/tests directly with `layerkit-source-edit-client`.

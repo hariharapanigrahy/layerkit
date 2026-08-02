@@ -41,7 +41,9 @@ layerkit proposal validate <file>   # read-only structural check
 layerkit doctor
 ```
 
-**Fail-closed:** freestyle without `agent start` is blocked at `next`/`mark-done`. Evidence must be non-empty and match the step content pattern. Prefer `agent next` so the skill packet lists the only allowed skill for this step.
+**Intentional purpose only:** User opts in with `layerkit: …` (or `/layerkit` / `@layerkit`) or an explicit integrate/heal-via-Layerkit request. Run `layerkit help` then `agent start`. Unrelated coding is out of scope — do not force these rails.
+
+**Fail-closed (while claiming Layerkit):** freestyle without `agent start` is blocked at `next`/`mark-done`. Evidence must be non-empty and match the step content pattern. Prefer `agent next` so the skill packet lists the only allowed skill for this step.
 
 | Command | Purpose |
 |---------|---------|
