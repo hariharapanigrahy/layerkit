@@ -16,7 +16,7 @@ Store resolution: `--project-dir` -> `LAYERKIT_PROJECT_DIR` -> `layerkit.path.js
 ## Agent Pipeline
 
 ```bash
-layerkit agent start --mode full|heal [--vendor <v>] [--note <text>]
+layerkit agent start [--mode full|heal] [--vendor <v>] [--note <text>]   # default: full
 layerkit agent status
 layerkit agent next
 layerkit agent mark-done --step discover|research|design|author|privacy|deletion-first|source-edit|handoff --evidence <path>

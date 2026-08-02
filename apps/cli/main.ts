@@ -164,7 +164,7 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['agent', 'start'],
-    usage: 'agent start --mode full|heal [--vendor <v>] [--note <text>] [--project-dir <path>]',
+    usage: 'agent start [--mode full|heal] [--vendor <v>] [--note <text>] [--project-dir <path>]',
     handler: runAgentStart,
     showInTopLevelHelp: true,
   },
@@ -769,11 +769,11 @@ function runAgentStatus(_args: string[], ctx: CliContext): void {
 /** Initialize the deterministic pipeline state only; source edits remain agent-owned. */
 function runAgentStart(args: string[], ctx: CliContext): void {
   const modeRaw = flag(args, '--mode');
-  if (modeRaw !== 'full' && modeRaw !== 'heal') {
-    throw new Error('Usage: layerkit agent start --mode full|heal [--vendor <v>] [--note <text>]');
+  // Default full so users need not learn heal vs full; heal is opt-in when domain is already known.
+  if (modeRaw != null && modeRaw !== 'full' && modeRaw !== 'heal') {
+    throw new Error('Usage: layerkit agent start [--mode full|heal] [--vendor <v>] [--note <text>]');
   }
-
-  const mode: PipelineMode = modeRaw;
+  const mode: PipelineMode = modeRaw === 'heal' ? 'heal' : 'full';
   const path = setPipelineMode(ctx.projectDir, mode, {
     vendor: flag(args, '--vendor'),
     note: flag(args, '--note'),
