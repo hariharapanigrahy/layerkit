@@ -650,7 +650,9 @@ function parseEnabled(v: string | undefined): boolean {
 
 function printInstallResult(result: Awaited<ReturnType<typeof installLayerkit>>): void {
   console.log(`Installed Layerkit for ${result.platformLabel}.`);
-  console.log(`Skills: ${result.skillCount} packaged; paths written: ${result.skills.length}`);
+  console.log(
+    `Skills: ${result.skillCount} packaged; paths written/refreshed: ${result.skills.length}`,
+  );
   if (result.hooks) {
     console.log(`Hooks: installed for ${result.hooks.events.join(', ')}.`);
   } else if (result.hooksRequested) {
@@ -667,6 +669,7 @@ function printInstallResult(result: Awaited<ReturnType<typeof installLayerkit>>)
   console.log('');
   console.log('Next steps:');
   console.log('- Restart your coding agent if skills/hooks do not appear.');
+  console.log('- Packaged skills are refreshed on every install (stale SKILL.md copies are replaced).');
   console.log('- Use the installed Layerkit skills to read evidence and edit the package directly.');
   console.log('- Use CLI rails only for explicit artifacts: proposal validate/apply, map validate, memory, doctor.');
   console.log('- Do not invent email/phone rules without documentation sources.');

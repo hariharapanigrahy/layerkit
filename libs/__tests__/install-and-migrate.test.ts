@@ -80,15 +80,15 @@ describe('install paths and skills', () => {
     );
   });
 
-  it('lists and copies packaged skills without overwriting custom skills', () => {
-      const root = mkdtempSync(join(tmpdir(), 'layerkit-skills-unit-'));
-      try {
+  it('lists and refreshes packaged skills; leaves non-packaged dirs', () => {
+    const root = mkdtempSync(join(tmpdir(), 'layerkit-skills-unit-'));
+    try {
       expect(listPackagedSkills(join(root, 'missing'))).toEqual([]);
       const skillsRoot = join(root, 'skills');
       mkdirSync(join(skillsRoot, 'layerkit-bootstrap'), { recursive: true });
       mkdirSync(join(skillsRoot, 'layerkit-source-edit-client'), { recursive: true });
-      writeFileSync(join(skillsRoot, 'layerkit-bootstrap', 'SKILL.md'), 'bootstrap');
-      writeFileSync(join(skillsRoot, 'layerkit-source-edit-client', 'SKILL.md'), 'source');
+      writeFileSync(join(skillsRoot, 'layerkit-bootstrap', 'SKILL.md'), 'bootstrap-v2');
+      writeFileSync(join(skillsRoot, 'layerkit-source-edit-client', 'SKILL.md'), 'source-v2');
       mkdirSync(join(skillsRoot, 'not-a-skill'), { recursive: true });
 
       expect(listPackagedSkills(root).sort()).toEqual(['layerkit-bootstrap', 'layerkit-source-edit-client']);
@@ -96,11 +96,19 @@ describe('install paths and skills', () => {
 
       const dest = join(root, 'dest');
       mkdirSync(join(dest, 'layerkit-bootstrap'), { recursive: true });
-      writeFileSync(join(dest, 'layerkit-bootstrap', 'SKILL.md'), 'custom');
+      writeFileSync(join(dest, 'layerkit-bootstrap', 'SKILL.md'), 'stale-packaged');
+      mkdirSync(join(dest, 'my-custom-skill'), { recursive: true });
+      writeFileSync(join(dest, 'my-custom-skill', 'SKILL.md'), 'user-owned');
+
       const copied = copySkillsTo(root, dest);
       expect(copied).toHaveLength(2);
-      expect(readFileSync(join(dest, 'layerkit-bootstrap', 'SKILL.md'), 'utf8')).toBe('custom');
-      expect(existsSync(join(dest, 'layerkit-source-edit-client', 'SKILL.md'))).toBe(true);
+      // Packaged skills always refresh from package source of truth
+      expect(readFileSync(join(dest, 'layerkit-bootstrap', 'SKILL.md'), 'utf8')).toBe('bootstrap-v2');
+      expect(readFileSync(join(dest, 'layerkit-source-edit-client', 'SKILL.md'), 'utf8')).toBe(
+        'source-v2',
+      );
+      // Non-packaged skill dirs are not deleted
+      expect(readFileSync(join(dest, 'my-custom-skill', 'SKILL.md'), 'utf8')).toBe('user-owned');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
