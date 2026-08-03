@@ -1,0 +1,9 @@
+{
+  "id": "agent-skill-packet",
+  "suite": "ci",
+  "title": "Skill packet + evidence fail-closed for agent freelancing",
+  "owners": ["agent"],
+  "featurePr": "agent-skill-enforcement",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network", "agent", "pipeline", "skills"]
+}

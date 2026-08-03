@@ -23,11 +23,33 @@ export {
   loadPipelineMode,
   effectiveCompletedSteps,
   markStepDone,
+  assertCanMarkStep,
   setPipelineMode,
+  pipelineAlreadyStarted,
+  resetPipelineStatus,
   pipelineStatusPath,
   type PipelineStep,
   type PipelineMode,
 } from './pipeline.js';
+
+export {
+  SKILL_PACKET_REL,
+  MIN_EVIDENCE_BYTES,
+  skillPacketPath,
+  buildSkillPacket,
+  writeSkillPacket,
+  assertEvidenceForStep,
+  assertSkillPacketForMarkDone,
+  readEvidenceFile,
+  requirePipelineStarted,
+} from './skill-packet.js';
+
+export {
+  LAYERKIT_INTENT_PREFIXES,
+  looksLikeLayerkitIntent,
+  formatLayerkitHelp,
+  layerkitIntentHookLine,
+} from './intent-help.js';
 
 export {
   HANDOFF_REQUIRED_HEADINGS,

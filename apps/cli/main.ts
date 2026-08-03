@@ -17,6 +17,13 @@ import {
   loadPipelineMode,
   effectiveCompletedSteps,
   getNextStepForProject,
+  writeSkillPacket,
+  assertEvidenceForStep,
+  assertSkillPacketForMarkDone,
+  readEvidenceFile,
+  requirePipelineStarted,
+  SKILL_PACKET_REL,
+  formatLayerkitHelp,
   type PipelineMode,
 } from '../../libs/agent/index.js';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
@@ -139,6 +146,12 @@ const cliCommands: CliCommand[] = [
     showInTopLevelHelp: true,
   },
   {
+    path: ['help'],
+    usage: 'help',
+    handler: runLayerkitHelp,
+    showInTopLevelHelp: true,
+  },
+  {
     path: ['cheatsheet'],
     usage: 'cheatsheet',
     handler: runCheatsheet,
@@ -157,6 +170,12 @@ const cliCommands: CliCommand[] = [
     showInTopLevelHelp: false,
   },
   {
+    path: ['agent', 'help'],
+    usage: 'agent help [--project-dir <path>]',
+    handler: runLayerkitHelp,
+    showInTopLevelHelp: true,
+  },
+  {
     path: ['agent', 'status'],
     usage: 'agent status [--project-dir <path>]',
     handler: runAgentStatus,
@@ -164,7 +183,7 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['agent', 'start'],
-    usage: 'agent start [--mode full|heal] [--vendor <v>] [--note <text>] [--project-dir <path>]',
+    usage: 'agent start [--mode full|heal] [--vendor <v>] [--note <text>] [--force-reset] [--project-dir <path>]',
     handler: runAgentStart,
     showInTopLevelHelp: true,
   },
@@ -774,28 +793,35 @@ function runAgentStart(args: string[], ctx: CliContext): void {
   const modeRaw = flag(args, '--mode');
   // Default full so users need not learn heal vs full; heal is opt-in when domain is already known.
   if (modeRaw != null && modeRaw !== 'full' && modeRaw !== 'heal') {
-    throw new Error('Usage: layerkit agent start [--mode full|heal] [--vendor <v>] [--note <text>]');
+    throw new Error('Usage: layerkit agent start [--mode full|heal] [--vendor <v>] [--note <text>] [--force-reset]');
   }
   const mode: PipelineMode = modeRaw === 'heal' ? 'heal' : 'full';
+  const forceReset = hasFlag(args, '--force-reset');
   const path = setPipelineMode(ctx.projectDir, mode, {
     vendor: flag(args, '--vendor'),
     note: flag(args, '--note'),
+    forceReset,
   });
   const completed = effectiveCompletedSteps(ctx.projectDir);
 
-  console.log(`Started agent pipeline: ${mode}`);
+  console.log(`Started agent pipeline: ${mode}${forceReset ? ' (force-reset)' : ''}`);
+  console.log(`projectDir: ${ctx.projectDir}`);
   console.log(`Marker file: ${path}`);
   console.log(formatNextStepLine(completed, mode));
+  console.log('Intentional session OPEN — skill rails apply until handoff.');
+  console.log('Unrelated non-integration work is out of scope for these rails.');
+  console.log('Next: layerkit agent next   (or layerkit help)');
   if (mode === 'heal') {
     console.log('Semantic contract drift and source edits remain agent-owned.');
   }
 }
 
 /**
- * Print next skill + exact CLI commands from INTEGRATION_PIPELINE.cliHints.
- * Agents should run these, then `layerkit agent mark-done --step <id> --evidence <path>`.
+ * Print next skill + exact CLI commands; always write a skill packet under memory/.
+ * Agents must follow the packet skill — freestyle without pipeline is blocked at mark-done.
  */
 function runAgentNext(_args: string[], ctx: CliContext): void {
+  requirePipelineStarted(ctx.projectDir);
   const mode = loadPipelineMode(ctx.projectDir);
   const next = getNextStepForProject(ctx.projectDir);
   if (!next) {
@@ -803,6 +829,7 @@ function runAgentNext(_args: string[], ctx: CliContext): void {
     console.log('Optional: layerkit agent status');
     return;
   }
+  const packetPath = writeSkillPacket(ctx.projectDir);
   console.log(`Next step: ${next.id}`);
   console.log(`Skill: ${next.skill}`);
   console.log(`Mode: ${mode}`);
@@ -811,12 +838,19 @@ function runAgentNext(_args: string[], ctx: CliContext): void {
   console.log('CLI commands:');
   for (const h of next.cliHints) console.log(`  ${h}`);
   console.log('');
+  console.log('FORBIDDEN: freestyle production edits or pin-only "full integrate" outside this skill.');
+  if (packetPath) {
+    console.log(`Skill packet written: ${packetPath}`);
+    console.log(`(relative: memory/${SKILL_PACKET_REL})`);
+  }
+  console.log('');
   console.log(`Mark complete: layerkit agent mark-done --step ${next.id} --evidence <path>`);
   console.log('Then: layerkit agent next');
 }
 
 /** Append a completed step marker under memory/runbooks/pipeline-status.md. */
 function runAgentMarkDone(args: string[], ctx: CliContext): void {
+  requirePipelineStarted(ctx.projectDir);
   const step = flag(args, '--step');
   const evidence = collectFlags(args, '--evidence');
   if (!step) {
@@ -829,29 +863,17 @@ function runAgentMarkDone(args: string[], ctx: CliContext): void {
       `Unknown step "${step}". Known: ${INTEGRATION_PIPELINE.map((s) => s.id).join(', ')}`,
     );
   }
-  const verifiedEvidence = verifyEvidencePaths(evidence, ctx);
-  const path = markStepDone(ctx.projectDir, step, verifiedEvidence);
+  const clean = evidence.map((p) => p.trim()).filter(Boolean);
+  // Fail-closed flow while session open: next → skill packet → evidence → mark-done (order)
+  assertSkillPacketForMarkDone(ctx.projectDir, step);
+  assertEvidenceForStep(step, clean, (p) => readEvidenceFile(p, ctx.repoRoot, ctx.projectDir));
+  const path = markStepDone(ctx.projectDir, step, clean);
   const mode = loadPipelineMode(ctx.projectDir);
   const completed = effectiveCompletedSteps(ctx.projectDir);
   console.log(`Marked done: ${step}`);
   console.log(`Marker file: ${path}`);
   console.log(formatNextStepLine(completed, mode));
-}
-
-function verifyEvidencePaths(evidence: string[], ctx: CliContext): string[] {
-  const clean = evidence.map((p) => p.trim()).filter(Boolean);
-  if (clean.length === 0) {
-    throw new Error('mark_done_requires_evidence: pass --evidence <path>');
-  }
-  for (const p of clean) {
-    const repoPath = resolve(ctx.repoRoot, p);
-    const projectPath = resolve(ctx.projectDir, p);
-    const absolutePath = resolve(p);
-    if (!existsSync(repoPath) && !existsSync(projectPath) && !existsSync(absolutePath)) {
-      throw new Error(`evidence_not_found: ${p}`);
-    }
-  }
-  return clean;
+  console.log('Next: layerkit agent next  (loads the next skill packet)');
 }
 
 function runConfig(): void {
@@ -1058,33 +1080,63 @@ function matchCommand(argv: string[]): CliCommand | undefined {
   return sorted.find((c) => c.path.every((p, i) => argv[i] === p));
 }
 
-function printHelp(): void {
-  console.log('layerkit — agent-first multi-vendor data-layer toolkit\n');
-  console.log('Usage:');
+function printCommandList(): void {
+  console.log('Commands:');
   for (const c of cliCommands.filter((x) => x.showInTopLevelHelp)) {
     console.log(`  layerkit ${c.usage}`);
   }
   console.log('\nGlobal flags: --project-dir <path>  (store root; default .layerkit)');
   console.log('Platforms: ' + installPlatformUsage);
+}
+
+/** BMAD-style orientation: when rails apply + how to opt in. */
+function runLayerkitHelp(_args: string[], ctx: CliContext): void {
+  const sessionOpen = existsSync(pipelineStatusPath(ctx.projectDir));
+  const completed = sessionOpen ? effectiveCompletedSteps(ctx.projectDir) : [];
+  const mode = sessionOpen ? loadPipelineMode(ctx.projectDir) : 'full';
+  const nextStepLine = sessionOpen ? formatNextStepLine(completed, mode) : undefined;
+  console.log(
+    formatLayerkitHelp({
+      projectDir: ctx.projectDir,
+      sessionOpen,
+      nextStepLine,
+    }),
+  );
+  console.log('');
+  printCommandList();
+}
+
+function printHelp(ctx?: CliContext): void {
+  if (ctx) {
+    runLayerkitHelp([], ctx);
+    return;
+  }
+  console.log('layerkit — agent-first multi-vendor data-layer toolkit\n');
+  console.log(
+    formatLayerkitHelp({
+      sessionOpen: false,
+    }),
+  );
+  console.log('');
+  printCommandList();
   console.log('Cheat sheet: layerkit cheatsheet  (docs/CHEATSHEET.md)');
   console.log('Agent install: docs/agent-install-prompt.md');
-  console.log('Advanced rails for skills/agents are documented in the cheat sheet.');
 }
 
 async function main(argv: string[]): Promise<void> {
-  if (!argv.length || argv[0] === '-h' || argv[0] === '--help' || argv[0] === 'help') {
-    printHelp();
-    return;
-  }
-
   const { rest, projectDir: projectDirFlag } = extractGlobalFlags(argv);
   const repoRoot = detectRepoRoot();
   const projectDir = resolveProjectDir(repoRoot, { cliProjectDir: projectDirFlag });
   const ctx: CliContext = { repoRoot, projectDirFlag, projectDir };
 
+  if (!rest.length || rest[0] === '-h' || rest[0] === '--help') {
+    printHelp(ctx);
+    return;
+  }
+
   const cmd = matchCommand(rest);
   if (!cmd) {
-    printHelp();
+    printHelp(ctx);
     process.exitCode = 1;
     return;
   }
@@ -1094,7 +1146,9 @@ async function main(argv: string[]): Promise<void> {
 main(process.argv.slice(2)).catch((err) => {
   if (err instanceof Error) {
     const code = errorCode(err.message);
-    console.error(`${code}: ${err.message}`);
+    // Avoid double prefix when message already starts with code:
+    const msg = err.message.startsWith(`${code}:`) ? err.message : `${code}: ${err.message}`;
+    console.error(msg);
     if (process.env.LAYERKIT_DEBUG === '1' && err.stack) console.error(err.stack);
   } else {
     console.error(`unknown_error: ${String(err)}`);

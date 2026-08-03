@@ -1,0 +1,9 @@
+{
+  "id": "agent-intent-help",
+  "suite": "ci",
+  "title": "Intentional Layerkit entry (layerkit: + help)",
+  "owners": ["agent"],
+  "featurePr": "agent-skill-enforcement",
+  "fixtures": [],
+  "tags": ["deterministic", "no-network", "agent", "intent"]
+}

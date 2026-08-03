@@ -165,7 +165,24 @@ try {
   assertEqual('no markers initially', loadCompletedSteps(projectDir).length, 0);
   const evidence = 'memory/evidence.md';
   mkdirSync(join(projectDir, 'memory'), { recursive: true });
-  writeFileSync(join(projectDir, evidence), 'evidence', 'utf8');
+  // Thick enough for mark-done content gates when those land; keep sequential marks valid.
+  writeFileSync(
+    join(projectDir, evidence),
+    [
+      'Pipeline eval evidence note with required keywords.',
+      'intents: purchase',
+      'fields: user.email',
+      'source:code path=src/App.ts',
+      'https://docs.example.com/api drift residual severity none',
+      'shape linear mapper existing adapter',
+      'map field vendor proposal sources',
+      'privacy no new PII residual',
+      'delete stale replace net-neutral loc',
+      'source-edit applied field residual diff',
+      'handoff goal next blocked quality residual',
+    ].join('\n'),
+    'utf8',
+  );
 
   const path1 = markStepDone(projectDir, 'discover', [evidence]);
   assertTrue('marker file created', existsSync(path1));
@@ -201,6 +218,14 @@ try {
     threw = true;
   }
   assertTrue('unknown step throws', threw);
+
+  let outOfOrder = false;
+  try {
+    markStepDone(projectDir, 'source-edit', [evidence]);
+  } catch (e) {
+    outOfOrder = String(e).includes('step_out_of_order');
+  }
+  assertTrue('out-of-order source-edit throws', outOfOrder);
 } finally {
   rmSync(root, { recursive: true, force: true });
 }
@@ -220,8 +245,21 @@ try {
   assertTrue('heal marks discover complete', loadCompletedSteps(healProjectDir).includes('discover'));
   assertEqual('heal next step is research', getNextStepForProject(healProjectDir)?.id, 'research');
 
-  setPipelineMode(healProjectDir, 'full');
-  assertEqual('full mode is loaded after reset', loadPipelineMode(healProjectDir), 'full');
+  let reenterBlocked = false;
+  try {
+    setPipelineMode(healProjectDir, 'full');
+  } catch (e) {
+    reenterBlocked = String(e).includes('pipeline_already_started');
+  }
+  assertTrue('second start without force-reset throws', reenterBlocked);
+
+  setPipelineMode(healProjectDir, 'full', { forceReset: true });
+  assertEqual('full mode after force-reset', loadPipelineMode(healProjectDir), 'full');
+  assertEqual(
+    'force-reset clears discover',
+    loadCompletedSteps(healProjectDir).includes('discover'),
+    false,
+  );
 } finally {
   rmSync(healRoot, { recursive: true, force: true });
 }

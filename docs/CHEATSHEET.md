@@ -13,14 +13,25 @@ layerkit doctor
 
 Store resolution: `--project-dir` -> `LAYERKIT_PROJECT_DIR` -> `layerkit.path.json` -> `.layerkit`.
 
-## Agent Pipeline
+## Intentional entry (integrate / heal only)
+
+Rails apply when the user opts in — not for unrelated coding.
 
 ```bash
-layerkit agent start [--mode full|heal] [--vendor <v>] [--note <text>]   # default: full
+# User message examples:
+#   layerkit: heal stripe to latest API
+#   /layerkit integrate vendor X
+
+layerkit help                 # BMAD-style: when rails apply + how to start
+layerkit agent help
+layerkit agent start [--mode full|heal] [--vendor <v>] [--note <text>] [--force-reset]   # default: full
+layerkit agent next           # required: writes skill packet for current step
+layerkit agent mark-done --step <id> --evidence <path>   # requires packet + order + real evidence
 layerkit agent status
-layerkit agent next
-layerkit agent mark-done --step discover|research|design|author|privacy|deletion-first|source-edit|handoff --evidence <path>
+# Re-start mid-run: agent start --force-reset (maps/memory kept)
 ```
+
+While a session is open, freelancing is fail-closed: no mark-done without `agent next`, no skip steps, no empty evidence stubs.
 
 Order:
 
