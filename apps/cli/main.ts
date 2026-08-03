@@ -1143,7 +1143,9 @@ async function main(argv: string[]): Promise<void> {
 main(process.argv.slice(2)).catch((err) => {
   if (err instanceof Error) {
     const code = errorCode(err.message);
-    console.error(`${code}: ${err.message}`);
+    // Avoid double prefix when message already starts with code:
+    const msg = err.message.startsWith(`${code}:`) ? err.message : `${code}: ${err.message}`;
+    console.error(msg);
     if (process.env.LAYERKIT_DEBUG === '1' && err.stack) console.error(err.stack);
   } else {
     console.error(`unknown_error: ${String(err)}`);
