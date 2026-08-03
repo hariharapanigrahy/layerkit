@@ -23,7 +23,10 @@ export {
   loadPipelineMode,
   effectiveCompletedSteps,
   markStepDone,
+  assertCanMarkStep,
   setPipelineMode,
+  pipelineAlreadyStarted,
+  resetPipelineStatus,
   pipelineStatusPath,
   type PipelineStep,
   type PipelineMode,
@@ -36,6 +39,7 @@ export {
   buildSkillPacket,
   writeSkillPacket,
   assertEvidenceForStep,
+  assertSkillPacketForMarkDone,
   readEvidenceFile,
   requirePipelineStarted,
 } from './skill-packet.js';

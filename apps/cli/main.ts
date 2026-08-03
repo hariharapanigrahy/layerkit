@@ -19,6 +19,7 @@ import {
   getNextStepForProject,
   writeSkillPacket,
   assertEvidenceForStep,
+  assertSkillPacketForMarkDone,
   readEvidenceFile,
   requirePipelineStarted,
   SKILL_PACKET_REL,
@@ -182,7 +183,7 @@ const cliCommands: CliCommand[] = [
   },
   {
     path: ['agent', 'start'],
-    usage: 'agent start [--mode full|heal] [--vendor <v>] [--note <text>] [--project-dir <path>]',
+    usage: 'agent start [--mode full|heal] [--vendor <v>] [--note <text>] [--force-reset] [--project-dir <path>]',
     handler: runAgentStart,
     showInTopLevelHelp: true,
   },
@@ -789,16 +790,18 @@ function runAgentStart(args: string[], ctx: CliContext): void {
   const modeRaw = flag(args, '--mode');
   // Default full so users need not learn heal vs full; heal is opt-in when domain is already known.
   if (modeRaw != null && modeRaw !== 'full' && modeRaw !== 'heal') {
-    throw new Error('Usage: layerkit agent start [--mode full|heal] [--vendor <v>] [--note <text>]');
+    throw new Error('Usage: layerkit agent start [--mode full|heal] [--vendor <v>] [--note <text>] [--force-reset]');
   }
   const mode: PipelineMode = modeRaw === 'heal' ? 'heal' : 'full';
+  const forceReset = hasFlag(args, '--force-reset');
   const path = setPipelineMode(ctx.projectDir, mode, {
     vendor: flag(args, '--vendor'),
     note: flag(args, '--note'),
+    forceReset,
   });
   const completed = effectiveCompletedSteps(ctx.projectDir);
 
-  console.log(`Started agent pipeline: ${mode}`);
+  console.log(`Started agent pipeline: ${mode}${forceReset ? ' (force-reset)' : ''}`);
   console.log(`projectDir: ${ctx.projectDir}`);
   console.log(`Marker file: ${path}`);
   console.log(formatNextStepLine(completed, mode));
@@ -858,6 +861,8 @@ function runAgentMarkDone(args: string[], ctx: CliContext): void {
     );
   }
   const clean = evidence.map((p) => p.trim()).filter(Boolean);
+  // Fail-closed flow while session open: next → skill packet → evidence → mark-done (order)
+  assertSkillPacketForMarkDone(ctx.projectDir, step);
   assertEvidenceForStep(step, clean, (p) => readEvidenceFile(p, ctx.repoRoot, ctx.projectDir));
   const path = markStepDone(ctx.projectDir, step, clean);
   const mode = loadPipelineMode(ctx.projectDir);

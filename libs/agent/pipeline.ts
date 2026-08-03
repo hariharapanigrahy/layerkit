@@ -3,7 +3,7 @@
  * Order: discover → research → design → author → privacy → deletion-first → source-edit → handoff
  * mode=heal skips discover when the customer domain model is already known.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 /** One ordered step in the integration pipeline. */
@@ -133,67 +133,62 @@ export function loadPipelineMode(projectDir: string): PipelineMode {
   return 'full';
 }
 
+/** True when a pipeline status marker file already exists. */
+export function pipelineAlreadyStarted(projectDir: string): boolean {
+  return existsSync(pipelineStatusPath(projectDir));
+}
+
+/** Delete pipeline step markers only (maps/memory kept). */
+export function resetPipelineStatus(projectDir: string): void {
+  const path = pipelineStatusPath(projectDir);
+  if (existsSync(path)) rmSync(path, { force: true });
+}
+
 /**
- * Ensure status file exists and set mode line (heal | full).
- * Heal marks discover complete so agent next starts at research.
+ * Create a new pipeline session. Existing markers require forceReset.
+ * Heal writes discover complete so agent next starts at research.
  */
 export function setPipelineMode(
   projectDir: string,
   mode: PipelineMode,
-  meta?: { vendor?: string; note?: string },
+  meta?: { vendor?: string; note?: string; forceReset?: boolean },
 ): string {
   const path = pipelineStatusPath(projectDir);
   mkdirSync(dirname(path), { recursive: true });
 
-  const iso = new Date().toISOString();
-  const vendorLine = meta?.vendor ? `vendor: ${meta.vendor}` : '';
-  const noteLine = meta?.note ? `note: ${meta.note}` : '';
-
-  if (!existsSync(path)) {
-    const header = [
-      '# Integration pipeline status',
-      '',
-      `mode: ${mode}`,
-      vendorLine,
-      noteLine,
-      '',
-      'Agent orchestration markers.',
-      'Mark steps complete with `layerkit agent mark-done --step <id> --evidence <path>`.',
-      '',
-      '## Completed',
-      '',
-      mode === 'heal'
-        ? `- [x] discover — ${iso} (heal: domain already known; evidence: memory/${PIPELINE_STATUS_REL})`
-        : '',
-      '',
-    ]
-      .filter((l) => l !== undefined)
-      .join('\n');
-    writeFileSync(path, header.replace(/\n{3,}/g, '\n\n'), 'utf8');
-    return path;
-  }
-
-  let prev = readFileSync(path, 'utf8');
-  if (/^\s*mode:\s*/im.test(prev)) {
-    prev = prev.replace(/^\s*mode:\s*(heal|full)\b.*$/im, `mode: ${mode}`);
-  } else {
-    prev = prev.replace(
-      /^(# Integration pipeline status\s*\n)/m,
-      `$1\nmode: ${mode}\n`,
+  if (existsSync(path) && !meta?.forceReset) {
+    throw new Error(
+      'pipeline_already_started: status markers already exist. ' +
+        'Resume with `layerkit agent status` / `agent next`, or ' +
+        '`layerkit agent start --force-reset` to wipe step markers (maps/memory kept).',
     );
   }
-  if (meta?.vendor) {
-    if (/^\s*vendor:\s*/im.test(prev)) {
-      prev = prev.replace(/^\s*vendor:\s*.*$/im, `vendor: ${meta.vendor}`);
-    } else {
-      prev = prev.replace(/^\s*mode:\s*.*$/im, (line) => `${line}\nvendor: ${meta.vendor}`);
-    }
+  if (meta?.forceReset && existsSync(path)) {
+    resetPipelineStatus(projectDir);
   }
-  writeFileSync(path, prev, 'utf8');
 
-  if (mode === 'heal') {
-    markStepDone(projectDir, 'discover', [`memory/${PIPELINE_STATUS_REL}`]);
-  }
+  const iso = new Date().toISOString();
+  const body = [
+    '# Integration pipeline status',
+    '',
+    `mode: ${mode}`,
+    ...(meta?.vendor ? [`vendor: ${meta.vendor}`] : []),
+    ...(meta?.note ? [`note: ${meta.note}`] : []),
+    '',
+    'Agent orchestration markers (fail-closed while session open).',
+    'Flow: agent next (skill packet) → do skill → mark-done --evidence.',
+    'Only the current next step may be marked done; packet step must match.',
+    '',
+    '## Completed',
+    '',
+    ...(mode === 'heal'
+      ? [
+          `- [x] discover — ${iso} (heal: domain already known; evidence: memory/${PIPELINE_STATUS_REL})`,
+          '',
+        ]
+      : []),
+  ].join('\n');
+  writeFileSync(path, body, 'utf8');
   return path;
 }
 
@@ -299,8 +294,31 @@ export function isPipelineStepId(id: string): boolean {
 }
 
 /**
+ * Fail closed unless stepId is the current next pipeline step.
+ */
+export function assertCanMarkStep(projectDir: string, stepId: string): void {
+  if (!isPipelineStepId(stepId)) {
+    const known = INTEGRATION_PIPELINE.map((s) => s.id).join(', ');
+    throw new Error(`Unknown pipeline step "${stepId}". Known: ${known}`);
+  }
+  const already = effectiveCompletedSteps(projectDir);
+  if (already.includes(stepId)) return;
+  const next = getNextStepForProject(projectDir);
+  if (!next) {
+    throw new Error(`pipeline_complete: no steps left to mark-done (attempted "${stepId}")`);
+  }
+  if (next.id !== stepId) {
+    throw new Error(
+      `step_out_of_order: expected next step "${next.id}" (skill ${next.skill}); got "${stepId}". ` +
+        `Run: layerkit agent next — then complete that skill only.`,
+    );
+  }
+}
+
+/**
  * Append a completed marker for `stepId` under memory/runbooks/pipeline-status.md.
  * Evidence paths are required so the checklist cannot be completed by self-attestation.
+ * Only the current next step may be marked (strict order).
  * Returns absolute path of the marker file.
  */
 export function markStepDone(projectDir: string, stepId: string, evidencePaths: string[] = []): string {
@@ -320,6 +338,8 @@ export function markStepDone(projectDir: string, stepId: string, evidencePaths: 
   if (already.includes(stepId)) {
     return path;
   }
+
+  assertCanMarkStep(projectDir, stepId);
 
   const iso = new Date().toISOString();
   const markerLine = `- [x] ${stepId} — ${iso} (evidence: ${evidence.join(', ')})`;

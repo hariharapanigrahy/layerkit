@@ -164,6 +164,35 @@ export function readEvidenceFile(
   return null;
 }
 
+
+/**
+ * mark-done requires a current skill packet from `agent next` for this exact step.
+ * Prevents freelancing mark-done without loading the skill packet.
+ */
+export function assertSkillPacketForMarkDone(projectDir: string, stepId: string): void {
+  const path = skillPacketPath(projectDir);
+  if (!existsSync(path)) {
+    throw new Error(
+      'skill_packet_required: run `layerkit agent next` first so the current skill packet is written. ' +
+        'Mark-done without a packet is freelancing and is blocked while the session is open.',
+    );
+  }
+  const body = readFileSync(path, 'utf8');
+  const m = body.match(/^step:\s*(\S+)/m);
+  const packetStep = m?.[1];
+  if (!packetStep) {
+    throw new Error(
+      'skill_packet_invalid: current-skill-packet.md missing step: line. Re-run `layerkit agent next`.',
+    );
+  }
+  if (packetStep !== stepId) {
+    throw new Error(
+      `skill_packet_step_mismatch: packet is for step "${packetStep}" but mark-done requested "${stepId}". ` +
+        `Run \`layerkit agent next\` and complete skill for "${packetStep}" only.`,
+    );
+  }
+}
+
 /** Whether pipeline has been started (status file present). */
 export function requirePipelineStarted(projectDir: string): void {
   if (!existsSync(pipelineStatusPath(projectDir))) {

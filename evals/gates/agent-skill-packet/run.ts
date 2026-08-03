@@ -11,6 +11,7 @@ import {
   MIN_EVIDENCE_BYTES,
   setPipelineMode,
   writeSkillPacket,
+  assertSkillPacketForMarkDone,
   requirePipelineStarted,
   SKILL_PACKET_REL,
 } from '../../../libs/agent/index.js';
@@ -66,6 +67,23 @@ try {
     () =>
       `${pad}\nhttps://docs.stripe.com/changelog drift residual severity none\n`,
   );
+
+  // mark-done without packet fails
+  let noPacket = false;
+  try {
+    assertSkillPacketForMarkDone(projectDir, 'research');
+  } catch (e) {
+    noPacket = String(e).includes('skill_packet_step_mismatch') || String(e).includes('skill_packet_required');
+  }
+  // packet is for discover; research should mismatch
+  noPacket = false;
+  try {
+    assertSkillPacketForMarkDone(projectDir, 'research');
+  } catch (e) {
+    noPacket = String(e).includes('skill_packet_step_mismatch');
+  }
+  assertTrue('packet step mismatch for research while on discover', noPacket);
+  assertSkillPacketForMarkDone(projectDir, 'discover');
 
   assertEqual('min evidence bytes constant', MIN_EVIDENCE_BYTES >= 40, true);
 } finally {
