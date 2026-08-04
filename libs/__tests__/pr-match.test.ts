@@ -93,6 +93,25 @@ describe('scorePrMatch / pickBestPrMatch', () => {
     // "workstream" is length >= 4
     expect(pickBestPrMatch([only], 'workstream', { explicitMatch: true })?.number).toBe(4);
   });
+
+  it('on equal score prefers higher PR number (raw, not mod 1000)', () => {
+    const key = 'heal multilang surfaces';
+    const older = cand({
+      number: 12,
+      title: 'heal multilang surfaces',
+      body: '',
+      headRefName: 'layerkit/heal-a',
+    });
+    const newer = cand({
+      number: 1500,
+      title: 'heal multilang surfaces',
+      body: '',
+      headRefName: 'layerkit/heal-b',
+    });
+    // Same token coverage on title; score equal → raw PR number decides
+    expect(scorePrMatch(older, key, matchTokens(key))).toBe(scorePrMatch(newer, key, matchTokens(key)));
+    expect(pickBestPrMatch([older, newer], key, { explicitMatch: true })?.number).toBe(1500);
+  });
 });
 
 describe('parseGithubOwnerRepo', () => {

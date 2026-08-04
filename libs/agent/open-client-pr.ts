@@ -17,6 +17,29 @@ import { pickBestPrMatch, type PrMatchCandidate } from './pr-match.js';
 /** Attribution link appended to client PR bodies. */
 export const LAYERKIT_PRODUCT_URL = 'https://github.com/hariharapanigrahy/layerkit';
 
+export type ProcessRunResult = { status: number; stdout: string; stderr: string };
+/** Injectable process runner (git/gh) for unit tests. */
+export type ProcessRunner = (cmd: string, args: string[], cwd: string) => ProcessRunResult;
+
+function defaultProcessRunner(cmd: string, args: string[], cwd: string): ProcessRunResult {
+  const r = spawnSync(cmd, args, { cwd, encoding: 'utf8', timeout: 120_000 });
+  return {
+    status: r.status ?? 1,
+    stdout: (r.stdout ?? '').trim(),
+    stderr: (r.stderr ?? '').trim(),
+  };
+}
+
+let processRunner: ProcessRunner = defaultProcessRunner;
+
+/**
+ * Test-only: inject git/gh doubles for openClientPr integration paths.
+ * Pass `null` to restore the real spawnSync runner.
+ */
+export function setOpenClientPrProcessRunnerForTests(runner: ProcessRunner | null): void {
+  processRunner = runner ?? defaultProcessRunner;
+}
+
 export interface OpenClientPrOpts {
   /** Customer package git root (usually projectDir or repoRoot). */
   cwd: string;
@@ -53,17 +76,8 @@ export interface OpenClientPrResult {
   prNumber?: number;
 }
 
-function run(
-  cmd: string,
-  args: string[],
-  cwd: string,
-): { status: number; stdout: string; stderr: string } {
-  const r = spawnSync(cmd, args, { cwd, encoding: 'utf8', timeout: 120_000 });
-  return {
-    status: r.status ?? 1,
-    stdout: (r.stdout ?? '').trim(),
-    stderr: (r.stderr ?? '').trim(),
-  };
+function run(cmd: string, args: string[], cwd: string): ProcessRunResult {
+  return processRunner(cmd, args, cwd);
 }
 
 function requireGitRepo(cwd: string): void {

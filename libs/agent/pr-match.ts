@@ -57,14 +57,12 @@ export function scorePrMatch(
   }
   if (everyToken) score += 50;
   if (rawInBlob) score += 20;
-  // Prefer newer PRs on score ties (added outside as tie-break; small bump by number)
-  score += Math.min(pr.number % 1000, 999) * 0.0001;
   return score;
 }
 
 /**
  * Pick the best matching PR from a list.
- * When multiple candidates score, highest score wins.
+ * Highest score wins; on equal score, higher PR number (newer) wins.
  */
 export function pickBestPrMatch(
   candidates: PrMatchCandidate[],
@@ -81,7 +79,11 @@ export function pickBestPrMatch(
   for (const pr of candidates) {
     const score = scorePrMatch(pr, prMatch, tokens);
     if (score < 0) continue;
-    if (score > bestScore) {
+    if (
+      best === null ||
+      score > bestScore ||
+      (score === bestScore && pr.number > best.number)
+    ) {
       bestScore = score;
       best = pr;
     }

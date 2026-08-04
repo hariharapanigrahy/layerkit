@@ -63,9 +63,12 @@ export {
   parseGithubOwnerRepo,
   findOpenPrByMatch,
   findOpenPrForUsecase,
+  setOpenClientPrProcessRunnerForTests,
   LAYERKIT_PRODUCT_URL,
   type OpenClientPrOpts,
   type OpenClientPrResult,
+  type ProcessRunner,
+  type ProcessRunResult,
 } from './open-client-pr.js';
 
 export {
