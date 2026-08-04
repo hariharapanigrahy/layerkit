@@ -5,50 +5,68 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](./package.json)
 
-Layerkit is an **AI-agent workbench for vendor integrations**. It installs skills, keeps local evidence/proposals/memory, and runs evals that teach agents to update a client package like a developer.
+**Evidence-first AI agents that integrate and heal vendor APIs like a senior developer — production code, multi-lang surfaces, live PRs.**
 
-Layerkit is **not** a runtime SDK that clients import to route or send vendor traffic. The final integration code belongs in the client package: existing mappers, adapters, datalayer interfaces, tests, and docs are edited directly by the agent from cited evidence.
-
-## Install
-
-```bash
-npm install -g layerkit
-# or
-npx layerkit --help
-```
-
-```bash
-cd /path/to/client/package
-layerkit install --platform codex --hooks enabled --map-reminders enabled
-layerkit doctor
-```
-
-Supported platforms:
+When a vendor renames fields or breaks a contract, freestyle agents pin `apiVersion`, invent maps, or open store-only “done” PRs. Layerkit makes the agent **read docs/OpenAPI/code**, **edit real client source** (not generate a sidecar SDK), **cover every language surface**, and **ship a real GitHub PR** — or an honest residual when there is nothing to change.
 
 ```text
-codex | claude | cursor | copilot | opencode | openhands | devin | windsurf | factory-droid | antigravity
+docs / OpenAPI / curl / code
+        ↓
+  research → map → production source edits (all languages)
+        ↓
+  package verify → live PR  (or residual-no-pr break-glass)
 ```
 
-## What Layerkit Provides
+Layerkit is **not** a runtime integration SDK and **not** a config-only installer. Skills + deterministic CLI rails force process; the client package remains the source of truth.
+
+| Outcome | Freestyle agent | With Layerkit |
+|--------|-----------------|---------------|
+| Pin-only / SDK bump as “full integrate” | Common | Blocked — field edits or residual required |
+| Multi-lang package (node/python/ruby/…) | Often one language | Surfaces inventory; PR blocked until all updated\|residual |
+| Handoff | Memory/store or fake PR URL | Live `pr:` URL (verified) or residual break-glass |
+| Evidence | Optional | Fail-closed mark-done (docs URLs, paths on disk) |
+
+## Quick start
+
+```bash
+npm install -g layerkit   # or: npx layerkit --help
+
+cd /path/to/your/client/package
+layerkit install --platform claude   # or codex | cursor | copilot | …
+layerkit doctor
+
+# Intentional integrate / contract heal (agent must opt in)
+layerkit help
+layerkit agent start --mode heal --vendor <vendor>
+layerkit agent next          # skill packet — follow that skill only
+# … evidence-backed research & production edits …
+layerkit agent mark-done --step <id> --evidence <note.md>
+layerkit pr open --title "…" --body "…" --pr-match "heal multilang"
+```
+
+**Platforms:** `codex` · `claude` · `cursor` · `copilot` · `opencode` · `openhands` · `devin` · `windsurf` · `factory-droid` · `antigravity`
+
+## What you get
 
 | Area | Purpose |
 |------|---------|
-| Skills | Agent instructions for research, mapping, source edits, privacy review, handoff, and checker assist |
-| Project store | Local `.layerkit` evidence, maps, proposals, memory, and sessions |
-| CLI rails | Deterministic tools for install, doctor, proposal validation, map validation, memory, and agent step state |
-| Evals | CI gates and skill judges that check agent behavior, evidence discipline, and package hygiene |
+| **Skills** | How the agent researches, maps, edits production source, reviews privacy, and hands off |
+| **Pipeline** | `discover → surfaces → research → design → author → privacy → deletion-first → source-edit → handoff` |
+| **CLI rails** | Fail-closed `agent next` / `mark-done`, surface inventory, package verify, PR open/reuse |
+| **Evals** | CI gates + skill-train that block freestyle holes (pin-only, invent fields, store-only PR) |
+| **Project store** | Local evidence, maps, proposals, memory under `.layerkit` (session workspace — not the product) |
 
-The CLI does not infer vendor semantics, rewrite source code, generate PR metadata, route live traffic, or perform semantic field renames. Those are agent responsibilities because they require reading docs and code in context.
+Semantic mapping, renames, and source edits are **agent** work (docs + code). The CLI validates structure, order, evidence, surfaces, and live PR existence — it does not invent vendor fields or replace your production datalayer.
 
-## Agent Workflow
+## Agent workflow
 
-Use the master skill `layerkit-orchestrate-integration`.
+Master skill: `layerkit-orchestrate-integration`.
 
 ```text
-discover -> research -> design -> author -> privacy -> deletion-first -> source-edit -> handoff
+discover → surfaces → research → design → author → privacy → deletion-first → source-edit → handoff
 ```
 
-For a contract heal, the agent starts from vendor docs/OpenAPI/change notes, compares them with the current client integration, and edits the client package directly. Existing fields are updated in place. Removed or unsupported fields become explicit TODOs only when the client interface or datalayer cannot support the new vendor contract.
+**Contract heal:** human/docs/OpenAPI → agent cites evidence → edits existing mappers/adapters/tests in the package → `layerkit pr open` (or residual). Prefer **updating** existing code; deletion-first before additive work.
 
 Deletion-first is mandatory:
 
@@ -58,17 +76,21 @@ Deletion-first is mandatory:
 - For every new file/function/export, list what it replaces. If it replaces nothing, justify why it must exist.
 - Target net-negative or near-neutral LOC unless functionality truly expands.
 
-## Useful Commands
+## Commands
 
 ```bash
 layerkit install --platform codex|claude|cursor|copilot|opencode|openhands|devin|windsurf|factory-droid|antigravity \
   [--hooks enabled|disabled] [--map-reminders enabled|disabled] [--poc] [--user-config]
 layerkit doctor
 layerkit repo status
+layerkit help
 
+layerkit agent start --mode full|heal --vendor <v>
 layerkit agent status
 layerkit agent next
-layerkit agent mark-done --step discover|research|design|author|privacy|deletion-first|source-edit|handoff --evidence <path>
+layerkit agent mark-done --step discover|surfaces|research|design|author|privacy|deletion-first|source-edit|handoff --evidence <path>
+
+layerkit pr open --title "…" --body "…" [--pr-match "heal multilang"] [--no-reuse]
 
 layerkit map list
 layerkit map show <vendor>

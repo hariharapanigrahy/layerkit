@@ -1,7 +1,7 @@
 {
   "name": "layerkit",
   "version": "0.1.3",
-  "description": "Agent-first multi-vendor data-layer toolkit: install skills/hooks into Codex, Claude Code, Cursor, Copilot, OpenCode, OpenHands; research vendor docs; proposal pipeline; client-source editing; evals.",
+  "description": "Evidence-first AI agent workbench for vendor API integrate and contract heal: production source edits, multi-lang surfaces, live PRs, skills + fail-closed CLI rails (not a runtime SDK).",
   "license": "MIT",
   "private": false,
   "type": "module",
@@ -15,19 +15,19 @@
     "url": "https://github.com/hariharapanigrahy/layerkit/issues"
   },
   "keywords": [
-    "data-layer",
-    "multi-vendor",
+    "vendor-integration",
+    "contract-heal",
     "ai-agents",
-    "codex",
+    "agent-skills",
     "claude-code",
+    "codex",
     "cursor",
     "copilot",
-    "opencode",
-    "openhands",
-    "java",
-    "field-mapping",
+    "openapi",
+    "multi-vendor",
+    "source-edit",
     "evals",
-    "integrations"
+    "integration-developer"
   ],
   "bin": {
     "layerkit": "dist/apps/cli/main.js"
