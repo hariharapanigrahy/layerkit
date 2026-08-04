@@ -54,13 +54,14 @@ try {
   mkdirSync(join(projectDir, 'memory'), { recursive: true });
   writeFileSync(join(projectDir, evidence), 'evidence', 'utf8');
   markStepDone(projectDir, 'discover', [evidence]);
+  markStepDone(projectDir, 'surfaces', [evidence]);
   markStepDone(projectDir, 'research', [evidence]);
 
   const outPath = writeHandoffRunbook({
     projectDir,
     vendor: 'acme',
     goal: 'Resume after research',
-    done: ['discover', 'research'],
+    done: ['discover', 'surfaces', 'research'],
     nextActions: ['design flow'],
     out: 'memory',
   });
