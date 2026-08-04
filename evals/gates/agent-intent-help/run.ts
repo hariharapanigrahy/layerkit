@@ -9,12 +9,12 @@ import {
   layerkitIntentHookLine,
 } from '../../../libs/agent/index.js';
 
-assertTrue('layerkit: is intent', looksLikeLayerkitIntent('layerkit: heal stripe'));
+assertTrue('layerkit: is intent', looksLikeLayerkitIntent('layerkit: heal acme'));
 assertTrue('/layerkit is intent', looksLikeLayerkitIntent('/layerkit integrate foo'));
 assertTrue('@layerkit is intent', looksLikeLayerkitIntent('@layerkit contract update'));
 assertTrue(
   'agent start phrasing is intent',
-  looksLikeLayerkitIntent('please layerkit agent start --vendor stripe'),
+  looksLikeLayerkitIntent('please layerkit agent start --vendor acme'),
 );
 assertTrue(
   'unrelated coding is not intent',
@@ -22,7 +22,7 @@ assertTrue(
 );
 assertTrue(
   'vendor alone without layerkit verbs is weak-not-forced',
-  !looksLikeLayerkitIntent('what is stripe checkout?'),
+  !looksLikeLayerkitIntent('what is acme checkout?'),
 );
 
 const help = formatLayerkitHelp({ projectDir: '/tmp/demo', sessionOpen: false });

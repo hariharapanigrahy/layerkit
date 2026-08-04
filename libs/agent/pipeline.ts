@@ -1,7 +1,8 @@
 /**
  * Deterministic integration checklist runner (not an LLM).
- * Order: discover → research → design → author → privacy → deletion-first → source-edit → handoff
+ * Order: discover → surfaces → research → design → author → privacy → deletion-first → source-edit → handoff
  * mode=heal skips discover when the customer domain model is already known.
+ * surfaces always runs (heal included) so multi-lang packages inventory before PR.
  */
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -34,6 +35,17 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
     ],
     doneWhen:
       'Customer domain events/fields discovered from code with source:code (skip when pipeline mode=heal)',
+  },
+  {
+    id: 'surfaces',
+    skill: 'layerkit-inventory-surfaces',
+    cliHints: [
+      'Agent lists every language/surface the package supports (node, python, ruby, …) from source:code',
+      'Write memory/runbooks/surface-inventory.json with languages[].id, roots[], status=pending',
+      'Layerkit validates all languages are updated|residual before source-edit complete / PR',
+    ],
+    doneWhen:
+      'Package language/surface inventory written to session (surface-inventory.json); multi-lang completeness enforced later',
   },
   {
     id: 'research',
@@ -96,19 +108,21 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
       'layerkit doctor',
     ],
     doneWhen:
-      'Production datalayer updated by the agent; client package verification green',
+      'Every inventory language status=updated|residual (no pending); production paths listed; verify before PR',
   },
   {
     id: 'handoff',
     skill: 'handoff',
     cliHints: [
-      'layerkit agent status',
-      'layerkit handoff write --vendor <id> --goal "contract heal" --next "review when package verification is green"',
+      'layerkit doctor && package verification green',
+      'layerkit pr open --title "…" --body "…" [--pr-match "heal multilang"]  (reuse open workstream PR; push if collaborator, else fork→push→PR)',
+      'Put live pr: URL in handoff evidence (fake URLs blocked)',
+      'layerkit handoff write --vendor <id> --goal "…" including pr: URL',
       'Use skill layerkit-checker-assist (read-only risk checklist)',
     ],
     requiresHuman: true,
     doneWhen:
-      'Package verification green; checker risk checklist complete; PR-ready handoff',
+      'package_verify: green (or residual) + live client PR (verified) OR residual-no-pr break-glass; no fake PR URLs',
   },
 ] as const;
 

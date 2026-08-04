@@ -25,3 +25,7 @@ Collaboration style: work with the user in a "Dances with Robots" rhythm: eviden
 Shared AI working rules: `AI_WORKING_RULES.md`.
 
 Docs: `layerkit cheatsheet`, `skills/*/SKILL.md`, `{projectDir}/memory/INDEX.md`. CLI: `layerkit` / `npx layerkit`.
+
+## Layerkit
+
+If user message starts with layerkit: or asks vendor integrate/heal via Layerkit: run `layerkit help` then `layerkit agent start` and follow skill packets. Do not apply Layerkit rails to unrelated tasks. Do not freestyle pin-only "full integrate" PRs. Layerkit: evidence-first (OpenAPI/docs/curl/code); residual human only; edit client-owned source directly. Lead: layerkit-orchestrate-integration after intentional entry (layerkit: … or agent start). Checker-assist read-only. Handoff after package verification and quality gates. Docs: layerkit help, layerkit cheatsheet, skills/*/SKILL.md. CLI: layerkit / npx layerkit.

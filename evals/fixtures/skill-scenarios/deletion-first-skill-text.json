@@ -1,0 +1,374 @@
+{
+  "id": "deletion-first-skill-text",
+  "title": "Skills must require deletion-first before additive work",
+  "userIntent": "layerkit: heal update existing integration",
+  "mode": "heal",
+  "vendor": "acme",
+  "trains": [
+    "deletion-first",
+    "skill text"
+  ],
+  "skillText": {
+    "skillsUnderTest": [
+      "layerkit-deletion-first",
+      "layerkit-source-edit-client"
+    ],
+    "mustMatch": [
+      "Before adding code",
+      "Prefer modifying or deleting",
+      "net-negative|near-neutral"
+    ],
+    "mustNotMatch": [
+      "always add a new facade"
+    ]
+  },
+  "runGold": {
+    "mustCiteHosts": [
+      "docs.example.com"
+    ],
+    "requiredPipelineSteps": [
+      "discover",
+      "surfaces",
+      "research",
+      "design",
+      "author",
+      "privacy",
+      "deletion-first",
+      "source-edit",
+      "handoff"
+    ],
+    "mapFieldsMin": 1,
+    "forbidInventFieldPaths": true,
+    "forbidStoreOnlyHandoff": true,
+    "requirePrUrl": true,
+    "allowResidualNoPr": false
+  },
+  "runs": [
+    {
+      "id": "good",
+      "expectPass": true,
+      "transcript": {
+        "id": "t-g",
+        "scenarioId": "deletion-first-skill-text",
+        "steps": [
+          {
+            "id": "deletion-first-skill-text-discover",
+            "pipelineStep": "discover",
+            "skill": "layerkit-discover-data-layer",
+            "action": "discover",
+            "claim": "Completed discover for scenario deletion-first-skill-text",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deletion-first-skill-text-surfaces",
+            "pipelineStep": "surfaces",
+            "skill": "layerkit-inventory-surfaces",
+            "action": "surfaces",
+            "claim": "Inventoried languages for deletion-first-skill-text",
+            "sources": [
+              {
+                "title": "layout",
+                "url": "file://package",
+                "excerpt": "server/node server/python"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deletion-first-skill-text-research",
+            "pipelineStep": "research",
+            "skill": "layerkit-research-vendor",
+            "action": "research",
+            "claim": "Contract drift assessed from docs.example.com",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deletion-first-skill-text-design",
+            "pipelineStep": "design",
+            "skill": "layerkit-design-flow",
+            "action": "design",
+            "claim": "Completed design for scenario deletion-first-skill-text",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deletion-first-skill-text-author",
+            "pipelineStep": "author",
+            "skill": "layerkit-author-map",
+            "action": "author",
+            "claim": "Completed author for scenario deletion-first-skill-text",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deletion-first-skill-text-privacy",
+            "pipelineStep": "privacy",
+            "skill": "layerkit-privacy-review",
+            "action": "privacy",
+            "claim": "Completed privacy for scenario deletion-first-skill-text",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deletion-first-skill-text-deletion-first",
+            "pipelineStep": "deletion-first",
+            "skill": "layerkit-deletion-first",
+            "action": "deletion-first",
+            "claim": "Completed deletion-first for scenario deletion-first-skill-text",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deletion-first-skill-text-source-edit",
+            "pipelineStep": "source-edit",
+            "skill": "layerkit-source-edit-client",
+            "action": "source-edit",
+            "claim": "Completed source-edit for scenario deletion-first-skill-text",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deletion-first-skill-text-handoff",
+            "pipelineStep": "handoff",
+            "skill": "layerkit-session-handoff",
+            "action": "handoff",
+            "claim": "Completed handoff for scenario deletion-first-skill-text",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          }
+        ]
+      },
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "amount",
+            "vendor": "amount"
+          }
+        ],
+        "mapIntents": {
+          "sample": {
+            "eventName": "sample",
+            "operationId": "default"
+          }
+        },
+        "mapOperations": [
+          "default"
+        ],
+        "documentationUrls": [
+          "https://docs.example.com/api"
+        ],
+        "prUrl": "https://github.com/acme/client/pull/1",
+        "sourceEditPaths": [
+          "server/server.js"
+        ]
+      }
+    },
+    {
+      "id": "bad-no-cite",
+      "expectPass": false,
+      "transcript": {
+        "id": "t-b",
+        "scenarioId": "deletion-first-skill-text",
+        "steps": [
+          {
+            "id": "deletion-first-skill-text-discover",
+            "pipelineStep": "discover",
+            "skill": "layerkit-discover-data-layer",
+            "action": "discover",
+            "claim": "Completed discover for scenario deletion-first-skill-text",
+            "sources": [],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deletion-first-skill-text-surfaces",
+            "pipelineStep": "surfaces",
+            "skill": "layerkit-inventory-surfaces",
+            "action": "surfaces",
+            "claim": "Inventoried languages for deletion-first-skill-text",
+            "sources": [
+              {
+                "title": "layout",
+                "url": "file://package",
+                "excerpt": "server/node server/python"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deletion-first-skill-text-research",
+            "pipelineStep": "research",
+            "skill": "layerkit-research-vendor",
+            "action": "research",
+            "claim": "Contract drift assessed from docs.example.com",
+            "sources": [],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deletion-first-skill-text-design",
+            "pipelineStep": "design",
+            "skill": "layerkit-design-flow",
+            "action": "design",
+            "claim": "Completed design for scenario deletion-first-skill-text",
+            "sources": [],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deletion-first-skill-text-author",
+            "pipelineStep": "author",
+            "skill": "layerkit-author-map",
+            "action": "author",
+            "claim": "Completed author for scenario deletion-first-skill-text",
+            "sources": [],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deletion-first-skill-text-privacy",
+            "pipelineStep": "privacy",
+            "skill": "layerkit-privacy-review",
+            "action": "privacy",
+            "claim": "Completed privacy for scenario deletion-first-skill-text",
+            "sources": [],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deletion-first-skill-text-deletion-first",
+            "pipelineStep": "deletion-first",
+            "skill": "layerkit-deletion-first",
+            "action": "deletion-first",
+            "claim": "Completed deletion-first for scenario deletion-first-skill-text",
+            "sources": [],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deletion-first-skill-text-source-edit",
+            "pipelineStep": "source-edit",
+            "skill": "layerkit-source-edit-client",
+            "action": "source-edit",
+            "claim": "Completed source-edit for scenario deletion-first-skill-text",
+            "sources": [],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deletion-first-skill-text-handoff",
+            "pipelineStep": "handoff",
+            "skill": "layerkit-session-handoff",
+            "action": "handoff",
+            "claim": "Completed handoff for scenario deletion-first-skill-text",
+            "sources": [],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          }
+        ]
+      },
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "amount",
+            "vendor": "amount"
+          }
+        ],
+        "mapIntents": {
+          "sample": {
+            "eventName": "sample",
+            "operationId": "default"
+          }
+        },
+        "mapOperations": [
+          "default"
+        ],
+        "documentationUrls": [
+          "https://docs.example.com/api"
+        ],
+        "prUrl": "https://github.com/acme/client/pull/1",
+        "sourceEditPaths": [
+          "server/server.js"
+        ]
+      }
+    }
+  ]
+}

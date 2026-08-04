@@ -56,10 +56,12 @@ _(one sentence: what integration outcome this session aimed for)_
 - do not invent endpoints or fields
 - do not apply without checker
 - do not open deny-paths / dump secrets
+- do not mark handoff complete with store/memory only — require client PR URL or residual-no-pr break-glass
 
 ## Quality
 
 - _(last client package verification result; coverage if any)_
+- _(pr: https://github.com/org/repo/pull/N — or outcome: residual-no-pr + allow_residual_no_pr: true + residual: …)_
 `;
 
 export interface HandoffRunbookInput {

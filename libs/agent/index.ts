@@ -45,6 +45,40 @@ export {
 } from './skill-packet.js';
 
 export {
+  SURFACE_INVENTORY_REL,
+  surfaceInventoryPath,
+  loadSurfaceInventory,
+  saveSurfaceInventory,
+  assertValidSurfaceInventory,
+  assertSurfacesStepComplete,
+  assertAllSurfacesResolved,
+  type SurfaceInventory,
+  type SurfaceLanguage,
+  type SurfaceStatus,
+} from './surfaces.js';
+
+export {
+  openClientPr,
+  canPushToGithubRepo,
+  parseGithubOwnerRepo,
+  findOpenPrByMatch,
+  findOpenPrForUsecase,
+  setOpenClientPrProcessRunnerForTests,
+  LAYERKIT_PRODUCT_URL,
+  type OpenClientPrOpts,
+  type OpenClientPrResult,
+  type ProcessRunner,
+  type ProcessRunResult,
+} from './open-client-pr.js';
+
+export {
+  matchTokens,
+  scorePrMatch,
+  pickBestPrMatch,
+  type PrMatchCandidate,
+} from './pr-match.js';
+
+export {
   LAYERKIT_INTENT_PREFIXES,
   looksLikeLayerkitIntent,
   formatLayerkitHelp,

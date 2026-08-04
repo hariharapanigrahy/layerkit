@@ -1,0 +1,421 @@
+{
+  "id": "hybrid-heal-no-fake-cli",
+  "title": "Skills must not describe fake deterministic heal CLI parsers",
+  "userIntent": "layerkit: heal from docs link",
+  "mode": "heal",
+  "vendor": "acme",
+  "trains": [
+    "skill text",
+    "hybrid heal",
+    "agent-owned"
+  ],
+  "skillText": {
+    "skillsUnderTest": [
+      "layerkit-research-vendor",
+      "layerkit-orchestrate-integration",
+      "layerkit-source-edit-client"
+    ],
+    "mustMatch": [
+      "AI agent|agent-owned|agent",
+      "docs|OpenAPI"
+    ],
+    "mustNotMatch": [
+      "layerkit heal run",
+      "contract-from-doc",
+      "agent multi"
+    ]
+  },
+  "runGold": {
+    "mustCiteHosts": [
+      "docs.example.com"
+    ],
+    "requiredPipelineSteps": [
+      "discover",
+      "surfaces",
+      "research",
+      "design",
+      "author",
+      "privacy",
+      "deletion-first",
+      "source-edit",
+      "handoff"
+    ],
+    "mapFieldsMin": 1,
+    "forbidInventFieldPaths": true,
+    "forbidStoreOnlyHandoff": true,
+    "requirePrUrl": true,
+    "allowResidualNoPr": false
+  },
+  "runs": [
+    {
+      "id": "good",
+      "expectPass": true,
+      "transcript": {
+        "id": "t-g",
+        "scenarioId": "hybrid-heal-no-fake-cli",
+        "steps": [
+          {
+            "id": "hybrid-heal-no-fake-cli-discover",
+            "pipelineStep": "discover",
+            "skill": "layerkit-discover-data-layer",
+            "action": "discover",
+            "claim": "Completed discover for scenario hybrid-heal-no-fake-cli",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "hybrid-heal-no-fake-cli-surfaces",
+            "pipelineStep": "surfaces",
+            "skill": "layerkit-inventory-surfaces",
+            "action": "surfaces",
+            "claim": "Inventoried languages for hybrid-heal-no-fake-cli",
+            "sources": [
+              {
+                "title": "layout",
+                "url": "file://package",
+                "excerpt": "server/node server/python"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "hybrid-heal-no-fake-cli-research",
+            "pipelineStep": "research",
+            "skill": "layerkit-research-vendor",
+            "action": "research",
+            "claim": "Contract drift assessed from docs.example.com",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "hybrid-heal-no-fake-cli-design",
+            "pipelineStep": "design",
+            "skill": "layerkit-design-flow",
+            "action": "design",
+            "claim": "Completed design for scenario hybrid-heal-no-fake-cli",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "hybrid-heal-no-fake-cli-author",
+            "pipelineStep": "author",
+            "skill": "layerkit-author-map",
+            "action": "author",
+            "claim": "Completed author for scenario hybrid-heal-no-fake-cli",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "hybrid-heal-no-fake-cli-privacy",
+            "pipelineStep": "privacy",
+            "skill": "layerkit-privacy-review",
+            "action": "privacy",
+            "claim": "Completed privacy for scenario hybrid-heal-no-fake-cli",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "hybrid-heal-no-fake-cli-deletion-first",
+            "pipelineStep": "deletion-first",
+            "skill": "layerkit-deletion-first",
+            "action": "deletion-first",
+            "claim": "Completed deletion-first for scenario hybrid-heal-no-fake-cli",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "hybrid-heal-no-fake-cli-source-edit",
+            "pipelineStep": "source-edit",
+            "skill": "layerkit-source-edit-client",
+            "action": "source-edit",
+            "claim": "Completed source-edit for scenario hybrid-heal-no-fake-cli",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "hybrid-heal-no-fake-cli-handoff",
+            "pipelineStep": "handoff",
+            "skill": "layerkit-session-handoff",
+            "action": "handoff",
+            "claim": "Completed handoff for scenario hybrid-heal-no-fake-cli",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          }
+        ]
+      },
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "amount",
+            "vendor": "amount"
+          }
+        ],
+        "mapIntents": {
+          "sample": {
+            "eventName": "sample",
+            "operationId": "default"
+          }
+        },
+        "mapOperations": [
+          "default"
+        ],
+        "documentationUrls": [
+          "https://docs.example.com/api"
+        ],
+        "prUrl": "https://github.com/acme/client/pull/1",
+        "sourceEditPaths": [
+          "server/server.js"
+        ]
+      }
+    },
+    {
+      "id": "bad-store",
+      "expectPass": false,
+      "transcript": {
+        "id": "t-b",
+        "scenarioId": "hybrid-heal-no-fake-cli",
+        "steps": [
+          {
+            "id": "hybrid-heal-no-fake-cli-discover",
+            "pipelineStep": "discover",
+            "skill": "layerkit-discover-data-layer",
+            "action": "discover",
+            "claim": "Completed discover for scenario hybrid-heal-no-fake-cli",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "hybrid-heal-no-fake-cli-surfaces",
+            "pipelineStep": "surfaces",
+            "skill": "layerkit-inventory-surfaces",
+            "action": "surfaces",
+            "claim": "Inventoried languages for hybrid-heal-no-fake-cli",
+            "sources": [
+              {
+                "title": "layout",
+                "url": "file://package",
+                "excerpt": "server/node server/python"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "hybrid-heal-no-fake-cli-research",
+            "pipelineStep": "research",
+            "skill": "layerkit-research-vendor",
+            "action": "research",
+            "claim": "Contract drift assessed from docs.example.com",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "hybrid-heal-no-fake-cli-design",
+            "pipelineStep": "design",
+            "skill": "layerkit-design-flow",
+            "action": "design",
+            "claim": "Completed design for scenario hybrid-heal-no-fake-cli",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "hybrid-heal-no-fake-cli-author",
+            "pipelineStep": "author",
+            "skill": "layerkit-author-map",
+            "action": "author",
+            "claim": "Completed author for scenario hybrid-heal-no-fake-cli",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "hybrid-heal-no-fake-cli-privacy",
+            "pipelineStep": "privacy",
+            "skill": "layerkit-privacy-review",
+            "action": "privacy",
+            "claim": "Completed privacy for scenario hybrid-heal-no-fake-cli",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "hybrid-heal-no-fake-cli-deletion-first",
+            "pipelineStep": "deletion-first",
+            "skill": "layerkit-deletion-first",
+            "action": "deletion-first",
+            "claim": "Completed deletion-first for scenario hybrid-heal-no-fake-cli",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "hybrid-heal-no-fake-cli-source-edit",
+            "pipelineStep": "source-edit",
+            "skill": "layerkit-source-edit-client",
+            "action": "source-edit",
+            "claim": "Completed source-edit for scenario hybrid-heal-no-fake-cli",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "hybrid-heal-no-fake-cli-handoff",
+            "pipelineStep": "handoff",
+            "skill": "layerkit-session-handoff",
+            "action": "handoff",
+            "claim": "Completed handoff for scenario hybrid-heal-no-fake-cli",
+            "sources": [
+              {
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          }
+        ]
+      },
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "a",
+            "vendor": "b"
+          }
+        ],
+        "documentationUrls": [
+          "https://docs.example.com/api"
+        ],
+        "mapIntents": {
+          "s": {
+            "eventName": "s",
+            "operationId": "default"
+          }
+        },
+        "mapOperations": [
+          "default"
+        ]
+      }
+    }
+  ]
+}

@@ -27,7 +27,10 @@ export function looksLikeLayerkitIntent(userText: string): boolean {
   ) {
     return true;
   }
-  if (/\b(integrate|heal)\b/i.test(t) && /\b(layerkit|vendor|openapi|stripe|shopify)\b/i.test(t)) {
+  if (
+    /\b(integrate|heal)\b/i.test(t) &&
+    /\b(layerkit|vendor|openapi|acme|customer\s+package)\b/i.test(t)
+  ) {
     return true;
   }
   return false;
@@ -47,7 +50,7 @@ export function formatLayerkitHelp(opts?: {
     'vendor integrate / contract heal / map work. Unrelated coding is free agent work.',
     '',
     '## How the user opts in (pick one)',
-    '  layerkit: heal stripe to latest API in this package',
+    '  layerkit: heal acme vendor to latest API in this package',
     '  /layerkit integrate vendor X',
     '  @layerkit contract update',
     '  layerkit agent start --mode full|heal --vendor <v>',
@@ -74,7 +77,7 @@ export function formatLayerkitHelp(opts?: {
     '  layerkit agent start --force-reset   # wipe step markers (maps/memory kept) if supported',
     '',
     '## Skills (order)',
-    '  discover → research → design → author (map) → privacy → deletion-first → source-edit → handoff',
+    '  discover → surfaces → research → design → author (map) → privacy → deletion-first → source-edit → handoff',
     '  Lead skill: layerkit-orchestrate-integration',
     '',
     '## CLI rails (artifacts only)',

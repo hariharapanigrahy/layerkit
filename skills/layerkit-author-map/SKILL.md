@@ -81,6 +81,7 @@ layerkit memory append --type proposals --title "<vendor> map draft" --vendor <v
 ## Forbidden
 
 - Inventing vendor field names, hash rules, or endpoints without citations
+- Do not guess renames or fields from names alone — map only with docs/OpenAPI/curl evidence
 - Applying/promoting from this skill without maker-checker when strict
 - Encoding vendor-specific field truth into Layerkit core
 - Hardcoding one company's OpenAPI extension name as the only domain-op source in product code

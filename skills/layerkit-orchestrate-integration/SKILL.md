@@ -9,7 +9,7 @@ Master loop: full-stack integration developer. Skills author knowledge and sourc
 
 **One pipeline** for first-time integrate and **contract heal**. Semantic work is agent-owned: the AI agent reads docs/OpenAPI/code, decides mappings from evidence, and edits production source files directly.
 
-`discover → research → design → author → privacy → deletion-first → source-edit → verify → handoff`
+`discover → surfaces → research → design → author → privacy → deletion-first → source-edit → verify → handoff`
 
 Heal = human supplies updated OpenAPI/docs → AI agent reads and cites evidence → AI updates existing maps/source/tests in the package → deterministic CLI validates explicit artifacts and package health. The CLI does not understand arbitrary docs, semantic mappings, rename intent, or production source edits.
 
@@ -45,26 +45,29 @@ layerkit doctor
 
 **Fail-closed (while claiming Layerkit):** freestyle without `agent start` is blocked at `next`/`mark-done`. Evidence must be non-empty and match the step content pattern. Prefer `agent next` so the skill packet lists the only allowed skill for this step.
 
+**Pin-only is not full integrate:** Do not bump `apiVersion` or the vendor SDK alone and call it full integrate or contract heal. Pin-only / apiVersion alone is residual at best; production field renames and real source edits (or explicit residual-no-field-edit) are required when the contract drifted.
+
 | Command | Purpose |
 |---------|---------|
 | `agent start` | Default **full** (includes discover). `--mode heal` skips discover when domain already known |
 | `agent status` / `next` / `mark-done` | Same step ids always |
 | `proposal validate` / `map validate` / `doctor` | Validate explicit artifacts and package health; no semantic inference |
 
-Step ids: `discover` | `research` | `design` | `author` | `privacy` | `deletion-first` | `source-edit` | `handoff`.
+Step ids: `discover` | `surfaces` | `research` | `design` | `author` | `privacy` | `deletion-first` | `source-edit` | `handoff`.
 
 ## Ordered pipeline
 
 | id | Skill | Contract heal focus |
 |----|-------|---------------------|
 | `discover` | `layerkit-discover-data-layer` | **Skipped** when `mode: heal` |
+| `surfaces` | `layerkit-inventory-surfaces` | **Always runs** — inventory package languages; Layerkit blocks PR until each is updated\|residual |
 | `research` | `layerkit-research-vendor` | Read docs/OpenAPI → evidence-backed map/source update |
 | `design` | `layerkit-design-flow` | Re-validate shape under new contract |
 | `author` | `layerkit-author-map` (processors via `layerkit-author-processor` when needed) | Map fields from evidence; processors only if transforms required |
 | `privacy` | `layerkit-privacy-review` | Human if new PII fields |
 | `deletion-first` | `layerkit-deletion-first` | Remove stale docs/tests/shims before adding code |
 | `source-edit` | `layerkit-source-edit-client` or direct agent edit | Agent edits existing source/tests |
-| `handoff` | checker + review | Human; breaking severity never silent |
+| `handoff` | checker + review | **Terminal:** `package_verify: green` + **live** PR via `layerkit pr open --pr-match "…"` (reuse open workstream PR; collaborator push, else **fork→push→PR**) or residual-no-pr break-glass (`outcome: residual-no-pr` + `allow_residual_no_pr: true` + `residual: <why>`). `--pr-match` is a PR dedupe string only — not a vendor API registry. Fake PR URLs blocked. |
 
 ## Stop conditions
 
@@ -95,6 +98,7 @@ Step ids: `discover` | `research` | `design` | `author` | `privacy` | `deletion-
 - Self-approve in STRICT
 - Treating Layerkit as the runtime integration SDK
 - Treating generated plans, stubs, or `.layerkit/out` as production source
+- Bumping apiVersion or SDK alone (pin-only) and calling it full integrate
 
 ## Success criteria
 
@@ -103,5 +107,6 @@ Step ids: `discover` | `research` | `design` | `author` | `privacy` | `deletion-
 - [ ] Applied maps/proposals have sources[] from supplied docs/OpenAPI/code
 - [ ] Production source/test edits were made by the agent in real package files
 - [ ] Package tests/build/coverage command green before handoff
+- [ ] Client PR opened (or residual-no-pr break-glass only when research proved zero production change: `allow_residual_no_pr: true` + residual reason)
 - [ ] Outcome checkpoints recorded: must pass, proof artifact, fallback
 - [ ] Test backing is proportional to implementation size, including client-package edit paths, mapping semantics, deletion-first behavior, and CI/eval gates when those areas change

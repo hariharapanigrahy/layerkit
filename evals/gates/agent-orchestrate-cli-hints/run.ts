@@ -75,26 +75,27 @@ for (const h of first.cliHints) {
   );
 }
 
-// Mid-pipeline next step also has hints (research after discover)
-const research = getNextStep(['discover']) as PipelineStep;
-assertEqual('after discover → research', research?.id, 'research');
-assertTrue('research skill non-empty', research.skill.trim().length > 0);
-assertTrue('research cliHints non-empty', research.cliHints.length > 0);
+// Mid-pipeline next step also has hints (surfaces after discover)
+const surfaces = getNextStep(['discover']) as PipelineStep;
+assertEqual('after discover → surfaces', surfaces?.id, 'surfaces');
+assertTrue('surfaces skill non-empty', surfaces.skill.trim().length > 0);
+assertTrue('surfaces cliHints non-empty', surfaces.cliHints.length > 0);
 
 const midStatus = formatPipelineStatus(['discover']);
-assertTrue('mid status Next: research', midStatus.includes('Next: research'), midStatus);
+assertTrue('mid status Next: surfaces', midStatus.includes('Next: surfaces'), midStatus);
 assertTrue(
-  'mid status includes research skill',
-  midStatus.includes(research.skill),
+  'mid status includes surfaces skill',
+  midStatus.includes(surfaces.skill),
   midStatus,
 );
-for (const h of research.cliHints) {
-  assertTrue(`mid status includes research cliHint: ${h}`, midStatus.includes(h), midStatus);
+for (const h of surfaces.cliHints) {
+  assertTrue(`mid status includes surfaces cliHint: ${h}`, midStatus.includes(h), midStatus);
 }
 
 // Count invariant: every known pipeline id covered
 const expectedIds = [
   'discover',
+  'surfaces',
   'research',
   'design',
   'author',

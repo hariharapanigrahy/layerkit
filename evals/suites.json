@@ -23,6 +23,7 @@
     "schema-dual-read",
     "skill-judge-coverage",
     "skill-hybrid-heal-judge",
+    "skill-train-loop",
     "source-edit-skill-cases"
   ],
   "all": [
@@ -49,11 +50,13 @@
     "schema-dual-read",
     "skill-judge-coverage",
     "skill-hybrid-heal-judge",
+    "skill-train-loop",
     "source-edit-skill-cases",
     "vendor-research-plan"
   ],
   "nightly": [
     "package-hygiene",
-    "skill-hybrid-heal-judge"
+    "skill-hybrid-heal-judge",
+    "skill-train-loop"
   ]
 }

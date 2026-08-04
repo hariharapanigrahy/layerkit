@@ -3,24 +3,59 @@
   "description": "Skill judge coverage manifest. Every Layerkit skill must list at least one CI gate that checks its contract, output shape, or agent-process posture.",
   "skills": {
     "layerkit-align-client-style": {
-      "dimensions": ["agent-reads-client-style", "no-style-scan-cli"],
-      "ciCases": ["skill-hybrid-heal-judge", "deletion-first-skill"]
+      "dimensions": [
+        "agent-reads-client-style",
+        "no-style-scan-cli"
+      ],
+      "ciCases": [
+        "skill-hybrid-heal-judge",
+        "deletion-first-skill"
+      ]
     },
     "layerkit-author-map": {
-      "dimensions": ["citation-required", "proposal-source-gate", "agent-authored-map"],
-      "ciCases": ["agent-citation-required-on-map", "proposal-sources-required"]
+      "dimensions": [
+        "citation-required",
+        "proposal-source-gate",
+        "agent-authored-map",
+        "skill-scenario-train"
+      ],
+      "ciCases": [
+        "agent-citation-required-on-map",
+        "proposal-sources-required",
+        "skill-train-loop"
+      ]
     },
     "layerkit-author-processor": {
-      "dimensions": ["client-code-helper", "citation-required"],
-      "ciCases": ["skill-hybrid-heal-judge", "proposal-sources-required"]
+      "dimensions": [
+        "client-code-helper",
+        "citation-required"
+      ],
+      "ciCases": [
+        "skill-hybrid-heal-judge",
+        "proposal-sources-required"
+      ]
     },
     "layerkit-bootstrap": {
-      "dimensions": ["install-platforms", "project-dir-resolution", "secret-scan"],
-      "ciCases": ["install-platforms", "project-dir-resolve", "doctor-secret-scan"]
+      "dimensions": [
+        "install-platforms",
+        "project-dir-resolution",
+        "secret-scan"
+      ],
+      "ciCases": [
+        "install-platforms",
+        "project-dir-resolve",
+        "doctor-secret-scan"
+      ]
     },
     "layerkit-checker-assist": {
-      "dimensions": ["read-only-checker", "citation-risk-review"],
-      "ciCases": ["agent-citation-required-on-map", "maker-checker-strict-path"]
+      "dimensions": [
+        "read-only-checker",
+        "citation-risk-review"
+      ],
+      "ciCases": [
+        "agent-citation-required-on-map",
+        "maker-checker-strict-path"
+      ]
     },
     "layerkit-deletion-first": {
       "dimensions": [
@@ -28,25 +63,51 @@
         "new-code-replacement-justification",
         "strategic-redirect-proof",
         "outcome-checkpoints",
-        "test-backing-proportional"
+        "test-backing-proportional",
+        "skill-scenario-train"
       ],
-      "ciCases": ["deletion-first-skill", "skill-hybrid-heal-judge"]
+      "ciCases": [
+        "deletion-first-skill",
+        "skill-hybrid-heal-judge",
+        "skill-train-loop"
+      ]
     },
     "layerkit-design-flow": {
-      "dimensions": ["client-code-flow-design", "no-layerkit-runtime-flow"],
-      "ciCases": ["skill-hybrid-heal-judge"]
+      "dimensions": [
+        "client-code-flow-design",
+        "no-layerkit-runtime-flow"
+      ],
+      "ciCases": [
+        "skill-hybrid-heal-judge"
+      ]
     },
     "layerkit-design-integration": {
-      "dimensions": ["agent-owned-design-decision", "evidence-backed-flow-vs-map"],
-      "ciCases": ["skill-hybrid-heal-judge"]
+      "dimensions": [
+        "agent-owned-design-decision",
+        "evidence-backed-flow-vs-map"
+      ],
+      "ciCases": [
+        "skill-hybrid-heal-judge"
+      ]
     },
     "layerkit-discover-data-layer": {
-      "dimensions": ["deny-secret-paths", "agent-reads-code-evidence"],
-      "ciCases": ["doctor-secret-scan", "skill-hybrid-heal-judge"]
+      "dimensions": [
+        "deny-secret-paths",
+        "agent-reads-code-evidence"
+      ],
+      "ciCases": [
+        "doctor-secret-scan",
+        "skill-hybrid-heal-judge"
+      ]
     },
     "layerkit-fix-from-dry-run": {
-      "dimensions": ["agent-fixes-client-tests", "no-map-dry-run-cli"],
-      "ciCases": ["skill-hybrid-heal-judge"]
+      "dimensions": [
+        "agent-fixes-client-tests",
+        "no-map-dry-run-cli"
+      ],
+      "ciCases": [
+        "skill-hybrid-heal-judge"
+      ]
     },
     "layerkit-source-edit-client": {
       "dimensions": [
@@ -58,13 +119,26 @@
         "strategic-redirect-proof",
         "outcome-checkpoints",
         "client-package-edit-path-tests",
-        "mapping-semantics-tests"
+        "mapping-semantics-tests",
+        "skill-scenario-train"
       ],
-      "ciCases": ["skill-hybrid-heal-judge", "deletion-first-skill", "source-edit-skill-cases"]
+      "ciCases": [
+        "skill-hybrid-heal-judge",
+        "deletion-first-skill",
+        "source-edit-skill-cases",
+        "agent-skill-packet",
+        "skill-train-loop"
+      ]
     },
     "layerkit-multi-agent": {
-      "dimensions": ["specialist-coordination", "agent-owned-source-edits", "no-agent-multi-cli"],
-      "ciCases": ["skill-hybrid-heal-judge"]
+      "dimensions": [
+        "specialist-coordination",
+        "agent-owned-source-edits",
+        "no-agent-multi-cli"
+      ],
+      "ciCases": [
+        "skill-hybrid-heal-judge"
+      ]
     },
     "layerkit-orchestrate-integration": {
       "dimensions": [
@@ -73,26 +147,65 @@
         "heal-source-edits-by-agent",
         "strategic-redirect-proof",
         "outcome-checkpoints",
-        "fallback-before-implementation"
+        "fallback-before-implementation",
+        "skill-scenario-train"
       ],
-      "ciCases": ["agent-orchestrate-checklist", "agent-pipeline-order", "skill-hybrid-heal-judge"]
+      "ciCases": [
+        "agent-orchestrate-checklist",
+        "agent-pipeline-order",
+        "skill-hybrid-heal-judge",
+        "agent-skill-packet",
+        "skill-train-loop"
+      ]
     },
     "layerkit-privacy-review": {
       "dimensions": [
         "client-code-privacy-review",
         "citation-required-for-privacy-rules",
         "secret-literal-remediation",
-        "secret-literal-release-blocker"
+        "secret-literal-release-blocker",
+        "skill-scenario-train"
       ],
-      "ciCases": ["skill-hybrid-heal-judge", "doctor-secret-scan"]
+      "ciCases": [
+        "skill-hybrid-heal-judge",
+        "doctor-secret-scan",
+        "skill-train-loop"
+      ]
     },
     "layerkit-research-vendor": {
-      "dimensions": ["docs-link-contract-curation", "semantic-rename-evidence", "no-deterministic-research-cli"],
-      "ciCases": ["skill-hybrid-heal-judge"]
+      "dimensions": [
+        "docs-link-contract-curation",
+        "semantic-rename-evidence",
+        "no-deterministic-research-cli",
+        "skill-scenario-train"
+      ],
+      "ciCases": [
+        "skill-hybrid-heal-judge",
+        "skill-train-loop"
+      ]
     },
     "layerkit-session-handoff": {
-      "dimensions": ["runbook-written", "resume-safe-state", "outcome-checkpoints", "unresolved-errors"],
-      "ciCases": ["handoff-runbook-cli", "skill-hybrid-heal-judge"]
+      "dimensions": [
+        "runbook-written",
+        "resume-safe-state",
+        "outcome-checkpoints",
+        "unresolved-errors"
+      ],
+      "ciCases": [
+        "handoff-runbook-cli",
+        "skill-hybrid-heal-judge"
+      ]
+    },
+    "layerkit-inventory-surfaces": {
+      "dimensions": [
+        "multi-lang-inventory",
+        "session-surface-file",
+        "enforce-before-pr"
+      ],
+      "ciCases": [
+        "agent-skill-packet",
+        "agent-pipeline-order"
+      ]
     }
   }
 }

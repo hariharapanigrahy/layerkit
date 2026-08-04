@@ -1,0 +1,8 @@
+{
+  "id": "skill-train-loop",
+  "suite": "ci",
+  "title": "Continuous skill training: skill-text + agent-run judges on scenario curriculum",
+  "owners": ["skill-train", "evals"],
+  "featurePr": "skill-train",
+  "tags": ["deterministic", "no-network", "skill-train", "agent", "curriculum"]
+}
