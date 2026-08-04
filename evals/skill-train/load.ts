@@ -1,10 +1,17 @@
 /**
  * Load skill-scenario curriculum from evals/fixtures/skill-scenarios/*.json
  * Lean TDD set only — no package-name expansion bloat.
+ *
+ * Fixtures may be compact (pipeline template + deltas) or legacy full transcripts.
+ * Both expand to SkillScenario before training.
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  expandSkillScenario,
+  type CompactSkillScenario,
+} from './expand.js';
 import type { SkillScenario } from './types.js';
 
 export function findRepoRoot(start = dirname(fileURLToPath(import.meta.url))): string {
@@ -37,11 +44,12 @@ export function loadSkillScenarios(repoRoot = findRepoRoot()): SkillScenario[] {
   const out: SkillScenario[] = [];
   const ids = new Set<string>();
   for (const f of files) {
-    const raw = JSON.parse(readFileSync(join(dir, f), 'utf8')) as SkillScenario;
-    assertScenario(raw, f);
-    if (ids.has(raw.id)) throw new Error(`duplicate scenario id ${raw.id}`);
-    ids.add(raw.id);
-    out.push(raw);
+    const raw = JSON.parse(readFileSync(join(dir, f), 'utf8')) as CompactSkillScenario;
+    const scenario = expandSkillScenario(raw);
+    assertScenario(scenario, f);
+    if (ids.has(scenario.id)) throw new Error(`duplicate scenario id ${scenario.id}`);
+    ids.add(scenario.id);
+    out.push(scenario);
   }
   return out;
 }
@@ -61,5 +69,10 @@ function assertScenario(s: SkillScenario, file: string): void {
   }
   if (!s.runGold?.requiredPipelineSteps?.length) {
     throw new Error(`${file}: runGold.requiredPipelineSteps required`);
+  }
+  for (const run of s.runs) {
+    if (!run.transcript?.steps?.length) {
+      throw new Error(`${file}: run ${run.id} expanded to empty transcript`);
+    }
   }
 }
