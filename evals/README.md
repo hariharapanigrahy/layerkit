@@ -32,9 +32,17 @@ node dist/evals/harness/runner.js --suite ci --json   # JSON on stdout; logs on 
 
 ## Continuous skill training
 
-Curriculum: `evals/fixtures/skill-scenarios/*.json`.
+Curriculum: `evals/fixtures/skill-scenarios/*.json` (compact form).
 
 Scenarios use **synthetic vendors** (`acme`, `docs.example.com`, example PR URLs). They do **not** call vendor docs or APIs — offline judges on local `SKILL.md` + canned transcripts. Do not name scenarios after real vendor release codenames.
+
+**Compact fixtures (deduped):** each scenario stores skill-text gold + run deltas only. The loader expands a shared pipeline template (`runGold.requiredPipelineSteps`) via `evals/skill-train/expand.ts`. Prefer:
+
+- `artifactsPreset`: `good-pr` | `store-only` | `store-only-map` | `residual-no-pr` | `pin-only-pr`
+- `stepOverrides`: e.g. `{ "author": { "invent": true } }`
+- `prepend` / `append`: extra steps (e.g. ask-human)
+- `steps`: absolute partial pipeline (incomplete bad runs)
+- Legacy full `transcript` still loads if present
 
 ```text
 scenario → skill-text judge (SKILL.md) → agent-run judge (L0 runs) → PASS/FAIL
@@ -43,10 +51,10 @@ scenario → skill-text judge (SKILL.md) → agent-run judge (L0 runs) → PASS/
 
 | Layer | What |
 |-------|------|
-| **A Scenarios** | User intent + gold + L0 good/bad runs |
+| **A Scenarios** | User intent + gold + compact L0 good/bad run deltas |
 | **B1 Skill-text** | Does SKILL.md instruct correct behavior? |
 | **B2 Agent-run** | Did the run meet gold (process, specs, routing, mapper, terminal, pipeline)? |
-| **C L0 runs** | Transcripts + artifacts in each scenario file |
+| **C L0 runs** | Expanded from template + deltas (or legacy full transcript) |
 | **D Loop** | `evals/skill-train/loop.ts` — all scenarios must go green |
 
 Agents do not load scenarios at runtime. Training improves skills and rails; runtime uses skills + mark-done rails.

@@ -1,6 +1,6 @@
 {
   "id": "tdd-e2e-mergeable-integration-developer",
-  "title": "TDD: integration developer E2E \u2014 docs evidence \u2192 map \u2192 production edit \u2192 verify \u2192 PR (no freestyle complete)",
+  "title": "TDD: integration developer E2E — docs evidence → map → production edit → verify → PR (no freestyle complete)",
   "userIntent": "layerkit: heal acme customer package end-to-end until PR is mergeable",
   "mode": "heal",
   "vendor": "acme",
@@ -59,174 +59,7 @@
     {
       "id": "good-mergeable-chain",
       "expectPass": true,
-      "transcript": {
-        "id": "e2e-good",
-        "scenarioId": "tdd-e2e-mergeable-integration-developer",
-        "vendor": "acme",
-        "title": "Full chain: cited docs, map, production edit, package verify, PR",
-        "steps": [
-          {
-            "id": "discover",
-            "pipelineStep": "discover",
-            "skill": "layerkit-discover-data-layer",
-            "action": "discover",
-            "claim": "Customer domain fields amount currency from source:code file://server/server.js",
-            "sources": [
-              {
-                "title": "client server",
-                "url": "file://server/server.js",
-                "excerpt": "paymentIntents.create amount currency"
-              }
-            ],
-            "invent": false,
-            "deepened": true,
-            "askedHuman": false
-          },
-          {
-            "id": "tdd-e2e-mergeable-integration-developer-surfaces",
-            "pipelineStep": "surfaces",
-            "skill": "layerkit-inventory-surfaces",
-            "action": "surfaces",
-            "claim": "Inventoried languages for tdd-e2e-mergeable-integration-developer",
-            "sources": [
-              {
-                "title": "layout",
-                "url": "file://package",
-                "excerpt": "server/node server/python"
-              }
-            ],
-            "invent": false,
-            "deepened": true,
-            "askedHuman": false
-          },
-          {
-            "id": "research",
-            "pipelineStep": "research",
-            "skill": "layerkit-research-vendor",
-            "action": "research",
-            "claim": "acme PaymentIntent create still uses amount currency; apiVersion pin alone is not heal",
-            "sources": [
-              {
-                "title": "PaymentIntents API",
-                "url": "https://docs.example.com/api/payment_intents/create",
-                "excerpt": "amount, currency required"
-              },
-              {
-                "title": "API versioning",
-                "url": "https://docs.example.com/api/versioning",
-                "excerpt": "apiVersion is not a substitute for field contract"
-              }
-            ],
-            "invent": false,
-            "deepened": true,
-            "askedHuman": false,
-            "notes": "severity residual; changelog reviewed"
-          },
-          {
-            "id": "design",
-            "pipelineStep": "design",
-            "skill": "layerkit-design-flow",
-            "action": "design",
-            "claim": "Keep existing linear mapper/adapter; no new facade",
-            "sources": [
-              {
-                "title": "client adapter",
-                "url": "file://server/server.js",
-                "excerpt": "existing vendor client usage"
-              }
-            ],
-            "invent": false,
-            "deepened": true,
-            "askedHuman": false
-          },
-          {
-            "id": "author",
-            "pipelineStep": "author",
-            "skill": "layerkit-author-map",
-            "action": "author",
-            "claim": "Map amount:amount currency:currency from cited docs",
-            "sources": [
-              {
-                "title": "PaymentIntents API",
-                "url": "https://docs.example.com/api/payment_intents/create",
-                "excerpt": "amount currency"
-              }
-            ],
-            "invent": false,
-            "deepened": true,
-            "askedHuman": false
-          },
-          {
-            "id": "privacy",
-            "pipelineStep": "privacy",
-            "skill": "layerkit-privacy-review",
-            "action": "privacy",
-            "claim": "No new PII fields; residual privacy none",
-            "sources": [
-              {
-                "title": "privacy note",
-                "url": "file://memory/privacy.md",
-                "excerpt": "no new PII"
-              }
-            ],
-            "invent": false,
-            "deepened": true,
-            "askedHuman": false
-          },
-          {
-            "id": "deletion-first",
-            "pipelineStep": "deletion-first",
-            "skill": "layerkit-deletion-first",
-            "action": "deletion-first",
-            "claim": "No stale facade; net-neutral edit of existing server",
-            "sources": [
-              {
-                "title": "deletion note",
-                "url": "file://memory/deletion.md",
-                "excerpt": "modify existing only"
-              }
-            ],
-            "invent": false,
-            "deepened": true,
-            "askedHuman": false
-          },
-          {
-            "id": "source-edit",
-            "pipelineStep": "source-edit",
-            "skill": "layerkit-source-edit-client",
-            "action": "source-edit",
-            "claim": "Production server/server.js updated from map; package tests green",
-            "sources": [
-              {
-                "title": "diff",
-                "url": "file://server/server.js",
-                "excerpt": "edited payment intent create path"
-              }
-            ],
-            "invent": false,
-            "deepened": true,
-            "askedHuman": false
-          },
-          {
-            "id": "handoff",
-            "pipelineStep": "handoff",
-            "skill": "layerkit-session-handoff",
-            "action": "handoff",
-            "claim": "Client PR opened after package verification green",
-            "sources": [
-              {
-                "title": "PR",
-                "url": "https://github.com/acme/client/pull/42",
-                "excerpt": "mergeable after CI green"
-              }
-            ],
-            "invent": false,
-            "deepened": true,
-            "askedHuman": false,
-            "notes": "pr: https://github.com/acme/client/pull/42 quality: package tests green"
-          }
-        ]
-      },
+      "artifactsPreset": "good-pr",
       "artifacts": {
         "mapFields": [
           {
@@ -244,15 +77,9 @@
             "operationId": "default"
           }
         },
-        "mapOperations": [
-          "default"
-        ],
         "documentationUrls": [
           "https://docs.example.com/api/payment_intents/create",
           "https://docs.example.com/api/versioning"
-        ],
-        "sourceEditPaths": [
-          "server/server.js"
         ],
         "prUrl": "https://github.com/acme/client/pull/42"
       }
@@ -260,66 +87,59 @@
     {
       "id": "bad-store-only-complete",
       "expectPass": false,
-      "defect": "store-only-no-pr-no-edit",
-      "transcript": {
-        "id": "e2e-bad-store",
-        "scenarioId": "tdd-e2e-mergeable-integration-developer",
-        "vendor": "acme",
-        "title": "Freestyle: pipeline markers only",
-        "steps": [
-          {
-            "id": "tdd-e2e-mergeable-integration-developer-surfaces",
-            "pipelineStep": "surfaces",
-            "skill": "layerkit-inventory-surfaces",
-            "action": "surfaces",
-            "claim": "Inventoried languages for tdd-e2e-mergeable-integration-developer",
-            "sources": [
-              {
-                "title": "layout",
-                "url": "file://package",
-                "excerpt": "server/node server/python"
-              }
-            ],
-            "invent": false,
-            "deepened": true,
-            "askedHuman": false
-          },
-          {
-            "id": "research-stub",
-            "pipelineStep": "research",
-            "skill": "layerkit-research-vendor",
-            "action": "research",
-            "claim": "severity residual drift residual OpenAPI docs reviewed",
-            "sources": [
-              {
-                "title": "stub",
-                "url": "https://docs.example.com/api",
-                "excerpt": "keywords only"
-              }
-            ],
-            "invent": false,
-            "deepened": true,
-            "askedHuman": false
-          },
-          {
-            "id": "handoff-stub",
-            "pipelineStep": "handoff",
-            "skill": "layerkit-session-handoff",
-            "action": "handoff",
-            "claim": "goal done next none blocked none quality residual",
-            "sources": [
-              {
-                "title": "memory",
-                "url": "file://memory/handoff.md",
-                "excerpt": "store only"
-              }
-            ],
-            "invent": false,
-            "deepened": true,
-            "askedHuman": false
-          }
-        ]
-      },
+      "steps": [
+        {
+          "id": "tdd-e2e-mergeable-integration-developer-surfaces",
+          "pipelineStep": "surfaces",
+          "skill": "layerkit-inventory-surfaces",
+          "action": "surfaces",
+          "claim": "Inventoried languages for tdd-e2e-mergeable-integration-developer",
+          "sources": [
+            {
+              "title": "layout",
+              "url": "file://package",
+              "excerpt": "server/node server/python"
+            }
+          ],
+          "invent": false,
+          "deepened": true,
+          "askedHuman": false
+        },
+        {
+          "id": "research-stub",
+          "pipelineStep": "research",
+          "skill": "layerkit-research-vendor",
+          "action": "research",
+          "claim": "severity residual drift residual OpenAPI docs reviewed",
+          "sources": [
+            {
+              "title": "stub",
+              "url": "https://docs.example.com/api",
+              "excerpt": "keywords only"
+            }
+          ],
+          "invent": false,
+          "deepened": true,
+          "askedHuman": false
+        },
+        {
+          "id": "handoff-stub",
+          "pipelineStep": "handoff",
+          "skill": "layerkit-session-handoff",
+          "action": "handoff",
+          "claim": "goal done next none blocked none quality residual",
+          "sources": [
+            {
+              "title": "memory",
+              "url": "file://memory/handoff.md",
+              "excerpt": "store only"
+            }
+          ],
+          "invent": false,
+          "deepened": true,
+          "askedHuman": false
+        }
+      ],
       "artifacts": {
         "mapFields": [
           {
@@ -344,83 +164,76 @@
     {
       "id": "bad-pin-only-pr",
       "expectPass": false,
-      "defect": "apiVersion-only-as-full-integrate",
-      "transcript": {
-        "id": "e2e-bad-pin",
-        "scenarioId": "tdd-e2e-mergeable-integration-developer",
-        "vendor": "acme",
-        "title": "Freestyle pin-only called full integrate",
-        "steps": [
-          {
-            "id": "tdd-e2e-mergeable-integration-developer-surfaces",
-            "pipelineStep": "surfaces",
-            "skill": "layerkit-inventory-surfaces",
-            "action": "surfaces",
-            "claim": "Inventoried languages for tdd-e2e-mergeable-integration-developer",
-            "sources": [
-              {
-                "title": "layout",
-                "url": "file://package",
-                "excerpt": "server/node server/python"
-              }
-            ],
-            "invent": false,
-            "deepened": true,
-            "askedHuman": false
-          },
-          {
-            "id": "research",
-            "pipelineStep": "research",
-            "skill": "layerkit-research-vendor",
-            "action": "research",
-            "claim": "Only bumped apiVersion; no field contract work",
-            "sources": [
-              {
-                "title": "versioning",
-                "url": "https://docs.example.com/api/versioning",
-                "excerpt": "apiVersion"
-              }
-            ],
-            "invent": false,
-            "deepened": true,
-            "askedHuman": false
-          },
-          {
-            "id": "source-edit",
-            "pipelineStep": "source-edit",
-            "skill": "layerkit-source-edit-client",
-            "action": "source-edit",
-            "claim": "Changed apiVersion string only",
-            "sources": [
-              {
-                "title": "pin",
-                "url": "file://package.json",
-                "excerpt": "apiVersion bump"
-              }
-            ],
-            "invent": false,
-            "deepened": true,
-            "askedHuman": false
-          },
-          {
-            "id": "handoff",
-            "pipelineStep": "handoff",
-            "skill": "layerkit-session-handoff",
-            "action": "handoff",
-            "claim": "Opened PR with pin-only",
-            "sources": [
-              {
-                "title": "pr",
-                "url": "https://github.com/acme/client/pull/99",
-                "excerpt": "apiVersion only"
-              }
-            ],
-            "invent": false,
-            "deepened": true,
-            "askedHuman": false
-          }
-        ]
-      },
+      "steps": [
+        {
+          "id": "tdd-e2e-mergeable-integration-developer-surfaces",
+          "pipelineStep": "surfaces",
+          "skill": "layerkit-inventory-surfaces",
+          "action": "surfaces",
+          "claim": "Inventoried languages for tdd-e2e-mergeable-integration-developer",
+          "sources": [
+            {
+              "title": "layout",
+              "url": "file://package",
+              "excerpt": "server/node server/python"
+            }
+          ],
+          "invent": false,
+          "deepened": true,
+          "askedHuman": false
+        },
+        {
+          "id": "research",
+          "pipelineStep": "research",
+          "skill": "layerkit-research-vendor",
+          "action": "research",
+          "claim": "Only bumped apiVersion; no field contract work",
+          "sources": [
+            {
+              "title": "versioning",
+              "url": "https://docs.example.com/api/versioning",
+              "excerpt": "apiVersion"
+            }
+          ],
+          "invent": false,
+          "deepened": true,
+          "askedHuman": false
+        },
+        {
+          "id": "source-edit",
+          "pipelineStep": "source-edit",
+          "skill": "layerkit-source-edit-client",
+          "action": "source-edit",
+          "claim": "Changed apiVersion string only",
+          "sources": [
+            {
+              "title": "pin",
+              "url": "file://package.json",
+              "excerpt": "apiVersion bump"
+            }
+          ],
+          "invent": false,
+          "deepened": true,
+          "askedHuman": false
+        },
+        {
+          "id": "handoff",
+          "pipelineStep": "handoff",
+          "skill": "layerkit-session-handoff",
+          "action": "handoff",
+          "claim": "Opened PR with pin-only",
+          "sources": [
+            {
+              "title": "pr",
+              "url": "https://github.com/acme/client/pull/99",
+              "excerpt": "apiVersion only"
+            }
+          ],
+          "invent": false,
+          "deepened": true,
+          "askedHuman": false
+        }
+      ],
       "artifacts": {
         "mapFields": [],
         "mapIntents": {},
