@@ -203,7 +203,7 @@ const cliCommands: CliCommand[] = [
   {
     path: ['pr', 'open'],
     usage:
-      'pr open --title <text> --body <text> [--usecase <key>] [--branch <name>] [--base main] [--commit-message <msg>] [--no-reuse] [--cwd <path>] [--project-dir <path>]',
+      'pr open --title <text> --body <text> [--pr-match <key>] [--usecase <key>] [--branch <name>] [--base main] [--commit-message <msg>] [--no-reuse] [--cwd <path>] [--project-dir <path>]',
     handler: runPrOpen,
     showInTopLevelHelp: true,
   },
@@ -866,14 +866,17 @@ function runPrOpen(args: string[], ctx: CliContext): void {
   const body = flag(args, '--body');
   if (!title?.trim() || !body?.trim()) {
     throw new Error(
-      'Usage: layerkit pr open --title <text> --body <text> [--usecase <key>] [--branch <name>] [--base main] [--commit-message <msg>] [--no-reuse] [--cwd <git-root>]',
+      'Usage: layerkit pr open --title <text> --body <text> [--pr-match <key>] [--usecase <key>] [--branch <name>] [--base main] [--commit-message <msg>] [--no-reuse] [--cwd <git-root>]\n' +
+        '  --pr-match: free-form PR dedupe string (title/body/branch tokens); not a vendor API registry.\n' +
+        '  --usecase: deprecated alias of --pr-match.',
     );
   }
   const cwd = flag(args, '--cwd') || ctx.repoRoot || ctx.projectDir;
   const branch = flag(args, '--branch') || undefined;
   const base = flag(args, '--base') || 'main';
   const commitMessage = flag(args, '--commit-message') || undefined;
-  const usecase = flag(args, '--usecase') || undefined;
+  // Prefer --pr-match; --usecase kept as deprecated alias (not a contract registry).
+  const prMatch = flag(args, '--pr-match') || flag(args, '--usecase') || undefined;
   const reuseOpenPr = !args.includes('--no-reuse');
   const result = openClientPr({
     cwd,
@@ -882,12 +885,12 @@ function runPrOpen(args: string[], ctx: CliContext): void {
     branch,
     base,
     commitMessage,
-    usecase,
+    prMatch,
     reuseOpenPr,
   });
   console.log(
     result.reused
-      ? `PR updated (reuse open use-case, ${result.mode}): ${result.prUrl}`
+      ? `PR updated (reuse open match, ${result.mode}): ${result.prUrl}`
       : `PR opened (${result.mode}): ${result.prUrl}`,
   );
   console.log(`head: ${result.head}  base: ${result.base}  branch: ${result.branch}`);
@@ -899,7 +902,7 @@ function runPrOpen(args: string[], ctx: CliContext): void {
     console.log('(Not a collaborator on origin — used fork push → upstream PR.)');
   }
   if (result.reused) {
-    console.log('(Matched open PR for same use case — pushed to existing branch, no duplicate PR.)');
+    console.log('(Matched open PR via --pr-match / title tokens — pushed to existing branch, no duplicate PR.)');
   }
 }
 

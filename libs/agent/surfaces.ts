@@ -140,12 +140,7 @@ export function assertSurfacesStepComplete(
   evidenceBodies: string[],
 ): SurfaceInventory {
   const inv = resolveSurfaceInventory(projectDir, evidenceBodies);
-  // At surfaces step, pending is OK — agent only inventories
-  for (const lang of inv.languages) {
-    if (lang.status === 'updated' || lang.status === 'residual' || lang.status === 'pending') {
-      continue;
-    }
-  }
+  // At surfaces step, pending is OK — agent only inventories; schema already validated.
   saveSurfaceInventory(projectDir, inv);
   return inv;
 }

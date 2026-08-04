@@ -1,16 +1,20 @@
 /**
  * Open or update a client package PR for handoff.
  *
- * 1) If an open PR already matches this use case (same author, layerkit head, title/body match),
+ * 1) If an open PR matches the PR-match key (same author, layerkit/ head, title/body/head tokens),
  *    push to that branch and return the existing PR URL (update, not duplicate).
  * 2) Else if collaborator on origin: push branch → create PR.
  * 3) Else: fork → push → PR into upstream.
  *
+ * `--pr-match` is a free-form PR dedupe string only — not a vendor API registry or contract store.
  * Deterministic CLI helper; no LLM.
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+
+/** Attribution link appended to client PR bodies. */
+export const LAYERKIT_PRODUCT_URL = 'https://github.com/hariharapanigrahy/layerkit';
 
 export interface OpenClientPrOpts {
   /** Customer package git root (usually projectDir or repoRoot). */
@@ -24,8 +28,13 @@ export interface OpenClientPrOpts {
   /** Commit message if there are uncommitted production changes. */
   commitMessage?: string;
   /**
-   * Use-case key for reusing an open PR (e.g. "basil-dahlia-multilang").
+   * Free-form PR dedupe key (e.g. "heal multilang surfaces").
    * Matched against open PR title/body/head (author=@me, head contains layerkit/).
+   * Not a vendor version registry — tokens only.
+   */
+  prMatch?: string;
+  /**
+   * @deprecated Alias of `prMatch` (CLI: `--usecase`). Prefer `--pr-match`.
    */
   usecase?: string;
   /** Default true: prefer updating an open matching PR over opening a new one. */
@@ -94,10 +103,26 @@ function currentUserLogin(cwd: string): string {
   return r.stdout;
 }
 
+/**
+ * Switch to branch without resetting an existing tip.
+ * - already on branch → no-op
+ * - local branch exists → checkout (no -B)
+ * - otherwise → create with -b from current HEAD
+ */
 function ensureOnBranch(cwd: string, branch: string): void {
   const cur = run('git', ['branch', '--show-current'], cwd);
   if (cur.stdout === branch) return;
-  const co = run('git', ['checkout', '-B', branch], cwd);
+
+  const exists = run('git', ['show-ref', '--verify', '--quiet', `refs/heads/${branch}`], cwd);
+  if (exists.status === 0) {
+    const co = run('git', ['checkout', branch], cwd);
+    if (co.status !== 0) {
+      throw new Error(`git_checkout_failed: ${co.stderr || co.stdout}`);
+    }
+    return;
+  }
+
+  const co = run('git', ['checkout', '-b', branch], cwd);
   if (co.status !== 0) {
     throw new Error(`git_checkout_failed: ${co.stderr || co.stdout}`);
   }
@@ -132,15 +157,24 @@ interface ExistingPr {
   headRepositoryOwner: string;
 }
 
+function matchTokens(key: string): string[] {
+  return key
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length >= 4);
+}
+
 /**
- * Find an open PR for the same use case (author = me, layerkit head, title/body match).
+ * Find an open PR matching the PR-dedupe key (author = me, layerkit head, title/body/head tokens).
+ * Not a vendor contract lookup — string match only.
  */
-export function findOpenPrForUsecase(
+export function findOpenPrByMatch(
   owner: string,
   repo: string,
   login: string,
-  usecase: string,
+  prMatch: string,
   cwd: string,
+  opts?: { explicitMatch?: boolean },
 ): ExistingPr | null {
   const list = run(
     'gh',
@@ -177,27 +211,26 @@ export function findOpenPrForUsecase(
     return null;
   }
 
-  const tokens = usecase
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter((t) => t.length >= 3);
+  const tokens = matchTokens(prMatch);
+  const explicit = opts?.explicitMatch === true;
+  // Title-derived match needs ≥2 tokens so short titles do not over-reuse
+  if (!explicit && tokens.length < 2) return null;
 
   for (const pr of prs) {
     const ownerLogin =
       typeof pr.headRepositoryOwner === 'string'
         ? pr.headRepositoryOwner
         : pr.headRepositoryOwner?.login ?? '';
-    const headOk =
-      pr.headRefName.includes('layerkit') ||
-      ownerLogin.toLowerCase() === login.toLowerCase();
-    if (!headOk) continue;
+
+    // Always require layerkit/ workstream head for reuse
+    if (!pr.headRefName.toLowerCase().includes('layerkit')) continue;
 
     const blob = `${pr.title}\n${pr.body}\n${pr.headRefName}`.toLowerCase();
     const match =
       tokens.length === 0
-        ? pr.headRefName.includes('layerkit')
+        ? false
         : tokens.every((t) => blob.includes(t));
-    if (!match && !blob.includes(usecase.toLowerCase())) continue;
+    if (!match && !blob.includes(prMatch.toLowerCase())) continue;
 
     return {
       number: pr.number,
@@ -209,6 +242,17 @@ export function findOpenPrForUsecase(
     };
   }
   return null;
+}
+
+/** @deprecated Use findOpenPrByMatch */
+export function findOpenPrForUsecase(
+  owner: string,
+  repo: string,
+  login: string,
+  usecase: string,
+  cwd: string,
+): ExistingPr | null {
+  return findOpenPrByMatch(owner, repo, login, usecase, cwd, { explicitMatch: true });
 }
 
 function ensureForkRemote(cwd: string, forkSlug: string): void {
@@ -223,19 +267,22 @@ function ensureForkRemote(cwd: string, forkSlug: string): void {
   }
 }
 
-function pushBranch(
-  cwd: string,
-  remote: 'origin' | 'fork',
-  branch: string,
-): void {
+function pushBranch(cwd: string, remote: 'origin' | 'fork', branch: string): void {
   const push = run('git', ['push', '-u', remote, branch], cwd);
   if (push.status !== 0) {
     throw new Error(`git_push_failed (${remote}): ${push.stderr || push.stdout}`);
   }
 }
 
+function layerkitAttributionBody(body: string): string {
+  if (new RegExp(LAYERKIT_PRODUCT_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(body)) {
+    return body;
+  }
+  return `${body}\n\n---\nProduced with [Layerkit](${LAYERKIT_PRODUCT_URL}).\n`;
+}
+
 /**
- * Open or update PR: reuse open use-case PR when possible; else direct or fork path.
+ * Open or update PR: reuse open matching PR when possible; else direct or fork path.
  */
 export function openClientPr(opts: OpenClientPrOpts): OpenClientPrResult {
   const cwd = opts.cwd;
@@ -255,23 +302,20 @@ export function openClientPr(opts: OpenClientPrOpts): OpenClientPrResult {
   }
 
   const canPush = canPushToGithubRepo(parsed.owner, parsed.repo, cwd);
-  const usecase =
-    opts.usecase?.trim() ||
+  const explicitKey = (opts.prMatch ?? opts.usecase)?.trim() || '';
+  const prMatch =
+    explicitKey ||
     opts.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
       .slice(0, 48);
 
-  // 1) Reuse open PR for same use case
+  // 1) Reuse open PR for same workstream match key
   if (reuse) {
-    const existing = findOpenPrForUsecase(
-      parsed.owner,
-      parsed.repo,
-      login,
-      usecase,
-      cwd,
-    );
+    const existing = findOpenPrByMatch(parsed.owner, parsed.repo, login, prMatch, cwd, {
+      explicitMatch: Boolean(explicitKey),
+    });
     if (existing) {
       const branch = existing.headRefName;
       ensureOnBranch(cwd, branch);
@@ -288,8 +332,7 @@ export function openClientPr(opts: OpenClientPrOpts): OpenClientPrResult {
       }
       pushBranch(cwd, remote, branch);
 
-      // refresh body with Layerkit link if missing
-      if (!/github\.com\/hariharapanigrahy\/layerkit/i.test(existing.body + opts.body)) {
+      if (!new RegExp(LAYERKIT_PRODUCT_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(existing.body)) {
         run(
           'gh',
           [
@@ -299,7 +342,7 @@ export function openClientPr(opts: OpenClientPrOpts): OpenClientPrResult {
             '--repo',
             `${parsed.owner}/${parsed.repo}`,
             '--body',
-            `${opts.body}\n\n---\nProduced with [Layerkit](https://github.com/hariharapanigrahy/layerkit).\n`,
+            layerkitAttributionBody(opts.body),
           ],
           cwd,
         );
@@ -326,7 +369,7 @@ export function openClientPr(opts: OpenClientPrOpts): OpenClientPrResult {
   ensureOnBranch(cwd, branch);
   if (opts.commitMessage) commitIfNeeded(cwd, opts.commitMessage);
 
-  const bodyWithLk = `${opts.body}\n\n---\nProduced with [Layerkit](https://github.com/hariharapanigrahy/layerkit).\n`;
+  const bodyWithLk = layerkitAttributionBody(opts.body);
 
   if (canPush) {
     pushBranch(cwd, 'origin', branch);

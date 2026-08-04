@@ -43,7 +43,7 @@ const EVIDENCE_PATTERNS: Record<string, RegExp> = {
   author: /field|map|source|vendor|intent|proposal/i,
   privacy: /pii|privacy|consent|no new|residual/i,
   'deletion-first': /delete|remov|stale|replace|net-|loc/i,
-  'source-edit': /edit|diff|residual|field|applied|confirmation|createPreview|source|files?|paths?|residual-no-field-edit/i,
+  'source-edit': /edit|diff|residual|field|applied|source|files?|paths?|residual-no-field-edit/i,
   handoff: /goal|next|blocked|handoff|quality|pr:|pull\/\d+|residual-no-pr/i,
 };
 

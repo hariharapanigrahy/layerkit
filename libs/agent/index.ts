@@ -61,6 +61,9 @@ export {
   openClientPr,
   canPushToGithubRepo,
   parseGithubOwnerRepo,
+  findOpenPrByMatch,
+  findOpenPrForUsecase,
+  LAYERKIT_PRODUCT_URL,
   type OpenClientPrOpts,
   type OpenClientPrResult,
 } from './open-client-pr.js';

@@ -53,7 +53,7 @@ layerkit doctor
 | `agent status` / `next` / `mark-done` | Same step ids always |
 | `proposal validate` / `map validate` / `doctor` | Validate explicit artifacts and package health; no semantic inference |
 
-Step ids: `discover` | `research` | `design` | `author` | `privacy` | `deletion-first` | `source-edit` | `handoff`.
+Step ids: `discover` | `surfaces` | `research` | `design` | `author` | `privacy` | `deletion-first` | `source-edit` | `handoff`.
 
 ## Ordered pipeline
 
@@ -67,7 +67,7 @@ Step ids: `discover` | `research` | `design` | `author` | `privacy` | `deletion-
 | `privacy` | `layerkit-privacy-review` | Human if new PII fields |
 | `deletion-first` | `layerkit-deletion-first` | Remove stale docs/tests/shims before adding code |
 | `source-edit` | `layerkit-source-edit-client` or direct agent edit | Agent edits existing source/tests |
-| `handoff` | checker + review | **Terminal:** `package_verify: green` + **live** PR via `layerkit pr open` (collaborator push, else **fork→push→PR**) or residual-no-pr break-glass (`outcome: residual-no-pr` + `allow_residual_no_pr: true` + `residual: <why>`). Fake PR URLs blocked. |
+| `handoff` | checker + review | **Terminal:** `package_verify: green` + **live** PR via `layerkit pr open --pr-match "…"` (reuse open workstream PR; collaborator push, else **fork→push→PR**) or residual-no-pr break-glass (`outcome: residual-no-pr` + `allow_residual_no_pr: true` + `residual: <why>`). `--pr-match` is a PR dedupe string only — not a vendor API registry. Fake PR URLs blocked. |
 
 ## Stop conditions
 

@@ -115,7 +115,7 @@ export const INTEGRATION_PIPELINE: readonly PipelineStep[] = [
     skill: 'handoff',
     cliHints: [
       'layerkit doctor && package verification green',
-      'layerkit pr open --title "…" --body "…"  (auto: push if collaborator, else fork→push→PR)',
+      'layerkit pr open --title "…" --body "…" [--pr-match "heal multilang"]  (reuse open workstream PR; push if collaborator, else fork→push→PR)',
       'Put live pr: URL in handoff evidence (fake URLs blocked)',
       'layerkit handoff write --vendor <id> --goal "…" including pr: URL',
       'Use skill layerkit-checker-assist (read-only risk checklist)',
