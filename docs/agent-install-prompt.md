@@ -15,11 +15,10 @@ Before installing, ask:
 
 Question 0 — Agent platform?
 1. Codex  2. Claude Code  3. Cursor  4. GitHub Copilot CLI
-5. OpenCode  6. OpenHands  7. Devin  8. Windsurf
-9. Factory Droid  10. Antigravity
+5. OpenCode  6. OpenHands  7. Factory Droid  8. Antigravity
 
 Question 1 — Guidance mode?
-1. Hooks + map-update reminders (Recommended)
+1. Hooks + auto-map-updates reminders (Recommended)
 2. Hooks only
 3. No hooks
 
@@ -28,9 +27,9 @@ Question 2 — Seed empty project store (POC layout)?
 2. No
 
 Map Q1:
-- 1 → --hooks enabled --map-reminders enabled
-- 2 → --hooks enabled --map-reminders disabled
-- 3 → --hooks disabled --map-reminders disabled
+- 1 → --hooks enabled --auto-map-updates enabled
+- 2 → --hooks enabled --auto-map-updates disabled
+- 3 → --hooks disabled --auto-map-updates disabled
 
 ```bash
 git clone https://github.com/hariharapanigrahy/layerkit.git
@@ -41,6 +40,8 @@ layerkit doctor
 layerkit agent status
 layerkit agent next
 ```
+
+Supported platforms: codex|claude|cursor|copilot|opencode|openhands|factory-droid|antigravity
 
 Do not invent vendor field maps during install.
 Do not research or author maps until install + doctor are green.
