@@ -12,6 +12,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { pickBestPrMatch, type PrMatchCandidate } from './pr-match.js';
 
 /** Attribution link appended to client PR bodies. */
 export const LAYERKIT_PRODUCT_URL = 'https://github.com/hariharapanigrahy/layerkit';
@@ -157,16 +158,10 @@ interface ExistingPr {
   headRepositoryOwner: string;
 }
 
-function matchTokens(key: string): string[] {
-  return key
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter((t) => t.length >= 4);
-}
-
 /**
  * Find an open PR matching the PR-dedupe key (author = me, layerkit head, title/body/head tokens).
  * Not a vendor contract lookup — string match only.
+ * When several PRs match, picks the best score (head token hits preferred over body-only).
  */
 export function findOpenPrByMatch(
   owner: string,
@@ -211,27 +206,11 @@ export function findOpenPrByMatch(
     return null;
   }
 
-  const tokens = matchTokens(prMatch);
-  const explicit = opts?.explicitMatch === true;
-  // Title-derived match needs ≥2 tokens so short titles do not over-reuse
-  if (!explicit && tokens.length < 2) return null;
-
-  for (const pr of prs) {
+  const candidates: PrMatchCandidate[] = prs.map((pr) => {
     const ownerLogin =
       typeof pr.headRepositoryOwner === 'string'
         ? pr.headRepositoryOwner
         : pr.headRepositoryOwner?.login ?? '';
-
-    // Always require layerkit/ workstream head for reuse
-    if (!pr.headRefName.toLowerCase().includes('layerkit')) continue;
-
-    const blob = `${pr.title}\n${pr.body}\n${pr.headRefName}`.toLowerCase();
-    const match =
-      tokens.length === 0
-        ? false
-        : tokens.every((t) => blob.includes(t));
-    if (!match && !blob.includes(prMatch.toLowerCase())) continue;
-
     return {
       number: pr.number,
       url: pr.url,
@@ -240,8 +219,18 @@ export function findOpenPrByMatch(
       headRefName: pr.headRefName,
       headRepositoryOwner: ownerLogin || login,
     };
-  }
-  return null;
+  });
+
+  const best = pickBestPrMatch(candidates, prMatch, opts);
+  if (!best) return null;
+  return {
+    number: best.number,
+    url: best.url,
+    title: best.title,
+    body: best.body,
+    headRefName: best.headRefName,
+    headRepositoryOwner: best.headRepositoryOwner || login,
+  };
 }
 
 /** @deprecated Use findOpenPrByMatch */

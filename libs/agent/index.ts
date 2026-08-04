@@ -69,6 +69,13 @@ export {
 } from './open-client-pr.js';
 
 export {
+  matchTokens,
+  scorePrMatch,
+  pickBestPrMatch,
+  type PrMatchCandidate,
+} from './pr-match.js';
+
+export {
   LAYERKIT_INTENT_PREFIXES,
   looksLikeLayerkitIntent,
   formatLayerkitHelp,

@@ -35,7 +35,7 @@ Optional `project.json` source-edit hints:
 
 ## Mapping Rules
 
-- If the vendor renames `email` to `email_id` and the client still exposes `getEmail()`, update the existing vendor setter to use the existing client getter: `payload.setEmailId(event.getEmail())`. Do not guess renames from names alone — require docs/OpenAPI/changelog evidence.
+- **Generic rename pattern** (email is only an example): if the vendor renames any field (e.g. `email` → `email_id`) and the client still exposes the same domain value (`getEmail()`), update the **existing** vendor setter from the **existing** client getter: `payload.setEmailId(event.getEmail())`. Same rule for any evidence-backed rename. Do not guess renames from names alone — require docs/OpenAPI/changelog evidence.
 - If the vendor removes a field, remove the stale mapping and update tests. Do not keep a wrapper for removed vendor behavior.
 - If the vendor adds a field and the client interface/datalayer already has equivalent data, map the existing client field into the new vendor shape.
 - If no client source represents the required data, treat it as an unsupported datalayer gap: leave a localized TODO and handoff note with the missing interface/datalayer gap.

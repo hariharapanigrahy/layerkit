@@ -15,6 +15,9 @@ export default defineConfig({
         'libs/doctor/*.ts',
         'libs/install/paths.ts',
         'libs/install/skills.ts',
+        // Agent pure helpers + surfaces inventory (PR #178 rails)
+        'libs/agent/pr-match.ts',
+        'libs/agent/surfaces.ts',
       ],
       thresholds: {
         lines: 95,
