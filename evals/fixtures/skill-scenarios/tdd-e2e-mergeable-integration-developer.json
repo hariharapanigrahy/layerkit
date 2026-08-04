@@ -1,9 +1,9 @@
 {
   "id": "tdd-e2e-mergeable-integration-developer",
   "title": "TDD: integration developer E2E \u2014 docs evidence \u2192 map \u2192 production edit \u2192 verify \u2192 PR (no freestyle complete)",
-  "userIntent": "layerkit: heal stripe customer package end-to-end until PR is mergeable",
+  "userIntent": "layerkit: heal acme customer package end-to-end until PR is mergeable",
   "mode": "heal",
-  "vendor": "stripe",
+  "vendor": "acme",
   "trains": [
     "integration developer",
     "docs understanding enforced",
@@ -36,7 +36,7 @@
   },
   "runGold": {
     "mustCiteHosts": [
-      "docs.stripe.com"
+      "docs.example.com"
     ],
     "requiredPipelineSteps": [
       "discover",
@@ -62,7 +62,7 @@
       "transcript": {
         "id": "e2e-good",
         "scenarioId": "tdd-e2e-mergeable-integration-developer",
-        "vendor": "stripe",
+        "vendor": "acme",
         "title": "Full chain: cited docs, map, production edit, package verify, PR",
         "steps": [
           {
@@ -104,16 +104,16 @@
             "pipelineStep": "research",
             "skill": "layerkit-research-vendor",
             "action": "research",
-            "claim": "Stripe PaymentIntent create still uses amount currency; apiVersion pin alone is not heal",
+            "claim": "acme PaymentIntent create still uses amount currency; apiVersion pin alone is not heal",
             "sources": [
               {
                 "title": "PaymentIntents API",
-                "url": "https://docs.stripe.com/api/payment_intents/create",
+                "url": "https://docs.example.com/api/payment_intents/create",
                 "excerpt": "amount, currency required"
               },
               {
                 "title": "API versioning",
-                "url": "https://docs.stripe.com/api/versioning",
+                "url": "https://docs.example.com/api/versioning",
                 "excerpt": "apiVersion is not a substitute for field contract"
               }
             ],
@@ -132,7 +132,7 @@
               {
                 "title": "client adapter",
                 "url": "file://server/server.js",
-                "excerpt": "existing stripe client usage"
+                "excerpt": "existing vendor client usage"
               }
             ],
             "invent": false,
@@ -148,7 +148,7 @@
             "sources": [
               {
                 "title": "PaymentIntents API",
-                "url": "https://docs.stripe.com/api/payment_intents/create",
+                "url": "https://docs.example.com/api/payment_intents/create",
                 "excerpt": "amount currency"
               }
             ],
@@ -248,8 +248,8 @@
           "default"
         ],
         "documentationUrls": [
-          "https://docs.stripe.com/api/payment_intents/create",
-          "https://docs.stripe.com/api/versioning"
+          "https://docs.example.com/api/payment_intents/create",
+          "https://docs.example.com/api/versioning"
         ],
         "sourceEditPaths": [
           "server/server.js"
@@ -264,7 +264,7 @@
       "transcript": {
         "id": "e2e-bad-store",
         "scenarioId": "tdd-e2e-mergeable-integration-developer",
-        "vendor": "stripe",
+        "vendor": "acme",
         "title": "Freestyle: pipeline markers only",
         "steps": [
           {
@@ -293,7 +293,7 @@
             "sources": [
               {
                 "title": "stub",
-                "url": "https://docs.stripe.com/api",
+                "url": "https://docs.example.com/api",
                 "excerpt": "keywords only"
               }
             ],
@@ -337,7 +337,7 @@
           "default"
         ],
         "documentationUrls": [
-          "https://docs.stripe.com/api"
+          "https://docs.example.com/api"
         ]
       }
     },
@@ -348,7 +348,7 @@
       "transcript": {
         "id": "e2e-bad-pin",
         "scenarioId": "tdd-e2e-mergeable-integration-developer",
-        "vendor": "stripe",
+        "vendor": "acme",
         "title": "Freestyle pin-only called full integrate",
         "steps": [
           {
@@ -377,7 +377,7 @@
             "sources": [
               {
                 "title": "versioning",
-                "url": "https://docs.stripe.com/api/versioning",
+                "url": "https://docs.example.com/api/versioning",
                 "excerpt": "apiVersion"
               }
             ],
@@ -426,7 +426,7 @@
         "mapIntents": {},
         "mapOperations": [],
         "documentationUrls": [
-          "https://docs.stripe.com/api/versioning"
+          "https://docs.example.com/api/versioning"
         ],
         "sourceEditPaths": [
           "package.json"

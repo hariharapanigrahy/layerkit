@@ -1,9 +1,9 @@
 {
   "id": "deepen-before-human",
   "title": "Must deepen evidence before residual human",
-  "userIntent": "layerkit: research stripe ambiguous hash",
+  "userIntent": "layerkit: research acme ambiguous field mapping",
   "mode": "heal",
-  "vendor": "stripe",
+  "vendor": "acme",
   "trains": [
     "research process",
     "residual human"
@@ -20,7 +20,7 @@
   },
   "runGold": {
     "mustCiteHosts": [
-      "docs.stripe.com"
+      "docs.example.com"
     ],
     "requiredPipelineSteps": [
       "discover",
@@ -55,8 +55,8 @@
             "claim": "Completed discover for scenario deepen-before-human",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -86,11 +86,11 @@
             "pipelineStep": "research",
             "skill": "layerkit-research-vendor",
             "action": "research",
-            "claim": "Contract drift assessed from docs.stripe.com",
+            "claim": "Contract drift assessed from docs.example.com",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -106,8 +106,8 @@
             "claim": "Completed design for scenario deepen-before-human",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -123,8 +123,8 @@
             "claim": "Completed author for scenario deepen-before-human",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -140,8 +140,8 @@
             "claim": "Completed privacy for scenario deepen-before-human",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -157,8 +157,8 @@
             "claim": "Completed deletion-first for scenario deepen-before-human",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -174,8 +174,8 @@
             "claim": "Completed source-edit for scenario deepen-before-human",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -191,8 +191,8 @@
             "claim": "Completed handoff for scenario deepen-before-human",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -230,7 +230,7 @@
           "default"
         ],
         "documentationUrls": [
-          "https://docs.stripe.com/api"
+          "https://docs.example.com/api"
         ],
         "prUrl": "https://github.com/acme/client/pull/1",
         "sourceEditPaths": [
@@ -263,8 +263,8 @@
             "claim": "Completed discover for scenario deepen-before-human",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -294,11 +294,11 @@
             "pipelineStep": "research",
             "skill": "layerkit-research-vendor",
             "action": "research",
-            "claim": "Contract drift assessed from docs.stripe.com",
+            "claim": "Contract drift assessed from docs.example.com",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -314,8 +314,8 @@
             "claim": "Completed design for scenario deepen-before-human",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -331,8 +331,8 @@
             "claim": "Completed author for scenario deepen-before-human",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -348,8 +348,8 @@
             "claim": "Completed privacy for scenario deepen-before-human",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -365,8 +365,8 @@
             "claim": "Completed deletion-first for scenario deepen-before-human",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -382,8 +382,8 @@
             "claim": "Completed source-edit for scenario deepen-before-human",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -399,8 +399,8 @@
             "claim": "Completed handoff for scenario deepen-before-human",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -427,7 +427,7 @@
           "default"
         ],
         "documentationUrls": [
-          "https://docs.stripe.com/api"
+          "https://docs.example.com/api"
         ],
         "prUrl": "https://github.com/acme/client/pull/1",
         "sourceEditPaths": [

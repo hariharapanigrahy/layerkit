@@ -3,7 +3,7 @@
   "title": "TDD RED\u2192GREEN: handoff skill must require client PR URL or residual-no-pr",
   "userIntent": "layerkit: handoff after source-edit",
   "mode": "heal",
-  "vendor": "stripe",
+  "vendor": "acme",
   "trains": [
     "handoff terminal",
     "critical"
@@ -22,7 +22,7 @@
   },
   "runGold": {
     "mustCiteHosts": [
-      "docs.stripe.com"
+      "docs.example.com"
     ],
     "requiredPipelineSteps": [
       "discover",
@@ -57,8 +57,8 @@
             "claim": "Completed discover",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API"
               }
             ],
@@ -91,8 +91,8 @@
             "claim": "Completed research",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API"
               }
             ],
@@ -108,8 +108,8 @@
             "claim": "Completed design",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API"
               }
             ],
@@ -125,8 +125,8 @@
             "claim": "Completed author",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API"
               }
             ],
@@ -142,8 +142,8 @@
             "claim": "Completed privacy",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API"
               }
             ],
@@ -159,8 +159,8 @@
             "claim": "Completed deletion-first",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API"
               }
             ],
@@ -176,8 +176,8 @@
             "claim": "Completed source-edit",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API"
               }
             ],
@@ -193,8 +193,8 @@
             "claim": "Completed handoff",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API"
               }
             ],
@@ -221,7 +221,7 @@
           "d"
         ],
         "documentationUrls": [
-          "https://docs.stripe.com/api"
+          "https://docs.example.com/api"
         ],
         "prUrl": "https://github.com/o/r/pull/1",
         "sourceEditPaths": [
@@ -244,8 +244,8 @@
             "claim": "Completed discover",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API"
               }
             ],
@@ -278,8 +278,8 @@
             "claim": "Completed research",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API"
               }
             ],
@@ -295,8 +295,8 @@
             "claim": "Completed design",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API"
               }
             ],
@@ -312,8 +312,8 @@
             "claim": "Completed author",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API"
               }
             ],
@@ -329,8 +329,8 @@
             "claim": "Completed privacy",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API"
               }
             ],
@@ -346,8 +346,8 @@
             "claim": "Completed deletion-first",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API"
               }
             ],
@@ -363,8 +363,8 @@
             "claim": "Completed source-edit",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API"
               }
             ],
@@ -380,8 +380,8 @@
             "claim": "Completed handoff",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API"
               }
             ],
@@ -408,7 +408,7 @@
           "d"
         ],
         "documentationUrls": [
-          "https://docs.stripe.com/api"
+          "https://docs.example.com/api"
         ]
       }
     }

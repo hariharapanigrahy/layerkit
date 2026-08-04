@@ -1,9 +1,9 @@
 {
   "id": "invent-field-blocked",
   "title": "Invented map fields must fail agent-run judge",
-  "userIntent": "layerkit: author map for stripe",
+  "userIntent": "layerkit: author map for acme (evidence required)",
   "mode": "heal",
-  "vendor": "stripe",
+  "vendor": "acme",
   "trains": [
     "mapper",
     "no invent",
@@ -24,7 +24,7 @@
   },
   "runGold": {
     "mustCiteHosts": [
-      "docs.stripe.com"
+      "docs.example.com"
     ],
     "requiredPipelineSteps": [
       "discover",
@@ -50,7 +50,7 @@
       "transcript": {
         "id": "t-g",
         "scenarioId": "invent-field-blocked",
-        "vendor": "stripe",
+        "vendor": "acme",
         "steps": [
           {
             "id": "invent-field-blocked-discover",
@@ -60,8 +60,8 @@
             "claim": "Completed discover for scenario invent-field-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -91,11 +91,11 @@
             "pipelineStep": "research",
             "skill": "layerkit-research-vendor",
             "action": "research",
-            "claim": "Contract drift assessed from docs.stripe.com",
+            "claim": "Contract drift assessed from docs.example.com",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -111,8 +111,8 @@
             "claim": "Completed design for scenario invent-field-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -128,8 +128,8 @@
             "claim": "Completed author for scenario invent-field-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -145,8 +145,8 @@
             "claim": "Completed privacy for scenario invent-field-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -162,8 +162,8 @@
             "claim": "Completed deletion-first for scenario invent-field-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -179,8 +179,8 @@
             "claim": "Completed source-edit for scenario invent-field-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -196,8 +196,8 @@
             "claim": "Completed handoff for scenario invent-field-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -224,7 +224,7 @@
           "default"
         ],
         "documentationUrls": [
-          "https://docs.stripe.com/api"
+          "https://docs.example.com/api"
         ],
         "prUrl": "https://github.com/acme/client/pull/1",
         "sourceEditPaths": [
@@ -239,7 +239,7 @@
       "transcript": {
         "id": "t-b",
         "scenarioId": "invent-field-blocked",
-        "vendor": "stripe",
+        "vendor": "acme",
         "steps": [
           {
             "id": "invent-field-blocked-discover",
@@ -249,8 +249,8 @@
             "claim": "Completed discover for scenario invent-field-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -280,11 +280,11 @@
             "pipelineStep": "research",
             "skill": "layerkit-research-vendor",
             "action": "research",
-            "claim": "Contract drift assessed from docs.stripe.com",
+            "claim": "Contract drift assessed from docs.example.com",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -300,8 +300,8 @@
             "claim": "Completed design for scenario invent-field-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -317,8 +317,8 @@
             "claim": "[INVENT] mapped invent_email without evidence",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -334,8 +334,8 @@
             "claim": "Completed privacy for scenario invent-field-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -351,8 +351,8 @@
             "claim": "Completed deletion-first for scenario invent-field-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -368,8 +368,8 @@
             "claim": "Completed source-edit for scenario invent-field-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -385,8 +385,8 @@
             "claim": "Completed handoff for scenario invent-field-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -413,7 +413,7 @@
           "default"
         ],
         "documentationUrls": [
-          "https://docs.stripe.com/api"
+          "https://docs.example.com/api"
         ],
         "prUrl": "https://github.com/acme/client/pull/1",
         "sourceEditPaths": [

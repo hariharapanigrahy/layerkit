@@ -130,7 +130,7 @@ assertEqual('all done → null', getNextStep([...REQUIRED_ORDER]), null);
 {
   const dir = mkdtempSync(join(tmpdir(), 'lk-pipe-heal-'));
   try {
-    setPipelineMode(dir, 'heal', { vendor: 'stripe' });
+    setPipelineMode(dir, 'heal', { vendor: 'acme' });
     assertEqual('heal mode loaded', loadPipelineMode(dir), 'heal');
     assertEqual(
       'heal next after start → surfaces (discover skipped)',

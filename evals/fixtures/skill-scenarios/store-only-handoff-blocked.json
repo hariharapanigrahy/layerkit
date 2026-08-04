@@ -1,9 +1,9 @@
 {
   "id": "store-only-handoff-blocked",
   "title": "Store-only handoff must fail; PR path must pass",
-  "userIntent": "layerkit: heal stripe client package",
+  "userIntent": "layerkit: heal acme client package",
   "mode": "heal",
-  "vendor": "stripe",
+  "vendor": "acme",
   "trains": [
     "terminal",
     "orchestrate",
@@ -24,7 +24,7 @@
   },
   "runGold": {
     "mustCiteHosts": [
-      "docs.stripe.com"
+      "docs.example.com"
     ],
     "requiredPipelineSteps": [
       "discover",
@@ -50,7 +50,7 @@
       "transcript": {
         "id": "t-good",
         "scenarioId": "store-only-handoff-blocked",
-        "vendor": "stripe",
+        "vendor": "acme",
         "title": "good",
         "steps": [
           {
@@ -61,8 +61,8 @@
             "claim": "Completed discover for scenario store-only-handoff-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -92,11 +92,11 @@
             "pipelineStep": "research",
             "skill": "layerkit-research-vendor",
             "action": "research",
-            "claim": "Contract drift assessed from docs.stripe.com",
+            "claim": "Contract drift assessed from docs.example.com",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -112,8 +112,8 @@
             "claim": "Completed design for scenario store-only-handoff-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -129,8 +129,8 @@
             "claim": "Completed author for scenario store-only-handoff-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -146,8 +146,8 @@
             "claim": "Completed privacy for scenario store-only-handoff-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -163,8 +163,8 @@
             "claim": "Completed deletion-first for scenario store-only-handoff-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -180,8 +180,8 @@
             "claim": "Completed source-edit for scenario store-only-handoff-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -197,8 +197,8 @@
             "claim": "Completed handoff for scenario store-only-handoff-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -225,7 +225,7 @@
           "default"
         ],
         "documentationUrls": [
-          "https://docs.stripe.com/api"
+          "https://docs.example.com/api"
         ],
         "prUrl": "https://github.com/acme/client/pull/1",
         "sourceEditPaths": [
@@ -240,7 +240,7 @@
       "transcript": {
         "id": "t-bad",
         "scenarioId": "store-only-handoff-blocked",
-        "vendor": "stripe",
+        "vendor": "acme",
         "title": "bad",
         "steps": [
           {
@@ -251,8 +251,8 @@
             "claim": "Completed discover for scenario store-only-handoff-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -282,11 +282,11 @@
             "pipelineStep": "research",
             "skill": "layerkit-research-vendor",
             "action": "research",
-            "claim": "Contract drift assessed from docs.stripe.com",
+            "claim": "Contract drift assessed from docs.example.com",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -302,8 +302,8 @@
             "claim": "Completed design for scenario store-only-handoff-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -319,8 +319,8 @@
             "claim": "Completed author for scenario store-only-handoff-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -336,8 +336,8 @@
             "claim": "Completed privacy for scenario store-only-handoff-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -353,8 +353,8 @@
             "claim": "Completed deletion-first for scenario store-only-handoff-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -370,8 +370,8 @@
             "claim": "Completed source-edit for scenario store-only-handoff-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -387,8 +387,8 @@
             "claim": "Completed handoff for scenario store-only-handoff-blocked",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -415,7 +415,7 @@
           "default"
         ],
         "documentationUrls": [
-          "https://docs.stripe.com/api"
+          "https://docs.example.com/api"
         ],
         "prUrl": null
       }

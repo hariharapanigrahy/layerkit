@@ -1,9 +1,9 @@
 {
   "id": "residual-no-pr-breakglass",
   "title": "Zero production change may residual-no-pr with break-glass",
-  "userIntent": "layerkit: heal stripe pin-only residual",
+  "userIntent": "layerkit: heal acme residual (no production field drift)",
   "mode": "heal",
-  "vendor": "stripe",
+  "vendor": "acme",
   "trains": [
     "terminal residual",
     "honest no-diff"
@@ -20,7 +20,7 @@
   },
   "runGold": {
     "mustCiteHosts": [
-      "docs.stripe.com"
+      "docs.example.com"
     ],
     "requiredPipelineSteps": [
       "discover",
@@ -46,7 +46,7 @@
       "transcript": {
         "id": "t-g",
         "scenarioId": "residual-no-pr-breakglass",
-        "vendor": "stripe",
+        "vendor": "acme",
         "steps": [
           {
             "id": "residual-no-pr-breakglass-discover",
@@ -56,8 +56,8 @@
             "claim": "Completed discover for scenario residual-no-pr-breakglass",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -87,11 +87,11 @@
             "pipelineStep": "research",
             "skill": "layerkit-research-vendor",
             "action": "research",
-            "claim": "Contract drift assessed from docs.stripe.com",
+            "claim": "Contract drift assessed from docs.example.com",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -107,8 +107,8 @@
             "claim": "Completed design for scenario residual-no-pr-breakglass",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -124,8 +124,8 @@
             "claim": "Completed author for scenario residual-no-pr-breakglass",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -141,8 +141,8 @@
             "claim": "Completed privacy for scenario residual-no-pr-breakglass",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -158,8 +158,8 @@
             "claim": "Completed deletion-first for scenario residual-no-pr-breakglass",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -175,8 +175,8 @@
             "claim": "Completed source-edit for scenario residual-no-pr-breakglass",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -192,8 +192,8 @@
             "claim": "Completed handoff for scenario residual-no-pr-breakglass",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -215,7 +215,7 @@
           "default"
         ],
         "documentationUrls": [
-          "https://docs.stripe.com/api"
+          "https://docs.example.com/api"
         ],
         "residualNoPr": true,
         "allowResidualNoPr": true,
@@ -230,7 +230,7 @@
       "transcript": {
         "id": "t-b",
         "scenarioId": "residual-no-pr-breakglass",
-        "vendor": "stripe",
+        "vendor": "acme",
         "steps": [
           {
             "id": "residual-no-pr-breakglass-discover",
@@ -240,8 +240,8 @@
             "claim": "Completed discover for scenario residual-no-pr-breakglass",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -271,11 +271,11 @@
             "pipelineStep": "research",
             "skill": "layerkit-research-vendor",
             "action": "research",
-            "claim": "Contract drift assessed from docs.stripe.com",
+            "claim": "Contract drift assessed from docs.example.com",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -291,8 +291,8 @@
             "claim": "Completed design for scenario residual-no-pr-breakglass",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -308,8 +308,8 @@
             "claim": "Completed author for scenario residual-no-pr-breakglass",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -325,8 +325,8 @@
             "claim": "Completed privacy for scenario residual-no-pr-breakglass",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -342,8 +342,8 @@
             "claim": "Completed deletion-first for scenario residual-no-pr-breakglass",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -359,8 +359,8 @@
             "claim": "Completed source-edit for scenario residual-no-pr-breakglass",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -376,8 +376,8 @@
             "claim": "Completed handoff for scenario residual-no-pr-breakglass",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -389,7 +389,7 @@
       },
       "artifacts": {
         "documentationUrls": [
-          "https://docs.stripe.com/api"
+          "https://docs.example.com/api"
         ],
         "mapFields": [],
         "prUrl": null

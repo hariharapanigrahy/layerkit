@@ -34,6 +34,8 @@ node dist/evals/harness/runner.js --suite ci --json   # JSON on stdout; logs on 
 
 Curriculum: `evals/fixtures/skill-scenarios/*.json`.
 
+Scenarios use **synthetic vendors** (`acme`, `docs.example.com`, example PR URLs). They do **not** call vendor docs or APIs — offline judges on local `SKILL.md` + canned transcripts. Do not name scenarios after real vendor release codenames.
+
 ```text
 scenario → skill-text judge (SKILL.md) → agent-run judge (L0 runs) → PASS/FAIL
          → on FAIL: fix skills/rails/fixtures → re-run

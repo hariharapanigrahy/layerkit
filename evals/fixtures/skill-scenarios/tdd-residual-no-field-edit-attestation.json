@@ -3,7 +3,7 @@
   "title": "TDD RED\u2192GREEN: residual-no-field-edit attestation required in source-edit skill",
   "userIntent": "layerkit: heal with zero field drift \u2014 residual path",
   "mode": "heal",
-  "vendor": "stripe",
+  "vendor": "acme",
   "trains": [
     "source-edit residual",
     "terminal honesty"
@@ -21,7 +21,7 @@
   },
   "runGold": {
     "mustCiteHosts": [
-      "docs.stripe.com"
+      "docs.example.com"
     ],
     "requiredPipelineSteps": [
       "discover",
@@ -56,8 +56,8 @@
             "claim": "Completed discover",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -90,8 +90,8 @@
             "claim": "Completed research",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -107,8 +107,8 @@
             "claim": "Completed design",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -124,8 +124,8 @@
             "claim": "Completed author",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -141,8 +141,8 @@
             "claim": "Completed privacy",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -158,8 +158,8 @@
             "claim": "Completed deletion-first",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -175,8 +175,8 @@
             "claim": "Completed source-edit",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -192,8 +192,8 @@
             "claim": "Completed handoff",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -208,7 +208,7 @@
         "mapIntents": {},
         "mapOperations": [],
         "documentationUrls": [
-          "https://docs.stripe.com/api"
+          "https://docs.example.com/api"
         ],
         "residualNoPr": true,
         "allowResidualNoPr": true,
@@ -231,8 +231,8 @@
             "claim": "Completed discover",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -265,8 +265,8 @@
             "claim": "Completed research",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -282,8 +282,8 @@
             "claim": "Completed design",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -299,8 +299,8 @@
             "claim": "Completed author",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -316,8 +316,8 @@
             "claim": "Completed privacy",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -333,8 +333,8 @@
             "claim": "Completed deletion-first",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -350,8 +350,8 @@
             "claim": "Completed source-edit",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -367,8 +367,8 @@
             "claim": "Completed handoff",
             "sources": [
               {
-                "title": "docs.stripe.com",
-                "url": "https://docs.stripe.com/api",
+                "title": "docs.example.com",
+                "url": "https://docs.example.com/api",
                 "excerpt": "API reference"
               }
             ],
@@ -380,7 +380,7 @@
       },
       "artifacts": {
         "documentationUrls": [
-          "https://docs.stripe.com/api"
+          "https://docs.example.com/api"
         ],
         "mapFields": [],
         "prUrl": null

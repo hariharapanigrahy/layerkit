@@ -28,7 +28,7 @@ try {
   }
   assertTrue('next/mark-done blocked without start', blocked);
 
-  setPipelineMode(projectDir, 'full', { vendor: 'stripe' });
+  setPipelineMode(projectDir, 'full', { vendor: 'acme' });
   requirePipelineStarted(projectDir);
 
   const built = buildSkillPacket(projectDir);
@@ -65,7 +65,7 @@ try {
     'research',
     ['r.md'],
     () =>
-      `${pad}\nhttps://docs.stripe.com/changelog drift residual severity none\n`,
+      `${pad}\nhttps://docs.example.com/changelog drift residual severity none\n`,
   );
 
   // mark-done without packet fails
@@ -92,8 +92,8 @@ try {
   const pkgRoot = join(root, 'pkg');
   mkdirSync(join(pkgRoot, 'src', 'integrations'), { recursive: true });
   mkdirSync(join(pkgRoot, 'memory', 'runbooks'), { recursive: true });
-  writeFileSync(join(pkgRoot, 'src', 'integrations', 'stripe.ts'), 'export const x = 1;\n');
-  writeFileSync(join(pkgRoot, 'src', 'integrations', 'stripe.js'), 'export const x = 1;\n');
+  writeFileSync(join(pkgRoot, 'src', 'integrations', 'acme.ts'), 'export const x = 1;\n');
+  writeFileSync(join(pkgRoot, 'src', 'integrations', 'acme.js'), 'export const x = 1;\n');
   writeFileSync(
     join(pkgRoot, 'memory', 'runbooks', 'surface-inventory.json'),
     JSON.stringify(
@@ -105,7 +105,7 @@ try {
             id: 'node',
             roots: ['src/integrations'],
             status: 'updated',
-            paths: ['src/integrations/stripe.js'],
+            paths: ['src/integrations/acme.js'],
           },
         ],
       },
@@ -138,7 +138,7 @@ try {
   assertEvidenceForStep(
     'source-edit',
     ['s.md'],
-    () => `${fat}\nfiles: src/integrations/stripe.ts\nedited residual applied source\n`,
+    () => `${fat}\nfiles: src/integrations/acme.ts\nedited residual applied source\n`,
     { projectDir: pkgRoot },
   );
   assertEvidenceForStep(
@@ -183,7 +183,7 @@ try {
       'handoff',
       ['h.md'],
       () =>
-        `${fat}\ngoal next blocked handoff quality\npackage_verify: green\nfiles: src/integrations/stripe.js\npr: https://github.com/acme/client/pull/42\n`,
+        `${fat}\ngoal next blocked handoff quality\npackage_verify: green\nfiles: src/integrations/acme.js\npr: https://github.com/acme/client/pull/42\n`,
       { projectDir: pkgRoot },
     );
   } finally {
