@@ -1,0 +1,423 @@
+{
+  "id": "tdd-no-pin-only-full-integrate",
+  "title": "TDD RED\u2192GREEN: pin/apiVersion alone is not full integrate",
+  "userIntent": "layerkit: full integrate stripe \u2014 agent freestyles apiVersion pin",
+  "mode": "full",
+  "vendor": "stripe",
+  "trains": [
+    "critical freestyle",
+    "orchestrate",
+    "no pin-only"
+  ],
+  "skillText": {
+    "skillsUnderTest": [
+      "layerkit-orchestrate-integration",
+      "layerkit-source-edit-client"
+    ],
+    "mustMatch": [
+      "apiVersion",
+      "pin-only|SDK alone|apiVersion alone",
+      "not full integrate|not call it full|do not.*full integrate"
+    ],
+    "mustNotMatch": [
+      "out/pr",
+      "agent multi"
+    ]
+  },
+  "runGold": {
+    "mustCiteHosts": [
+      "docs.stripe.com"
+    ],
+    "requiredPipelineSteps": [
+      "discover",
+      "surfaces",
+      "research",
+      "design",
+      "author",
+      "privacy",
+      "deletion-first",
+      "source-edit",
+      "handoff"
+    ],
+    "mapFieldsMin": 1,
+    "forbidInventFieldPaths": true,
+    "forbidStoreOnlyHandoff": true,
+    "requirePrUrl": true,
+    "allowResidualNoPr": false
+  },
+  "runs": [
+    {
+      "id": "good-real-edit-pr",
+      "expectPass": true,
+      "transcript": {
+        "id": "g",
+        "scenarioId": "tdd-no-pin-only-full-integrate",
+        "vendor": "stripe",
+        "steps": [
+          {
+            "id": "tdd-no-pin-only-full-integrate-discover",
+            "pipelineStep": "discover",
+            "skill": "layerkit-discover-data-layer",
+            "action": "discover",
+            "claim": "Completed discover",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-no-pin-only-full-integrate-surfaces",
+            "pipelineStep": "surfaces",
+            "skill": "layerkit-inventory-surfaces",
+            "action": "surfaces",
+            "claim": "Inventoried languages for tdd-no-pin-only-full-integrate",
+            "sources": [
+              {
+                "title": "layout",
+                "url": "file://package",
+                "excerpt": "server/node server/python"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-no-pin-only-full-integrate-research",
+            "pipelineStep": "research",
+            "skill": "layerkit-research-vendor",
+            "action": "research",
+            "claim": "Completed research",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-no-pin-only-full-integrate-design",
+            "pipelineStep": "design",
+            "skill": "layerkit-design-flow",
+            "action": "design",
+            "claim": "Completed design",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-no-pin-only-full-integrate-author",
+            "pipelineStep": "author",
+            "skill": "layerkit-author-map",
+            "action": "author",
+            "claim": "Completed author",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-no-pin-only-full-integrate-privacy",
+            "pipelineStep": "privacy",
+            "skill": "layerkit-privacy-review",
+            "action": "privacy",
+            "claim": "Completed privacy",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-no-pin-only-full-integrate-deletion-first",
+            "pipelineStep": "deletion-first",
+            "skill": "layerkit-deletion-first",
+            "action": "deletion-first",
+            "claim": "Completed deletion-first",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-no-pin-only-full-integrate-source-edit",
+            "pipelineStep": "source-edit",
+            "skill": "layerkit-source-edit-client",
+            "action": "source-edit",
+            "claim": "Completed source-edit",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-no-pin-only-full-integrate-handoff",
+            "pipelineStep": "handoff",
+            "skill": "layerkit-session-handoff",
+            "action": "handoff",
+            "claim": "Completed handoff",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          }
+        ]
+      },
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "amount",
+            "vendor": "amount"
+          }
+        ],
+        "mapIntents": {
+          "sample": {
+            "eventName": "sample",
+            "operationId": "default"
+          }
+        },
+        "mapOperations": [
+          "default"
+        ],
+        "documentationUrls": [
+          "https://docs.stripe.com/api",
+          "https://docs.stripe.com/changelog"
+        ],
+        "prUrl": "https://github.com/stripe-samples/subscription-use-cases/pull/1225",
+        "sourceEditPaths": [
+          "server/server.js"
+        ]
+      }
+    },
+    {
+      "id": "bad-store-only",
+      "expectPass": false,
+      "transcript": {
+        "id": "b",
+        "scenarioId": "tdd-no-pin-only-full-integrate",
+        "vendor": "stripe",
+        "steps": [
+          {
+            "id": "tdd-no-pin-only-full-integrate-discover",
+            "pipelineStep": "discover",
+            "skill": "layerkit-discover-data-layer",
+            "action": "discover",
+            "claim": "Completed discover",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-no-pin-only-full-integrate-surfaces",
+            "pipelineStep": "surfaces",
+            "skill": "layerkit-inventory-surfaces",
+            "action": "surfaces",
+            "claim": "Inventoried languages for tdd-no-pin-only-full-integrate",
+            "sources": [
+              {
+                "title": "layout",
+                "url": "file://package",
+                "excerpt": "server/node server/python"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-no-pin-only-full-integrate-research",
+            "pipelineStep": "research",
+            "skill": "layerkit-research-vendor",
+            "action": "research",
+            "claim": "Completed research",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-no-pin-only-full-integrate-design",
+            "pipelineStep": "design",
+            "skill": "layerkit-design-flow",
+            "action": "design",
+            "claim": "Completed design",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-no-pin-only-full-integrate-author",
+            "pipelineStep": "author",
+            "skill": "layerkit-author-map",
+            "action": "author",
+            "claim": "Completed author",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-no-pin-only-full-integrate-privacy",
+            "pipelineStep": "privacy",
+            "skill": "layerkit-privacy-review",
+            "action": "privacy",
+            "claim": "Completed privacy",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-no-pin-only-full-integrate-deletion-first",
+            "pipelineStep": "deletion-first",
+            "skill": "layerkit-deletion-first",
+            "action": "deletion-first",
+            "claim": "Completed deletion-first",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-no-pin-only-full-integrate-source-edit",
+            "pipelineStep": "source-edit",
+            "skill": "layerkit-source-edit-client",
+            "action": "source-edit",
+            "claim": "Completed source-edit",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-no-pin-only-full-integrate-handoff",
+            "pipelineStep": "handoff",
+            "skill": "layerkit-session-handoff",
+            "action": "handoff",
+            "claim": "Completed handoff",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          }
+        ]
+      },
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "a",
+            "vendor": "b"
+          }
+        ],
+        "mapIntents": {
+          "s": {
+            "eventName": "s",
+            "operationId": "d"
+          }
+        },
+        "mapOperations": [
+          "d"
+        ],
+        "documentationUrls": [
+          "https://docs.stripe.com/api"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,425 @@
+{
+  "id": "invent-field-blocked",
+  "title": "Invented map fields must fail agent-run judge",
+  "userIntent": "layerkit: author map for stripe",
+  "mode": "heal",
+  "vendor": "stripe",
+  "trains": [
+    "mapper",
+    "no invent",
+    "author-map"
+  ],
+  "skillText": {
+    "skillsUnderTest": [
+      "layerkit-author-map",
+      "layerkit-research-vendor"
+    ],
+    "mustMatch": [
+      "do not invent",
+      "sources"
+    ],
+    "mustNotMatch": [
+      "guess the field"
+    ]
+  },
+  "runGold": {
+    "mustCiteHosts": [
+      "docs.stripe.com"
+    ],
+    "requiredPipelineSteps": [
+      "discover",
+      "surfaces",
+      "research",
+      "design",
+      "author",
+      "privacy",
+      "deletion-first",
+      "source-edit",
+      "handoff"
+    ],
+    "mapFieldsMin": 1,
+    "forbidInventFieldPaths": true,
+    "forbidStoreOnlyHandoff": true,
+    "requirePrUrl": true,
+    "allowResidualNoPr": false
+  },
+  "runs": [
+    {
+      "id": "good-cited-fields",
+      "expectPass": true,
+      "transcript": {
+        "id": "t-g",
+        "scenarioId": "invent-field-blocked",
+        "vendor": "stripe",
+        "steps": [
+          {
+            "id": "invent-field-blocked-discover",
+            "pipelineStep": "discover",
+            "skill": "layerkit-discover-data-layer",
+            "action": "discover",
+            "claim": "Completed discover for scenario invent-field-blocked",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "invent-field-blocked-surfaces",
+            "pipelineStep": "surfaces",
+            "skill": "layerkit-inventory-surfaces",
+            "action": "surfaces",
+            "claim": "Inventoried languages for invent-field-blocked",
+            "sources": [
+              {
+                "title": "layout",
+                "url": "file://package",
+                "excerpt": "server/node server/python"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "invent-field-blocked-research",
+            "pipelineStep": "research",
+            "skill": "layerkit-research-vendor",
+            "action": "research",
+            "claim": "Contract drift assessed from docs.stripe.com",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "invent-field-blocked-design",
+            "pipelineStep": "design",
+            "skill": "layerkit-design-flow",
+            "action": "design",
+            "claim": "Completed design for scenario invent-field-blocked",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "invent-field-blocked-author",
+            "pipelineStep": "author",
+            "skill": "layerkit-author-map",
+            "action": "author",
+            "claim": "Completed author for scenario invent-field-blocked",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "invent-field-blocked-privacy",
+            "pipelineStep": "privacy",
+            "skill": "layerkit-privacy-review",
+            "action": "privacy",
+            "claim": "Completed privacy for scenario invent-field-blocked",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "invent-field-blocked-deletion-first",
+            "pipelineStep": "deletion-first",
+            "skill": "layerkit-deletion-first",
+            "action": "deletion-first",
+            "claim": "Completed deletion-first for scenario invent-field-blocked",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "invent-field-blocked-source-edit",
+            "pipelineStep": "source-edit",
+            "skill": "layerkit-source-edit-client",
+            "action": "source-edit",
+            "claim": "Completed source-edit for scenario invent-field-blocked",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "invent-field-blocked-handoff",
+            "pipelineStep": "handoff",
+            "skill": "layerkit-session-handoff",
+            "action": "handoff",
+            "claim": "Completed handoff for scenario invent-field-blocked",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          }
+        ]
+      },
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "amount",
+            "vendor": "amount"
+          }
+        ],
+        "mapIntents": {
+          "sample": {
+            "eventName": "sample",
+            "operationId": "default"
+          }
+        },
+        "mapOperations": [
+          "default"
+        ],
+        "documentationUrls": [
+          "https://docs.stripe.com/api"
+        ],
+        "prUrl": "https://github.com/acme/client/pull/1",
+        "sourceEditPaths": [
+          "server/server.js"
+        ]
+      }
+    },
+    {
+      "id": "bad-invent",
+      "expectPass": false,
+      "defect": "invent",
+      "transcript": {
+        "id": "t-b",
+        "scenarioId": "invent-field-blocked",
+        "vendor": "stripe",
+        "steps": [
+          {
+            "id": "invent-field-blocked-discover",
+            "pipelineStep": "discover",
+            "skill": "layerkit-discover-data-layer",
+            "action": "discover",
+            "claim": "Completed discover for scenario invent-field-blocked",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "invent-field-blocked-surfaces",
+            "pipelineStep": "surfaces",
+            "skill": "layerkit-inventory-surfaces",
+            "action": "surfaces",
+            "claim": "Inventoried languages for invent-field-blocked",
+            "sources": [
+              {
+                "title": "layout",
+                "url": "file://package",
+                "excerpt": "server/node server/python"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "invent-field-blocked-research",
+            "pipelineStep": "research",
+            "skill": "layerkit-research-vendor",
+            "action": "research",
+            "claim": "Contract drift assessed from docs.stripe.com",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "invent-field-blocked-design",
+            "pipelineStep": "design",
+            "skill": "layerkit-design-flow",
+            "action": "design",
+            "claim": "Completed design for scenario invent-field-blocked",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "invent-field-blocked-author",
+            "pipelineStep": "author",
+            "skill": "layerkit-author-map",
+            "action": "author",
+            "claim": "[INVENT] mapped invent_email without evidence",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": true,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "invent-field-blocked-privacy",
+            "pipelineStep": "privacy",
+            "skill": "layerkit-privacy-review",
+            "action": "privacy",
+            "claim": "Completed privacy for scenario invent-field-blocked",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "invent-field-blocked-deletion-first",
+            "pipelineStep": "deletion-first",
+            "skill": "layerkit-deletion-first",
+            "action": "deletion-first",
+            "claim": "Completed deletion-first for scenario invent-field-blocked",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "invent-field-blocked-source-edit",
+            "pipelineStep": "source-edit",
+            "skill": "layerkit-source-edit-client",
+            "action": "source-edit",
+            "claim": "Completed source-edit for scenario invent-field-blocked",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "invent-field-blocked-handoff",
+            "pipelineStep": "handoff",
+            "skill": "layerkit-session-handoff",
+            "action": "handoff",
+            "claim": "Completed handoff for scenario invent-field-blocked",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          }
+        ]
+      },
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "amount",
+            "vendor": "invent_email"
+          }
+        ],
+        "mapIntents": {
+          "sample": {
+            "eventName": "sample",
+            "operationId": "default"
+          }
+        },
+        "mapOperations": [
+          "default"
+        ],
+        "documentationUrls": [
+          "https://docs.stripe.com/api"
+        ],
+        "prUrl": "https://github.com/acme/client/pull/1",
+        "sourceEditPaths": [
+          "server/server.js"
+        ]
+      }
+    }
+  ]
+}

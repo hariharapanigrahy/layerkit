@@ -4,6 +4,7 @@ import { join } from 'node:path';
 export const SKILL_NAMES = [
   'layerkit-bootstrap',
   'layerkit-discover-data-layer',
+  'layerkit-inventory-surfaces',
   'layerkit-research-vendor',
   'layerkit-design-integration',
   'layerkit-author-map',

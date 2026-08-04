@@ -45,6 +45,27 @@ export {
 } from './skill-packet.js';
 
 export {
+  SURFACE_INVENTORY_REL,
+  surfaceInventoryPath,
+  loadSurfaceInventory,
+  saveSurfaceInventory,
+  assertValidSurfaceInventory,
+  assertSurfacesStepComplete,
+  assertAllSurfacesResolved,
+  type SurfaceInventory,
+  type SurfaceLanguage,
+  type SurfaceStatus,
+} from './surfaces.js';
+
+export {
+  openClientPr,
+  canPushToGithubRepo,
+  parseGithubOwnerRepo,
+  type OpenClientPrOpts,
+  type OpenClientPrResult,
+} from './open-client-pr.js';
+
+export {
   LAYERKIT_INTENT_PREFIXES,
   looksLikeLayerkitIntent,
   formatLayerkitHelp,

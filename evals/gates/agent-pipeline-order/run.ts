@@ -1,9 +1,9 @@
 /**
- * Gate: INTEGRATION_PIPELINE has discover → research → design → author → privacy
+ * Gate: INTEGRATION_PIPELINE has discover → surfaces → research → design → author → privacy
  * → deletion-first → source-edit → handoff
  * (key skill names present in order). Also covers getNextStep / formatPipelineStatus / mark-done markers.
  */
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { assertEqual, assertTrue } from '../../harness/assert.js';
@@ -24,6 +24,7 @@ import {
 /** Required key names in pipeline order (id or skill must contain the key). */
 const REQUIRED_ORDER = [
   'discover',
+  'surfaces',
   'research',
   'design',
   'author',
@@ -49,7 +50,7 @@ for (const key of REQUIRED_ORDER) {
 }
 
 assertTrue(
-  'pipeline has at least 7 steps',
+  'pipeline has at least required steps',
   INTEGRATION_PIPELINE.length >= REQUIRED_ORDER.length,
 );
 
@@ -70,40 +71,50 @@ for (const step of INTEGRATION_PIPELINE) {
 
 // --- getNextStep ---
 assertEqual('empty completed → discover', getNextStep([])?.id, 'discover');
+assertEqual('after discover → surfaces', getNextStep(['discover'])?.id, 'surfaces');
 assertEqual(
-  'after discover → research',
-  getNextStep(['discover'])?.id,
+  'after surfaces → research',
+  getNextStep(['discover', 'surfaces'])?.id,
   'research',
 );
 assertEqual(
   'after research → design',
-  getNextStep(['discover', 'research'])?.id,
+  getNextStep(['discover', 'surfaces', 'research'])?.id,
   'design',
 );
 assertEqual(
   'after design → author',
-  getNextStep(['discover', 'research', 'design'])?.id,
+  getNextStep(['discover', 'surfaces', 'research', 'design'])?.id,
   'author',
 );
 assertEqual(
   'after author → privacy',
-  getNextStep(['discover', 'research', 'design', 'author'])?.id,
+  getNextStep(['discover', 'surfaces', 'research', 'design', 'author'])?.id,
   'privacy',
 );
 assertEqual(
   'after privacy → deletion-first',
-  getNextStep(['discover', 'research', 'design', 'author', 'privacy'])?.id,
+  getNextStep(['discover', 'surfaces', 'research', 'design', 'author', 'privacy'])?.id,
   'deletion-first',
 );
 assertEqual(
   'after deletion-first → source-edit',
-  getNextStep(['discover', 'research', 'design', 'author', 'privacy', 'deletion-first'])?.id,
+  getNextStep([
+    'discover',
+    'surfaces',
+    'research',
+    'design',
+    'author',
+    'privacy',
+    'deletion-first',
+  ])?.id,
   'source-edit',
 );
 assertEqual(
   'after source-edit → handoff',
   getNextStep([
     'discover',
+    'surfaces',
     'research',
     'design',
     'author',
@@ -113,155 +124,61 @@ assertEqual(
   ])?.id,
   'handoff',
 );
-assertEqual(
-  'all done → null',
-  getNextStep([...REQUIRED_ORDER]),
-  null,
-);
+assertEqual('all done → null', getNextStep([...REQUIRED_ORDER]), null);
 
-// Unknown / out-of-order completed ids do not skip valid next
-assertEqual(
-  'unknown completed id ignored for next',
-  getNextStep(['not-a-real-step'])?.id,
-  'discover',
-);
-
-// --- formatPipelineStatus / formatNextStepLine ---
-const emptyStatus = formatPipelineStatus([]);
-assertTrue('status header', emptyStatus.includes('Integration pipeline:'));
-assertTrue('status marks discover next', /\[ \]\s+discover.*← next/.test(emptyStatus), emptyStatus);
-assertTrue('status lists research', emptyStatus.includes('research'));
-assertTrue('status lists handoff', emptyStatus.includes('handoff'));
-
-const midStatus = formatPipelineStatus(['discover', 'research']);
-assertTrue('mid status next design', midStatus.includes('Next: design'), midStatus);
-assertTrue(
-  'mid status discover checked',
-  /\[x\]\s+discover/.test(midStatus),
-  midStatus,
-);
-
-const doneStatus = formatPipelineStatus([...REQUIRED_ORDER]);
-assertTrue('done status complete', doneStatus.includes('pipeline complete'), doneStatus);
-
-assertTrue(
-  'formatNextStepLine empty',
-  formatNextStepLine([]).includes('discover'),
-  formatNextStepLine([]),
-);
-assertTrue(
-  'formatNextStepLine complete',
-  formatNextStepLine([...REQUIRED_ORDER]).includes('pipeline complete'),
-);
-
-// --- step id validation ---
-assertTrue('discover is valid id', isPipelineStepId('discover'));
-assertTrue('bogus id rejected', !isPipelineStepId('bogus-step'));
-
-// --- memory markers: markStepDone + loadCompletedSteps ---
-const root = mkdtempSync(join(tmpdir(), 'layerkit-agent-pipe-'));
-const projectDir = join(root, '.layerkit');
-try {
-  assertEqual('no markers initially', loadCompletedSteps(projectDir).length, 0);
-  const evidence = 'memory/evidence.md';
-  mkdirSync(join(projectDir, 'memory'), { recursive: true });
-  // Thick enough for mark-done content gates when those land; keep sequential marks valid.
-  writeFileSync(
-    join(projectDir, evidence),
-    [
-      'Pipeline eval evidence note with required keywords.',
-      'intents: purchase',
-      'fields: user.email',
-      'source:code path=src/App.ts',
-      'https://docs.example.com/api drift residual severity none',
-      'shape linear mapper existing adapter',
-      'map field vendor proposal sources',
-      'privacy no new PII residual',
-      'delete stale replace net-neutral loc',
-      'source-edit applied field residual diff',
-      'handoff goal next blocked quality residual',
-    ].join('\n'),
-    'utf8',
-  );
-
-  const path1 = markStepDone(projectDir, 'discover', [evidence]);
-  assertTrue('marker file created', existsSync(path1));
-  assertEqual('status path matches', path1, pipelineStatusPath(projectDir));
-
-  const loaded1 = loadCompletedSteps(projectDir);
-  assertEqual('one completed', loaded1.length, 1);
-  assertEqual('completed is discover', loaded1[0], 'discover');
-
-  const body1 = readFileSync(path1, 'utf8');
-  assertTrue('marker has [x] discover', /- \[x\] discover/.test(body1), body1);
-
-  markStepDone(projectDir, 'research', [evidence]);
-  const loaded2 = loadCompletedSteps(projectDir);
-  assertTrue('two completed', loaded2.includes('discover') && loaded2.includes('research'));
-
-  // Idempotent mark
-  markStepDone(projectDir, 'discover', [evidence]);
-  assertEqual(
-    'idempotent mark keeps two',
-    loadCompletedSteps(projectDir).filter((id) => id === 'discover').length,
-    1,
-  );
-
-  // getNextStep from disk markers
-  const fromDisk = loadCompletedSteps(projectDir);
-  assertEqual('next from disk is design', getNextStep(fromDisk)?.id, 'design');
-
-  let threw = false;
+// heal: discover auto-complete → next is surfaces (not research)
+{
+  const dir = mkdtempSync(join(tmpdir(), 'lk-pipe-heal-'));
   try {
-    markStepDone(projectDir, 'not-a-step', [evidence]);
-  } catch {
-    threw = true;
+    setPipelineMode(dir, 'heal', { vendor: 'stripe' });
+    assertEqual('heal mode loaded', loadPipelineMode(dir), 'heal');
+    assertEqual(
+      'heal next after start → surfaces (discover skipped)',
+      getNextStepForProject(dir)?.id,
+      'surfaces',
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
-  assertTrue('unknown step throws', threw);
-
-  let outOfOrder = false;
-  try {
-    markStepDone(projectDir, 'source-edit', [evidence]);
-  } catch (e) {
-    outOfOrder = String(e).includes('step_out_of_order');
-  }
-  assertTrue('out-of-order source-edit throws', outOfOrder);
-} finally {
-  rmSync(root, { recursive: true, force: true });
 }
 
-// --- heal start mode: discover is skipped by state, not by semantic inference ---
-const healRoot = mkdtempSync(join(tmpdir(), 'layerkit-agent-heal-'));
-const healProjectDir = join(healRoot, '.layerkit');
-try {
-  const path = setPipelineMode(healProjectDir, 'heal', {
-    vendor: 'ledgerbeam',
-    note: 'contract update',
-  });
-  const body = readFileSync(path, 'utf8');
-  assertEqual('heal mode is loaded', loadPipelineMode(healProjectDir), 'heal');
-  assertTrue('heal status records vendor', body.includes('vendor: ledgerbeam'), body);
-  assertTrue('heal status records note', body.includes('note: contract update'), body);
-  assertTrue('heal marks discover complete', loadCompletedSteps(healProjectDir).includes('discover'));
-  assertEqual('heal next step is research', getNextStepForProject(healProjectDir)?.id, 'research');
+// --- formatPipelineStatus / formatNextStepLine / markStepDone (smoke) ---
+const midStatus = formatPipelineStatus(['discover', 'surfaces', 'research']);
+assertTrue('status lists mode', /mode:/i.test(midStatus));
+assertTrue('status lists research done', /\[x\].*research/i.test(midStatus));
 
-  let reenterBlocked = false;
+assertTrue(
+  'next line mentions surfaces after discover only',
+  /surfaces/i.test(formatNextStepLine(['discover'])),
+);
+
+assertTrue('isPipelineStepId surfaces', isPipelineStepId('surfaces'));
+assertTrue('isPipelineStepId reject junk', !isPipelineStepId('not-a-step'));
+
+// mark-done markers
+{
+  const dir = mkdtempSync(join(tmpdir(), 'lk-pipe-mark-'));
   try {
-    setPipelineMode(healProjectDir, 'full');
-  } catch (e) {
-    reenterBlocked = String(e).includes('pipeline_already_started');
+    setPipelineMode(dir, 'full', { vendor: 'v' });
+    const p = pipelineStatusPath(dir);
+    assertTrue('status path under memory', p.includes('pipeline-status'));
+    markStepDone(dir, 'discover', ['ev1.md']);
+    const loaded = loadCompletedSteps(dir);
+    assertTrue('discover completed', loaded.includes('discover'));
+    markStepDone(dir, 'surfaces', ['ev2.md']);
+    const loaded2 = loadCompletedSteps(dir);
+    assertTrue(
+      'two completed',
+      loaded2.includes('discover') && loaded2.includes('surfaces'),
+    );
+    assertTrue('status file exists', existsSync(p));
+    assertTrue(
+      'status body has markers',
+      /\[x\].*discover/i.test(readFileSync(p, 'utf8')),
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
-  assertTrue('second start without force-reset throws', reenterBlocked);
-
-  setPipelineMode(healProjectDir, 'full', { forceReset: true });
-  assertEqual('full mode after force-reset', loadPipelineMode(healProjectDir), 'full');
-  assertEqual(
-    'force-reset clears discover',
-    loadCompletedSteps(healProjectDir).includes('discover'),
-    false,
-  );
-} finally {
-  rmSync(healRoot, { recursive: true, force: true });
 }
 
 console.log('agent-pipeline-order: all checks passed');

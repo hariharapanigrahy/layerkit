@@ -1,0 +1,439 @@
+{
+  "id": "deepen-before-human",
+  "title": "Must deepen evidence before residual human",
+  "userIntent": "layerkit: research stripe ambiguous hash",
+  "mode": "heal",
+  "vendor": "stripe",
+  "trains": [
+    "research process",
+    "residual human"
+  ],
+  "skillText": {
+    "skillsUnderTest": [
+      "layerkit-research-vendor"
+    ],
+    "mustMatch": [
+      "evidence",
+      "residual"
+    ],
+    "mustNotMatch": []
+  },
+  "runGold": {
+    "mustCiteHosts": [
+      "docs.stripe.com"
+    ],
+    "requiredPipelineSteps": [
+      "discover",
+      "surfaces",
+      "research",
+      "design",
+      "author",
+      "privacy",
+      "deletion-first",
+      "source-edit",
+      "handoff"
+    ],
+    "mapFieldsMin": 1,
+    "forbidInventFieldPaths": true,
+    "forbidStoreOnlyHandoff": true,
+    "requirePrUrl": true,
+    "allowResidualNoPr": false
+  },
+  "runs": [
+    {
+      "id": "good-deepened",
+      "expectPass": true,
+      "transcript": {
+        "id": "t-g",
+        "scenarioId": "deepen-before-human",
+        "steps": [
+          {
+            "id": "deepen-before-human-discover",
+            "pipelineStep": "discover",
+            "skill": "layerkit-discover-data-layer",
+            "action": "discover",
+            "claim": "Completed discover for scenario deepen-before-human",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deepen-before-human-surfaces",
+            "pipelineStep": "surfaces",
+            "skill": "layerkit-inventory-surfaces",
+            "action": "surfaces",
+            "claim": "Inventoried languages for deepen-before-human",
+            "sources": [
+              {
+                "title": "layout",
+                "url": "file://package",
+                "excerpt": "server/node server/python"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deepen-before-human-research",
+            "pipelineStep": "research",
+            "skill": "layerkit-research-vendor",
+            "action": "research",
+            "claim": "Contract drift assessed from docs.stripe.com",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deepen-before-human-design",
+            "pipelineStep": "design",
+            "skill": "layerkit-design-flow",
+            "action": "design",
+            "claim": "Completed design for scenario deepen-before-human",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deepen-before-human-author",
+            "pipelineStep": "author",
+            "skill": "layerkit-author-map",
+            "action": "author",
+            "claim": "Completed author for scenario deepen-before-human",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deepen-before-human-privacy",
+            "pipelineStep": "privacy",
+            "skill": "layerkit-privacy-review",
+            "action": "privacy",
+            "claim": "Completed privacy for scenario deepen-before-human",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deepen-before-human-deletion-first",
+            "pipelineStep": "deletion-first",
+            "skill": "layerkit-deletion-first",
+            "action": "deletion-first",
+            "claim": "Completed deletion-first for scenario deepen-before-human",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deepen-before-human-source-edit",
+            "pipelineStep": "source-edit",
+            "skill": "layerkit-source-edit-client",
+            "action": "source-edit",
+            "claim": "Completed source-edit for scenario deepen-before-human",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deepen-before-human-handoff",
+            "pipelineStep": "handoff",
+            "skill": "layerkit-session-handoff",
+            "action": "handoff",
+            "claim": "Completed handoff for scenario deepen-before-human",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "ask",
+            "skill": "layerkit-research-vendor",
+            "action": "ask-human",
+            "claim": "",
+            "sources": [],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": true,
+            "notes": "hash rule residual after deepen"
+          }
+        ]
+      },
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "amount",
+            "vendor": "amount"
+          }
+        ],
+        "mapIntents": {
+          "sample": {
+            "eventName": "sample",
+            "operationId": "default"
+          }
+        },
+        "mapOperations": [
+          "default"
+        ],
+        "documentationUrls": [
+          "https://docs.stripe.com/api"
+        ],
+        "prUrl": "https://github.com/acme/client/pull/1",
+        "sourceEditPaths": [
+          "server/server.js"
+        ]
+      }
+    },
+    {
+      "id": "bad-human-first",
+      "expectPass": false,
+      "transcript": {
+        "id": "t-b",
+        "scenarioId": "deepen-before-human",
+        "steps": [
+          {
+            "id": "ask",
+            "skill": "layerkit-research-vendor",
+            "action": "ask-human",
+            "claim": "",
+            "sources": [],
+            "invent": false,
+            "deepened": false,
+            "askedHuman": true
+          },
+          {
+            "id": "deepen-before-human-discover",
+            "pipelineStep": "discover",
+            "skill": "layerkit-discover-data-layer",
+            "action": "discover",
+            "claim": "Completed discover for scenario deepen-before-human",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deepen-before-human-surfaces",
+            "pipelineStep": "surfaces",
+            "skill": "layerkit-inventory-surfaces",
+            "action": "surfaces",
+            "claim": "Inventoried languages for deepen-before-human",
+            "sources": [
+              {
+                "title": "layout",
+                "url": "file://package",
+                "excerpt": "server/node server/python"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deepen-before-human-research",
+            "pipelineStep": "research",
+            "skill": "layerkit-research-vendor",
+            "action": "research",
+            "claim": "Contract drift assessed from docs.stripe.com",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deepen-before-human-design",
+            "pipelineStep": "design",
+            "skill": "layerkit-design-flow",
+            "action": "design",
+            "claim": "Completed design for scenario deepen-before-human",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deepen-before-human-author",
+            "pipelineStep": "author",
+            "skill": "layerkit-author-map",
+            "action": "author",
+            "claim": "Completed author for scenario deepen-before-human",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deepen-before-human-privacy",
+            "pipelineStep": "privacy",
+            "skill": "layerkit-privacy-review",
+            "action": "privacy",
+            "claim": "Completed privacy for scenario deepen-before-human",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deepen-before-human-deletion-first",
+            "pipelineStep": "deletion-first",
+            "skill": "layerkit-deletion-first",
+            "action": "deletion-first",
+            "claim": "Completed deletion-first for scenario deepen-before-human",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deepen-before-human-source-edit",
+            "pipelineStep": "source-edit",
+            "skill": "layerkit-source-edit-client",
+            "action": "source-edit",
+            "claim": "Completed source-edit for scenario deepen-before-human",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "deepen-before-human-handoff",
+            "pipelineStep": "handoff",
+            "skill": "layerkit-session-handoff",
+            "action": "handoff",
+            "claim": "Completed handoff for scenario deepen-before-human",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          }
+        ]
+      },
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "amount",
+            "vendor": "amount"
+          }
+        ],
+        "mapIntents": {
+          "sample": {
+            "eventName": "sample",
+            "operationId": "default"
+          }
+        },
+        "mapOperations": [
+          "default"
+        ],
+        "documentationUrls": [
+          "https://docs.stripe.com/api"
+        ],
+        "prUrl": "https://github.com/acme/client/pull/1",
+        "sourceEditPaths": [
+          "server/server.js"
+        ]
+      }
+    }
+  ]
+}

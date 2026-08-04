@@ -24,6 +24,7 @@ import {
   requirePipelineStarted,
   SKILL_PACKET_REL,
   formatLayerkitHelp,
+  openClientPr,
   type PipelineMode,
 } from '../../libs/agent/index.js';
 import { ensureLayerkitConfig, layerkitConfigPath } from '../../libs/config/layerkit-config.js';
@@ -197,6 +198,13 @@ const cliCommands: CliCommand[] = [
     path: ['agent', 'mark-done'],
     usage: 'agent mark-done --step <id> --evidence <path>... [--project-dir <path>]',
     handler: runAgentMarkDone,
+    showInTopLevelHelp: true,
+  },
+  {
+    path: ['pr', 'open'],
+    usage:
+      'pr open --title <text> --body <text> [--usecase <key>] [--branch <name>] [--base main] [--commit-message <msg>] [--no-reuse] [--cwd <path>] [--project-dir <path>]',
+    handler: runPrOpen,
     showInTopLevelHelp: true,
   },
 {
@@ -849,6 +857,52 @@ function runAgentNext(_args: string[], ctx: CliContext): void {
 }
 
 /** Append a completed step marker under memory/runbooks/pipeline-status.md. */
+/**
+ * Open client package PR for handoff.
+ * If not a collaborator on origin: fork → push → PR into upstream.
+ */
+function runPrOpen(args: string[], ctx: CliContext): void {
+  const title = flag(args, '--title');
+  const body = flag(args, '--body');
+  if (!title?.trim() || !body?.trim()) {
+    throw new Error(
+      'Usage: layerkit pr open --title <text> --body <text> [--usecase <key>] [--branch <name>] [--base main] [--commit-message <msg>] [--no-reuse] [--cwd <git-root>]',
+    );
+  }
+  const cwd = flag(args, '--cwd') || ctx.repoRoot || ctx.projectDir;
+  const branch = flag(args, '--branch') || undefined;
+  const base = flag(args, '--base') || 'main';
+  const commitMessage = flag(args, '--commit-message') || undefined;
+  const usecase = flag(args, '--usecase') || undefined;
+  const reuseOpenPr = !args.includes('--no-reuse');
+  const result = openClientPr({
+    cwd,
+    title: title.trim(),
+    body: body.trim(),
+    branch,
+    base,
+    commitMessage,
+    usecase,
+    reuseOpenPr,
+  });
+  console.log(
+    result.reused
+      ? `PR updated (reuse open use-case, ${result.mode}): ${result.prUrl}`
+      : `PR opened (${result.mode}): ${result.prUrl}`,
+  );
+  console.log(`head: ${result.head}  base: ${result.base}  branch: ${result.branch}`);
+  console.log('');
+  console.log('Handoff evidence must include:');
+  console.log(`  pr: ${result.prUrl}`);
+  console.log('  package_verify: green');
+  if (result.mode === 'fork') {
+    console.log('(Not a collaborator on origin — used fork push → upstream PR.)');
+  }
+  if (result.reused) {
+    console.log('(Matched open PR for same use case — pushed to existing branch, no duplicate PR.)');
+  }
+}
+
 function runAgentMarkDone(args: string[], ctx: CliContext): void {
   requirePipelineStarted(ctx.projectDir);
   const step = flag(args, '--step');
@@ -866,7 +920,12 @@ function runAgentMarkDone(args: string[], ctx: CliContext): void {
   const clean = evidence.map((p) => p.trim()).filter(Boolean);
   // Fail-closed flow while session open: next → skill packet → evidence → mark-done (order)
   assertSkillPacketForMarkDone(ctx.projectDir, step);
-  assertEvidenceForStep(step, clean, (p) => readEvidenceFile(p, ctx.repoRoot, ctx.projectDir));
+  assertEvidenceForStep(
+    step,
+    clean,
+    (p) => readEvidenceFile(p, ctx.repoRoot, ctx.projectDir),
+    { projectDir: ctx.projectDir },
+  );
   const path = markStepDone(ctx.projectDir, step, clean);
   const mode = loadPipelineMode(ctx.projectDir);
   const completed = effectiveCompletedSteps(ctx.projectDir);

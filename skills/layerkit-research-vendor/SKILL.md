@@ -70,7 +70,7 @@ Do not open a broad questionnaire while OpenAPI/docs/curl/source evidence can st
 ## Forbidden
 
 - Inventing hash/phone/auth/endpoint rules when evidence is silent
-- Guessing field renames from names alone; source edits require docs/code evidence
+- Do not guess field renames from names alone; source edits require docs/OpenAPI/changelog evidence
 - Ignoring applied map on heal (must diff / surgical update)
 - Opening full human questionnaire while OpenAPI/docs/curl already answer Q1/Q2
 - Trusting third-party maps without customer re-verify

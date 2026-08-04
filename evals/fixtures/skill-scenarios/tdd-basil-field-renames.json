@@ -1,0 +1,432 @@
+{
+  "id": "tdd-basil-field-renames",
+  "title": "TDD RED\u2192GREEN: contract renames only from docs; edit production fields",
+  "userIntent": "layerkit: heal stripe subscription Basil renames (confirmation_secret, createPreview)",
+  "mode": "heal",
+  "vendor": "stripe",
+  "trains": [
+    "critical rename",
+    "research",
+    "source-edit"
+  ],
+  "skillText": {
+    "skillsUnderTest": [
+      "layerkit-research-vendor",
+      "layerkit-source-edit-client",
+      "layerkit-author-map"
+    ],
+    "mustMatch": [
+      "changelog|OpenAPI|docs",
+      "rename",
+      "do not guess|never guess|not guess",
+      "production source|edit existing|existing mapper"
+    ],
+    "mustNotMatch": []
+  },
+  "runGold": {
+    "mustCiteHosts": [
+      "docs.stripe.com"
+    ],
+    "requiredPipelineSteps": [
+      "discover",
+      "surfaces",
+      "research",
+      "design",
+      "author",
+      "privacy",
+      "deletion-first",
+      "source-edit",
+      "handoff"
+    ],
+    "mapFieldsMin": 1,
+    "forbidInventFieldPaths": true,
+    "forbidStoreOnlyHandoff": true,
+    "requirePrUrl": true,
+    "allowResidualNoPr": false
+  },
+  "runs": [
+    {
+      "id": "good-renamed-fields",
+      "expectPass": true,
+      "transcript": {
+        "id": "g",
+        "scenarioId": "tdd-basil-field-renames",
+        "vendor": "stripe",
+        "steps": [
+          {
+            "id": "tdd-basil-field-renames-discover",
+            "pipelineStep": "discover",
+            "skill": "layerkit-discover-data-layer",
+            "action": "discover",
+            "claim": "Completed discover",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-basil-field-renames-surfaces",
+            "pipelineStep": "surfaces",
+            "skill": "layerkit-inventory-surfaces",
+            "action": "surfaces",
+            "claim": "Inventoried languages for tdd-basil-field-renames",
+            "sources": [
+              {
+                "title": "layout",
+                "url": "file://package",
+                "excerpt": "server/node server/python"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-basil-field-renames-research",
+            "pipelineStep": "research",
+            "skill": "layerkit-research-vendor",
+            "action": "research",
+            "claim": "Completed research",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-basil-field-renames-design",
+            "pipelineStep": "design",
+            "skill": "layerkit-design-flow",
+            "action": "design",
+            "claim": "Completed design",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-basil-field-renames-author",
+            "pipelineStep": "author",
+            "skill": "layerkit-author-map",
+            "action": "author",
+            "claim": "Completed author",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-basil-field-renames-privacy",
+            "pipelineStep": "privacy",
+            "skill": "layerkit-privacy-review",
+            "action": "privacy",
+            "claim": "Completed privacy",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-basil-field-renames-deletion-first",
+            "pipelineStep": "deletion-first",
+            "skill": "layerkit-deletion-first",
+            "action": "deletion-first",
+            "claim": "Completed deletion-first",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-basil-field-renames-source-edit",
+            "pipelineStep": "source-edit",
+            "skill": "layerkit-source-edit-client",
+            "action": "source-edit",
+            "claim": "Completed source-edit",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-basil-field-renames-handoff",
+            "pipelineStep": "handoff",
+            "skill": "layerkit-session-handoff",
+            "action": "handoff",
+            "claim": "Completed handoff",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          }
+        ]
+      },
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "payment.confirmation",
+            "vendor": "confirmation_secret"
+          },
+          {
+            "domain": "invoice.preview",
+            "vendor": "createPreview"
+          }
+        ],
+        "mapIntents": {
+          "sample": {
+            "eventName": "sample",
+            "operationId": "default"
+          }
+        },
+        "mapOperations": [
+          "default"
+        ],
+        "documentationUrls": [
+          "https://docs.stripe.com/api",
+          "https://docs.stripe.com/changelog"
+        ],
+        "prUrl": "https://github.com/stripe-samples/subscription-use-cases/pull/1225",
+        "sourceEditPaths": [
+          "server/server.js",
+          "fixed-price-subscriptions/server/server.js"
+        ]
+      }
+    },
+    {
+      "id": "bad-invent-rename",
+      "expectPass": false,
+      "transcript": {
+        "id": "b",
+        "scenarioId": "tdd-basil-field-renames",
+        "vendor": "stripe",
+        "steps": [
+          {
+            "id": "tdd-basil-field-renames-discover",
+            "pipelineStep": "discover",
+            "skill": "layerkit-discover-data-layer",
+            "action": "discover",
+            "claim": "Completed discover",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-basil-field-renames-surfaces",
+            "pipelineStep": "surfaces",
+            "skill": "layerkit-inventory-surfaces",
+            "action": "surfaces",
+            "claim": "Inventoried languages for tdd-basil-field-renames",
+            "sources": [
+              {
+                "title": "layout",
+                "url": "file://package",
+                "excerpt": "server/node server/python"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-basil-field-renames-research",
+            "pipelineStep": "research",
+            "skill": "layerkit-research-vendor",
+            "action": "research",
+            "claim": "Completed research",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-basil-field-renames-design",
+            "pipelineStep": "design",
+            "skill": "layerkit-design-flow",
+            "action": "design",
+            "claim": "Completed design",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-basil-field-renames-author",
+            "pipelineStep": "author",
+            "skill": "layerkit-author-map",
+            "action": "author",
+            "claim": "[INVENT] invent_email without docs",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": true,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-basil-field-renames-privacy",
+            "pipelineStep": "privacy",
+            "skill": "layerkit-privacy-review",
+            "action": "privacy",
+            "claim": "Completed privacy",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-basil-field-renames-deletion-first",
+            "pipelineStep": "deletion-first",
+            "skill": "layerkit-deletion-first",
+            "action": "deletion-first",
+            "claim": "Completed deletion-first",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-basil-field-renames-source-edit",
+            "pipelineStep": "source-edit",
+            "skill": "layerkit-source-edit-client",
+            "action": "source-edit",
+            "claim": "Completed source-edit",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          },
+          {
+            "id": "tdd-basil-field-renames-handoff",
+            "pipelineStep": "handoff",
+            "skill": "layerkit-session-handoff",
+            "action": "handoff",
+            "claim": "Completed handoff",
+            "sources": [
+              {
+                "title": "docs.stripe.com",
+                "url": "https://docs.stripe.com/api",
+                "excerpt": "API reference"
+              }
+            ],
+            "invent": false,
+            "deepened": true,
+            "askedHuman": false
+          }
+        ]
+      },
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "user.email",
+            "vendor": "invent_email"
+          }
+        ],
+        "mapIntents": {
+          "sample": {
+            "eventName": "sample",
+            "operationId": "default"
+          }
+        },
+        "mapOperations": [
+          "default"
+        ],
+        "documentationUrls": [
+          "https://docs.stripe.com/api",
+          "https://docs.stripe.com/changelog"
+        ],
+        "prUrl": "https://github.com/stripe-samples/subscription-use-cases/pull/1225",
+        "sourceEditPaths": [
+          "server/server.js"
+        ]
+      }
+    }
+  ]
+}
