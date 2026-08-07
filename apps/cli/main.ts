@@ -927,7 +927,7 @@ function runAgentMarkDone(args: string[], ctx: CliContext): void {
     step,
     clean,
     (p) => readEvidenceFile(p, ctx.repoRoot, ctx.projectDir),
-    { projectDir: ctx.projectDir },
+    { projectDir: ctx.projectDir, repoRoot: ctx.repoRoot },
   );
   const path = markStepDone(ctx.projectDir, step, clean);
   const mode = loadPipelineMode(ctx.projectDir);

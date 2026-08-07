@@ -12,6 +12,7 @@ Before source edits, match the **customer's** package layout, DI, HTTP client, a
 1. Scan customer repo (read-only) for existing integration clients:
    - Java/TS/Python/etc.: package roots, DI/framework style, HTTP client, test stack, naming, error handling
    - existing vendor clients, mappers, adapters, SDK wrappers, fetch/axios/WebClient/HttpClient usage
+   - multi-vendor packages: sibling vendor adapters, shared registry/router, and the sibling test pattern a new vendor should clone
 2. **Deny-paths**: same as discover (no `.env`, secrets, keys, pem).
 3. Build a **style profile** markdown:
 
@@ -27,7 +28,8 @@ Before source edits, match the **customer's** package layout, DI, HTTP client, a
 - test: junit5 + (wiremock|mockwebserver|mockito)
 - naming: *Client / *Adapter / *Mapper
 - errorHandling: checked | runtime + mapping notes
-- examples: file://paths to 2–3 reference classes
+- multiVendor: yes|no; siblingReference: file://…; registry: file://…; newVendorFollows: <path pattern>
+- examples: file://paths to 2–3 reference classes (prefer sibling vendor adapters when present)
 ```
 
 4. Write profile to memory (and optional file under projectDir).

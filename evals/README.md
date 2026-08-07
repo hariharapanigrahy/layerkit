@@ -118,6 +118,25 @@ console.log('my-gate: all checks passed');
 2. Run `npm run eval:skill-train` until green (fix skills/rails/fixtures as needed).
 3. Gate `skill-train-loop` is already in suite `ci`.
 
+### Multi-vendor / new-vendor full integrate (client packages)
+
+Train **process** on multi-vendor brownfield patterns — not package-name catalogs. Curriculum uses synthetic vendors (`northstar`, `cedar`, `acme`) and offline judges.
+
+Real-world patterns that motivated the scenarios (examples only; not shipped product truth):
+
+- Multi-provider payment packages (sibling adapters + shared registry/router)
+- Multi-destination analytics packages (extend existing destination module)
+- Issues/PRs asking to “add a provider/integration” by copying an existing path
+
+| Scenario | Trains |
+|----------|--------|
+| `tdd-full-e2e-new-vendor-follow-existing-path` | Full pipeline: discover siblings → research → design on existing path → production adapter+registry+tests → PR; reject parallel facade / store-only / invent |
+| `tdd-multi-vendor-no-parallel-facade` | Extend existing registry beside siblings; reject side registry and pin-only |
+
+Source-edit case fixtures under `evals/fixtures/skills/source-edit-cases.json` (`new-vendor-*`) lock the same behaviors for the `source-edit-skill-cases` gate.
+
+Do **not** expand training by listing real GitHub package names in `libs/` or scenarios — abstract the path, keep synthetic vendors, and fix skills until judges go green.
+
 ## Rules
 
 1. **Deterministic first** — fixed timestamps/fixtures; no flaky clocks; no live LLM required for merge bar.

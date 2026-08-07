@@ -42,6 +42,7 @@ export {
   assertSkillPacketForMarkDone,
   readEvidenceFile,
   requirePipelineStarted,
+  resolvePackageRootForPaths,
 } from './skill-packet.js';
 
 export {

@@ -1,0 +1,151 @@
+{
+  "id": "tdd-multi-vendor-no-parallel-facade",
+  "title": "TDD: multi-vendor packages must extend registry beside siblings; reject parallel facade",
+  "userIntent": "layerkit: add vendor cedar to client package with existing payment providers under src/vendors",
+  "mode": "full",
+  "vendor": "cedar",
+  "trains": [
+    "multi-vendor",
+    "no parallel facade",
+    "registry extension",
+    "deletion-first before new tree",
+    "style-match siblings"
+  ],
+  "skillText": {
+    "skillsUnderTest": [
+      "layerkit-source-edit-client",
+      "layerkit-design-flow",
+      "layerkit-deletion-first",
+      "layerkit-align-client-style"
+    ],
+    "mustMatch": [
+      "parallel facade",
+      "registry",
+      "sibling|existing.*(adapter|vendor|path)",
+      "deletion-first|stale|replace"
+    ],
+    "mustNotMatch": [
+      "generate an integration plan"
+    ]
+  },
+  "runGold": {
+    "mustCiteHosts": [
+      "docs.example.com"
+    ],
+    "requiredPipelineSteps": [
+      "discover",
+      "surfaces",
+      "research",
+      "design",
+      "author",
+      "privacy",
+      "deletion-first",
+      "source-edit",
+      "handoff"
+    ],
+    "mapFieldsMin": 1,
+    "forbidInventFieldPaths": true,
+    "forbidStoreOnlyHandoff": true,
+    "requirePrUrl": true,
+    "allowResidualNoPr": false
+  },
+  "runs": [
+    {
+      "id": "good-registry-extension",
+      "expectPass": true,
+      "stepOverrides": {
+        "deletion-first": {
+          "claim": "No stale parallel facade; will extend existing registry and sibling module root",
+          "sources": [
+            {
+              "title": "registry",
+              "url": "file://src/registry.ts",
+              "excerpt": "existing vendors registered"
+            }
+          ]
+        },
+        "source-edit": {
+          "claim": "Extended existing registry; cedar adapter beside siblings; sibling tests cloned",
+          "sources": [
+            {
+              "title": "cedar adapter",
+              "url": "file://src/vendors/cedar/adapter.ts",
+              "excerpt": "CedarAdapter"
+            },
+            {
+              "title": "registry",
+              "url": "file://src/registry.ts",
+              "excerpt": "register('cedar'"
+            }
+          ]
+        }
+      },
+      "artifactsPreset": "good-pr",
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "order.id",
+            "vendor": "order_id"
+          }
+        ],
+        "sourceEditPaths": [
+          "src/vendors/cedar/adapter.ts",
+          "src/registry.ts",
+          "tests/vendors/cedar.test.ts"
+        ],
+        "documentationUrls": [
+          "https://docs.example.com/api/cedar"
+        ],
+        "prUrl": "https://github.com/acme/payments-client/pull/12"
+      }
+    },
+    {
+      "id": "bad-side-registry",
+      "expectPass": false,
+      "defect": "side registry/facade when existing registry can be edited",
+      "stepOverrides": {
+        "design": {
+          "claim": "Designed second CedarRegistry facade beside existing registry",
+          "invent": true,
+          "sources": [
+            {
+              "title": "side registry",
+              "url": "file://src/cedar-registry.ts",
+              "excerpt": "new CedarRegistry class"
+            }
+          ]
+        }
+      },
+      "artifactsPreset": "good-pr",
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "order.id",
+            "vendor": "order_id"
+          }
+        ],
+        "sourceEditPaths": [
+          "src/cedar-registry.ts",
+          "src/vendors/cedar/adapter.ts"
+        ],
+        "prUrl": "https://github.com/acme/payments-client/pull/13"
+      }
+    },
+    {
+      "id": "bad-pin-only",
+      "expectPass": false,
+      "defect": "package.json pin without sibling path production work",
+      "artifactsPreset": "pin-only-pr",
+      "artifacts": {
+        "documentationUrls": [
+          "https://docs.example.com/api/cedar"
+        ],
+        "mapFields": [],
+        "sourceEditPaths": [
+          "package.json"
+        ],
+        "prUrl": "https://github.com/acme/payments-client/pull/14"
+      }
+    }
+  ]
+}

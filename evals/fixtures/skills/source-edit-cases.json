@@ -24,6 +24,24 @@
       "vendorChange": "Vendor requires loyalty_tier.",
       "clientEvidence": "No client interface, model, or datastore field represents loyalty tier.",
       "expected": "Leave a localized TODO and handoff note instead of inventing a field."
+    },
+    {
+      "id": "new-vendor-follow-sibling-path",
+      "vendorChange": "Client needs new vendor northstar; package already has acme and beacon adapters plus a shared registry.",
+      "clientEvidence": "src/vendors/acme/adapter.ts, src/vendors/beacon/adapter.ts, src/registry.ts, tests/vendors/acme.test.ts",
+      "expected": "Mirror sibling adapter under src/vendors/northstar/, wire the existing registry, clone sibling tests; do not invent a parallel facade outside the multi-vendor module root."
+    },
+    {
+      "id": "new-vendor-no-parallel-facade",
+      "vendorChange": "Agent proposed libs/northstar-sdk-wrapper as a new top-level tree for a new vendor.",
+      "clientEvidence": "Existing integrations live under src/vendors/* and register in src/registry.ts.",
+      "expected": "Reject the parallel facade; place the adapter beside siblings and register it in the existing registry following the sibling path."
+    },
+    {
+      "id": "new-vendor-clone-sibling-tests",
+      "vendorChange": "Full integrate of cedar into a multi-payment client package.",
+      "clientEvidence": "tests/vendors/acme.test.ts covers adapter send + registry lookup; package verification is npm test.",
+      "expected": "Clone the sibling test layout for cedar, adapt only evidence-backed contract differences, and keep package verification green before handoff."
     }
   ]
 }

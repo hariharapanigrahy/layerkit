@@ -34,9 +34,23 @@ for (const pattern of [
   /what must pass/i,
   /proof artifact/i,
   /fallback/i,
+  /New Vendor Integrations/i,
+  /sibling|multi-vendor/i,
+  /registry/i,
+  /parallel facade/i,
+  /follow.*existing path|existing path/i,
 ]) {
   assertTrue(`source-edit instructions include ${pattern}`, pattern.test(combined), combined);
 }
+
+const multiVendorCases = (fixture.cases as Array<{ id: string }>).filter((c) =>
+  c.id.startsWith('new-vendor-'),
+);
+assertTrue(
+  'source-edit-cases include multi-vendor new-vendor curriculum (≥2)',
+  multiVendorCases.length >= 2,
+  JSON.stringify(multiVendorCases.map((c) => c.id)),
+);
 
 for (const forbidden of [
   /new mapper instead/i,
