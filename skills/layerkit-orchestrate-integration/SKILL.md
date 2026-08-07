@@ -69,6 +69,19 @@ Step ids: `discover` | `surfaces` | `research` | `design` | `author` | `privacy`
 | `source-edit` | `layerkit-source-edit-client` or direct agent edit | Agent edits existing source/tests |
 | `handoff` | checker + review | **Terminal:** `package_verify: green` + **live** PR via `layerkit pr open --pr-match "…"` (reuse open workstream PR; collaborator push, else **fork→push→PR**) or residual-no-pr break-glass (`outcome: residual-no-pr` + `allow_residual_no_pr: true` + `residual: <why>`). `--pr-match` is a PR dedupe string only — not a vendor API registry. Fake PR URLs blocked. |
 
+## Full integrate on multi-vendor client packages
+
+When the customer package already has vendors (payment providers, analytics destinations, gateways):
+
+1. **Discover** sibling adapters/registries/tests — the path the next vendor must follow.
+2. **Research** the new vendor from docs/OpenAPI (citations required); do not invent fields.
+3. **Design** by following the existing sibling path (same module root + registry wire), not a freestyle tree.
+4. **Author** map/processors from evidence only.
+5. **Source-edit** production files: new vendor beside siblings, registry wire, clone sibling tests, package verification green.
+6. **Handoff** with live client PR (or residual-no-pr only when research proved zero production change).
+
+Pin-only / apiVersion alone is **not** full integrate. Store-only maps without production edits are **not** success. Parallel facades beside an existing multi-vendor module are forbidden.
+
 ## Stop conditions
 
 | Stage | Stop if |

@@ -1,0 +1,226 @@
+{
+  "id": "tdd-full-e2e-new-vendor-follow-existing-path",
+  "title": "TDD: full integrate new vendor by following multi-vendor sibling path (adapter + registry + tests + PR)",
+  "userIntent": "layerkit: full integrate northstar into multi-vendor client package that already ships acme and beacon",
+  "mode": "full",
+  "vendor": "northstar",
+  "trains": [
+    "full integrate new vendor",
+    "multi-vendor client package",
+    "follow existing sibling path",
+    "registry wire",
+    "clone sibling tests",
+    "no parallel facade",
+    "end-to-end PR"
+  ],
+  "skillText": {
+    "skillsUnderTest": [
+      "layerkit-orchestrate-integration",
+      "layerkit-discover-data-layer",
+      "layerkit-design-flow",
+      "layerkit-source-edit-client",
+      "layerkit-align-client-style"
+    ],
+    "mustMatch": [
+      "multi-vendor|sibling",
+      "follow.*existing path|existing path|sibling.*path",
+      "registry",
+      "parallel facade",
+      "discover",
+      "production source|existing",
+      "clone.*test|sibling test|tests"
+    ],
+    "mustNotMatch": [
+      "store-only is success",
+      "pin-only is full integrate"
+    ]
+  },
+  "runGold": {
+    "mustCiteHosts": [
+      "docs.example.com"
+    ],
+    "requiredPipelineSteps": [
+      "discover",
+      "surfaces",
+      "research",
+      "design",
+      "author",
+      "privacy",
+      "deletion-first",
+      "source-edit",
+      "handoff"
+    ],
+    "mapFieldsMin": 1,
+    "forbidInventFieldPaths": true,
+    "forbidStoreOnlyHandoff": true,
+    "requirePrUrl": true,
+    "allowResidualNoPr": false
+  },
+  "runs": [
+    {
+      "id": "good-follow-sibling-e2e",
+      "expectPass": true,
+      "stepOverrides": {
+        "discover": {
+          "claim": "Inventoried multi-vendor package: acme+beacon adapters under src/vendors; registry at src/registry.ts; sibling tests under tests/vendors",
+          "sources": [
+            {
+              "title": "sibling acme",
+              "url": "file://src/vendors/acme/adapter.ts",
+              "excerpt": "export class AcmeAdapter"
+            },
+            {
+              "title": "registry",
+              "url": "file://src/registry.ts",
+              "excerpt": "register('acme', new AcmeAdapter())"
+            }
+          ]
+        },
+        "design": {
+          "claim": "Design northstar by following existing sibling path src/vendors/* + registry wire + clone acme tests",
+          "sources": [
+            {
+              "title": "sibling path",
+              "url": "file://src/vendors/acme/adapter.ts",
+              "excerpt": "follow existing path"
+            },
+            {
+              "title": "northstar docs",
+              "url": "https://docs.example.com/api/northstar",
+              "excerpt": "POST /v1/events"
+            }
+          ]
+        },
+        "source-edit": {
+          "claim": "Added northstar adapter beside siblings, wired registry, cloned sibling tests; package verify green",
+          "sources": [
+            {
+              "title": "northstar adapter",
+              "url": "file://src/vendors/northstar/adapter.ts",
+              "excerpt": "export class NorthstarAdapter"
+            },
+            {
+              "title": "registry wire",
+              "url": "file://src/registry.ts",
+              "excerpt": "register('northstar'"
+            }
+          ]
+        }
+      },
+      "artifactsPreset": "good-pr",
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "amount",
+            "vendor": "amount_cents"
+          },
+          {
+            "domain": "currency",
+            "vendor": "currency_code"
+          }
+        ],
+        "mapIntents": {
+          "purchase": {
+            "eventName": "purchase",
+            "operationId": "createEvent"
+          }
+        },
+        "mapOperations": [
+          "createEvent"
+        ],
+        "documentationUrls": [
+          "https://docs.example.com/api/northstar",
+          "https://docs.example.com/api/northstar/events"
+        ],
+        "sourceEditPaths": [
+          "src/vendors/northstar/adapter.ts",
+          "src/registry.ts",
+          "tests/vendors/northstar.test.ts"
+        ],
+        "prUrl": "https://github.com/acme/multi-vendor-client/pull/88"
+      }
+    },
+    {
+      "id": "bad-parallel-facade",
+      "expectPass": false,
+      "defect": "invented parallel facade instead of sibling path",
+      "stepOverrides": {
+        "design": {
+          "claim": "Invented libs/northstar-sdk-wrapper parallel facade outside existing multi-vendor module",
+          "invent": true,
+          "sources": [
+            {
+              "title": "freestyle",
+              "url": "file://libs/northstar-sdk-wrapper/index.ts",
+              "excerpt": "new tree"
+            }
+          ]
+        },
+        "source-edit": {
+          "claim": "Created parallel facade without registry wire",
+          "sources": [
+            {
+              "title": "facade",
+              "url": "file://libs/northstar-sdk-wrapper/index.ts",
+              "excerpt": "orphan tree"
+            }
+          ]
+        }
+      },
+      "artifactsPreset": "good-pr",
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "amount",
+            "vendor": "amount"
+          }
+        ],
+        "sourceEditPaths": [
+          "libs/northstar-sdk-wrapper/index.ts"
+        ],
+        "prUrl": "https://github.com/acme/multi-vendor-client/pull/89"
+      }
+    },
+    {
+      "id": "bad-store-only-no-production",
+      "expectPass": false,
+      "defect": "store-only map without production sibling path edits",
+      "artifactsPreset": "store-only-map",
+      "artifacts": {
+        "documentationUrls": [
+          "https://docs.example.com/api/northstar"
+        ],
+        "mapFields": [
+          {
+            "domain": "amount",
+            "vendor": "amount"
+          }
+        ]
+      }
+    },
+    {
+      "id": "bad-invent-fields",
+      "expectPass": false,
+      "defect": "invented vendor field paths without docs",
+      "stepOverrides": {
+        "author": {
+          "invent": true,
+          "claim": "Invented fields without OpenAPI evidence"
+        }
+      },
+      "artifactsPreset": "good-pr",
+      "artifacts": {
+        "mapFields": [
+          {
+            "domain": "amount",
+            "vendor": "invent_amount"
+          }
+        ],
+        "sourceEditPaths": [
+          "src/vendors/northstar/adapter.ts"
+        ],
+        "prUrl": "https://github.com/acme/multi-vendor-client/pull/90"
+      }
+    }
+  ]
+}

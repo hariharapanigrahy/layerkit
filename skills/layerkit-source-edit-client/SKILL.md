@@ -43,10 +43,16 @@ Optional `project.json` source-edit hints:
 
 ## New Vendor Integrations
 
-- Start from existing client vendor integrations, registries, privacy checks, tests, naming, and error handling.
-- If a matching adapter/mapper pattern exists, extend that pattern for the new vendor and wire it into the existing registry.
-- Add a new file only when there is no existing file that should own the vendor-specific behavior; document what existing pattern it follows and why modifying an existing file was not enough.
-- Keep shared routing/runtime decisions in the client package. Layerkit only supplies agent skills and exact artifact rails.
+Full integrate of a **new** vendor into a multi-vendor (or single-vendor) package is end-to-end production work on the **existing path**, not a side project:
+
+1. **Inventory siblings first** — name concrete adapter/mapper/registry/test paths already shipping (from discover + style profile).
+2. **Follow the existing path** — place the new vendor beside siblings (same module root), mirror naming/error handling/privacy hooks, and **wire the existing registry/router**.
+3. **Clone sibling tests** — copy the nearest sibling test layout and adapt only what vendor evidence requires; run the client package verification command.
+4. **No parallel facade** — do not invent `libs/<vendor>-wrapper` or a second registry when `src/vendors/*` + registry already exists.
+5. Add a new file only when no existing file should own the vendor-specific behavior; document which sibling pattern it follows and why modifying an existing file was not enough.
+6. Keep shared routing/runtime decisions in the client package. Layerkit only supplies agent skills and exact artifact rails.
+
+Proof before broad work: package build/test green for the new vendor path (or residual TODO with missing datalayer gap). Handoff lists sibling reference paths, new production paths, registry wire, and PR URL.
 
 ## Forbidden
 

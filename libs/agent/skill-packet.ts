@@ -7,7 +7,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import {
   INTEGRATION_PIPELINE,
   type PipelineStep,
@@ -101,9 +101,40 @@ function assertSourceEditEvidence(bodies: string[]): void {
 }
 
 /**
- * Source-edit paths must exist on disk under projectDir (not freestyle invented paths).
+ * Resolve customer package root for production path checks.
+ * Store is usually `{packageRoot}/.layerkit` (projectDir); production source lives on packageRoot.
  */
-function assertSourceEditOnDisk(projectDir: string, bodies: string[]): void {
+export function resolvePackageRootForPaths(
+  projectDir: string | undefined,
+  repoRoot?: string,
+): string | undefined {
+  if (repoRoot && repoRoot.trim()) return resolve(repoRoot);
+  if (!projectDir) return undefined;
+  const resolved = resolve(projectDir);
+  // Default store layout: packageRoot/.layerkit
+  if (basename(resolved) === '.layerkit') {
+    return dirname(resolved);
+  }
+  return resolved;
+}
+
+/** True if relative production path exists under any candidate package root. */
+function productionPathExists(relativePath: string, roots: string[]): boolean {
+  for (const root of roots) {
+    if (existsSync(resolve(root, relativePath))) return true;
+  }
+  return false;
+}
+
+/**
+ * Source-edit paths must exist on disk under the customer package root
+ * (not freestyle invented paths under the Layerkit store).
+ */
+function assertSourceEditOnDisk(
+  projectDir: string,
+  bodies: string[],
+  repoRoot?: string,
+): void {
   const joined = bodies.join('\n\n');
   if (isResidualNoFieldEdit(joined)) return;
   const paths = extractProductionPaths(joined);
@@ -112,14 +143,18 @@ function assertSourceEditOnDisk(projectDir: string, bodies: string[]): void {
       'source_edit_paths_missing: list production paths that exist under the package root',
     );
   }
+  const packageRoot = resolvePackageRootForPaths(projectDir, repoRoot);
+  const roots = [packageRoot, projectDir, repoRoot]
+    .filter((r): r is string => typeof r === 'string' && r.trim().length > 0)
+    .map((r) => resolve(r));
+  const uniqueRoots = [...new Set(roots)];
   const missing: string[] = [];
   for (const p of paths) {
-    const abs = resolve(projectDir, p);
-    if (!existsSync(abs)) missing.push(p);
+    if (!productionPathExists(p, uniqueRoots)) missing.push(p);
   }
   if (missing.length) {
     throw new Error(
-      `source_edit_paths_not_on_disk: freestyle path list blocked — missing under projectDir: ${missing.join(', ')}. ` +
+      `source_edit_paths_not_on_disk: freestyle path list blocked — missing under package root: ${missing.join(', ')}. ` +
         `Edit real production files then list those paths.`,
     );
   }
@@ -129,7 +164,11 @@ function assertSourceEditOnDisk(projectDir: string, bodies: string[]): void {
  * Handoff requires package verification attestation (merge readiness).
  * Optionally runs a light syntax check on edited .js/.ts files.
  */
-function assertPackageVerify(bodies: string[], projectDir: string | undefined): void {
+function assertPackageVerify(
+  bodies: string[],
+  projectDir: string | undefined,
+  repoRoot?: string,
+): void {
   const joined = bodies.join('\n\n');
   if (isResidualNoPrBreakGlass(joined)) return;
 
@@ -162,11 +201,13 @@ function assertPackageVerify(bodies: string[], projectDir: string | undefined): 
   if (!projectDir || process.env.LAYERKIT_SKIP_PACKAGE_VERIFY === '1') return;
   if (residualVerify) return;
 
+  const packageRoot = resolvePackageRootForPaths(projectDir, repoRoot) ?? projectDir;
+
   // Light fail-closed check: node --check on listed production JS paths from evidence
   const paths = extractProductionPaths(joined);
   for (const p of paths) {
     if (!/\.(js|mjs|cjs|ts)$/i.test(p)) continue;
-    const abs = resolve(projectDir, p);
+    const abs = resolve(packageRoot, p);
     if (!existsSync(abs)) continue;
     if (/\.ts$/i.test(p)) continue; // node --check is for JS; TS left to package test script
     const r = spawnSync(process.execPath, ['--check', abs], {
@@ -338,13 +379,21 @@ export function writeSkillPacket(projectDir: string): string | null {
 }
 
 export interface AssertEvidenceOpts {
-  /** Customer package root — enables on-disk path checks and package verify. */
+  /**
+   * Layerkit project store (usually `{packageRoot}/.layerkit`).
+   * Used for surface inventory and as fallback root discovery.
+   */
   projectDir?: string;
+  /**
+   * Customer package / git root where production source lives.
+   * Required for accurate source-edit on-disk checks (not the `.layerkit` store).
+   */
+  repoRoot?: string;
 }
 
 /**
  * Validate evidence paths for a step: exists, min size, content pattern.
- * Throws on failure. Prefer passing projectDir so freestyle path lists fail closed.
+ * Throws on failure. Prefer passing projectDir + repoRoot so freestyle path lists fail closed.
  */
 export function assertEvidenceForStep(
   stepId: string,
@@ -395,7 +444,7 @@ export function assertEvidenceForStep(
   if (stepId === 'source-edit') {
     assertSourceEditEvidence(bodies);
     if (opts?.projectDir) {
-      assertSourceEditOnDisk(opts.projectDir, bodies);
+      assertSourceEditOnDisk(opts.projectDir, bodies, opts.repoRoot);
       // Multi-lang gate: every inventoried language must be updated|residual (no pending)
       assertAllSurfacesResolved(opts.projectDir);
     }
@@ -404,7 +453,7 @@ export function assertEvidenceForStep(
     if (opts?.projectDir) {
       assertAllSurfacesResolved(opts.projectDir);
     }
-    assertPackageVerify(bodies, opts?.projectDir);
+    assertPackageVerify(bodies, opts?.projectDir, opts?.repoRoot);
     assertHandoffTerminal(bodies);
   }
 }

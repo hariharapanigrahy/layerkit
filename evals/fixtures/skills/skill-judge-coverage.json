@@ -5,11 +5,14 @@
     "layerkit-align-client-style": {
       "dimensions": [
         "agent-reads-client-style",
-        "no-style-scan-cli"
+        "no-style-scan-cli",
+        "multi-vendor-sibling-style",
+        "skill-scenario-train"
       ],
       "ciCases": [
         "skill-hybrid-heal-judge",
-        "deletion-first-skill"
+        "deletion-first-skill",
+        "skill-train-loop"
       ]
     },
     "layerkit-author-map": {
@@ -75,10 +78,13 @@
     "layerkit-design-flow": {
       "dimensions": [
         "client-code-flow-design",
-        "no-layerkit-runtime-flow"
+        "no-layerkit-runtime-flow",
+        "multi-vendor-follow-existing-path",
+        "skill-scenario-train"
       ],
       "ciCases": [
-        "skill-hybrid-heal-judge"
+        "skill-hybrid-heal-judge",
+        "skill-train-loop"
       ]
     },
     "layerkit-design-integration": {
@@ -93,11 +99,14 @@
     "layerkit-discover-data-layer": {
       "dimensions": [
         "deny-secret-paths",
-        "agent-reads-code-evidence"
+        "agent-reads-code-evidence",
+        "multi-vendor-sibling-inventory",
+        "skill-scenario-train"
       ],
       "ciCases": [
         "doctor-secret-scan",
-        "skill-hybrid-heal-judge"
+        "skill-hybrid-heal-judge",
+        "skill-train-loop"
       ]
     },
     "layerkit-fix-from-dry-run": {
